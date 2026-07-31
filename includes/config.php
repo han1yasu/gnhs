@@ -26,14 +26,21 @@ function startSession(): void {
     if (session_status() === PHP_SESSION_NONE) session_start();
 }
 
+function getBaseUrl(): string {
+    $script = $_SERVER['SCRIPT_NAME'] ?? '';
+    $basePath = preg_replace('#/(pages|api|includes|database)/.*$#i', '', $script);
+    return rtrim($basePath, '/');
+}
+
 function requireLogin(string $role = ''): array {
     startSession();
+    $baseUrl = getBaseUrl();
     if (empty($_SESSION['user'])) {
-        header('Location: /gnhs-guidance/index.html'); exit;
+        header('Location: ' . $baseUrl . '/index.html'); exit;
     }
     $u = $_SESSION['user'];
     if ($role && $u['role'] !== $role && !($role === 'staff' && in_array($u['role'], ['admin','teacher']))) {
-        header('Location: /gnhs-guidance/index.html'); exit;
+        header('Location: ' . $baseUrl . '/index.html'); exit;
     }
 
     // Always refresh avatar_photo and advisory_class from DB so changes persist across pages

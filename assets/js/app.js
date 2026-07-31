@@ -12,8 +12,15 @@ let _activeCaseId = null;
 const $  = id  => document.getElementById(id);
 const $$ = sel => document.querySelectorAll(sel);
 
+// Dynamic Base Path Detection (laptop & environment independent)
+const APP_BASE = window.APP_BASE !== undefined ? window.APP_BASE : (window.location.pathname.replace(/\/(pages|api|includes|database)\/.*$/i, '').replace(/\/$/, ''));
+function getApiUrl(path) {
+  return APP_BASE + (path.startsWith('/') ? path : '/' + path);
+}
+
 async function apiPost(url, data) {
-  const r = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
+  const targetUrl = url.startsWith('/') && !url.startsWith(APP_BASE) ? APP_BASE + url : url;
+  const r = await fetch(targetUrl, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
   return r.json();
 }
 
@@ -136,7 +143,7 @@ async function handleLogin() {
   setLoading(btn, true); hideEl('login-msg');
 
   try {
-    const res = await apiPost('/gnhs-guidance/api/login.php', { email, password, role:_role });
+    const res = await apiPost(getApiUrl('/api/login.php'), { email, password, role:_role });
     if (res.success) { window.location.href = res.redirect; }
     else { showMsg('login-msg', res.message||'Invalid credentials. Please try again.'); setLoading(btn,false); }
   } catch {
@@ -174,7 +181,7 @@ async function handleRegister() {
   setLoading(btn, true); hideEl('reg-msg');
 
   try {
-    const res = await apiPost('/gnhs-guidance/api/register.php', {
+    const res = await apiPost(getApiUrl('/api/register.php'), {
       first_name:firstName, last_name:lastName, id_number:lrn,
       grade_section:grade, email, password:pass, confirm, role:_role
     });
@@ -217,7 +224,7 @@ document.addEventListener('click', e => {
 });
 
 async function markAllRead() {
-  try { await fetch('/gnhs-guidance/api/get_notifications.php?mark_read=1'); } catch {}
+  try { await fetch(getApiUrl('/api/get_notifications.php?mark_read=1')); } catch {}
   $$('.np-item.unread').forEach(el => el.classList.remove('unread'));
   $$('.notif-dot').forEach(d => d.classList.add('hidden'));
   showToast('All notifications marked as read.','info');
@@ -249,7 +256,7 @@ async function submitConcern() {
   setLoading(btn, true); hideEl('submitMsg');
 
   try {
-    const res = await apiPost('/gnhs-guidance/api/submit_case.php', {
+    const res = await apiPost(getApiUrl('/api/submit_case.php'), {
       concern_type:concernType, subject, description:desc,
       is_anonymous:isAnonymous, incident_date:incidentDate,
       preferred_contact:contact, priority
@@ -296,7 +303,7 @@ async function submitReferral() {
   setLoading(btn, true); hideEl('refMsg');
 
   try {
-    const res = await apiPost('/gnhs-guidance/api/submit_referral.php', {
+    const res = await apiPost(getApiUrl('/api/submit_referral.php'), {
       student_name: studentName, grade_section: gradeSection,
       concern_type: concernType, urgency, observations
     });
@@ -335,7 +342,7 @@ async function openCaseReview(caseId, caseNum, status, priority, subject, descri
   if (body) body.innerHTML = spinner;
 
   try {
-    const res = await fetch('/gnhs-guidance/api/get_case.php?id='+caseId);
+    const res = await fetch(getApiUrl('/api/get_case.php?id=')+caseId);
     const d   = await res.json();
     if (d.success) buildReviewModal(d.case, d.notes, d.session);
     else {
@@ -435,7 +442,7 @@ async function saveCase() {
   setLoading(btn,true);
 
   try {
-    const res = await apiPost('/gnhs-guidance/api/update_case.php', {
+    const res = await apiPost(getApiUrl('/api/update_case.php'), {
       case_id:_activeCaseId, priority, status, note, response, session_date:session
     });
     if (res.success) {
@@ -462,7 +469,7 @@ async function openCaseModal(caseId) {
   if (body) body.innerHTML='<div style="text-align:center;padding:40px"><span class="spinner" style="border-color:rgba(85,0,0,.2);border-top-color:var(--maroon);display:inline-block"></span></div>';
 
   try {
-    const res = await fetch('/gnhs-guidance/api/get_case.php?id='+caseId);
+    const res = await fetch(getApiUrl('/api/get_case.php?id=')+caseId);
     const d   = await res.json();
     if (d.success) {
       const c=d.case, notes=d.notes||[], session=d.session;
@@ -518,7 +525,7 @@ async function saveNewUser() {
 
   const btn=$('saveUserBtn'); setLoading(btn,true); hideEl('nuMsg');
   try{
-    const res=await apiPost('/gnhs-guidance/api/register.php',{first_name:first,last_name:last,email,password:pass,confirm:pass,role,id_number:idnum,grade_section:grade});
+    const res=await apiPost(getApiUrl('/api/register.php'),{first_name:first,last_name:last,email,password:pass,confirm:pass,role,id_number:idnum,grade_section:grade});
     if(res.success){showToast('User added!','success');$('addUserModal').classList.add('hidden');setTimeout(()=>location.reload(),1200);}
     else{showMsg('nuMsg',res.message||'Failed.');}
   }catch{showToast('User added (demo)','success');$('addUserModal')?.classList.add('hidden');}
@@ -528,7 +535,7 @@ async function saveNewUser() {
 async function deleteUser(userId, name) {
   if(!confirm(`Are you sure you want to deactivate the account of ${name}?`)) return;
   try{
-    const r=await fetch('/gnhs-guidance/api/update_user.php?action=deactivate&id='+userId);
+    const r=await fetch(getApiUrl('/api/update_user.php?action=deactivate&id=')+userId);
     const d=await r.json();
     if(d.success){showToast('User deactivated.','info');setTimeout(()=>location.reload(),1200);}
     else showToast(d.message||'Failed.','error');

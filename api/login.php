@@ -47,13 +47,14 @@ try {
         'advisory_class' => $user['advisory_class'] ?? null,
     ];
 
+    $baseUrl = getBaseUrl();
     $redirectMap = [
-        'student' => '/gnhs-guidance/pages/student-dashboard.php',
-        'teacher' => '/gnhs-guidance/pages/teacher-dashboard.php',
-        'admin'   => '/gnhs-guidance/pages/admin-dashboard.php',
+        'student' => $baseUrl . '/pages/student-dashboard.php',
+        'teacher' => $baseUrl . '/pages/teacher-dashboard.php',
+        'admin'   => $baseUrl . '/pages/admin-dashboard.php',
     ];
 
-    jsonOut(['success'=>true,'redirect'=>$redirectMap[$user['role']] ?? '/gnhs-guidance/index.html','user'=>$_SESSION['user']]);
+    jsonOut(['success'=>true,'redirect'=>$redirectMap[$user['role']] ?? ($baseUrl . '/index.html'),'user'=>$_SESSION['user']]);
 
 } catch (Exception $e) {
     jsonOut(['success'=>false,'message'=>'Server error. Please try again later.'], 500);

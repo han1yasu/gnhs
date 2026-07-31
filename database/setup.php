@@ -9,7 +9,7 @@
  * DELETE this file after running!
  */
 
-require_once __DIR__ . '/includes/config.php';
+require_once __DIR__ . '/../includes/config.php';
 
 // Safety: only allow if no users exist yet
 $db = getDB();

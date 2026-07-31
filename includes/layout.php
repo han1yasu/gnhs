@@ -1,5 +1,6 @@
 <?php
 function renderLayout(array $user, string $pageTitle, string $activeNav, string $content): void {
+    $baseUrl  = getBaseUrl();
     $role     = $user['role'];
     $initials = htmlspecialchars($user['avatar_initials'] ?? strtoupper($user['first_name'][0]));
     $fullName = htmlspecialchars($user['first_name'].' '.$user['last_name']);
@@ -68,7 +69,7 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title><?= htmlspecialchars($pageTitle) ?> — GNHS Guidance</title>
-  <link rel="stylesheet" href="/gnhs-guidance/style.css"/>
+  <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/style.css"/>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
 </head>
@@ -77,7 +78,7 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
 <!-- SIDEBAR -->
 <aside class="sidebar" id="sidebar">
   <div class="sb-brand">
-    <img src="/gnhs-guidance/gnhs.jpg" alt="GNHS Logo" class="sb-logo-img"/>
+    <img src="<?= $baseUrl ?>/assets/images/gnhs.jpg" alt="GNHS Logo" class="sb-logo-img"/>
     <div>
       <div class="sb-school">GNHS</div>
       <div class="sb-sub">Guidance System</div>
@@ -112,7 +113,7 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
         <i class="fas fa-bars"></i>
       </button>
       <div class="topbar-brand">
-        <img src="/gnhs-guidance/gnhs.jpg" alt="GNHS Logo" class="topbar-logo-img"/>
+        <img src="<?= $baseUrl ?>/assets/images/gnhs.jpg" alt="GNHS Logo" class="topbar-logo-img"/>
         <div class="topbar-school-info">
           <span class="topbar-school-name">Guinayang National High School</span>
           <span class="topbar-page-title"><?= htmlspecialchars($pageTitle) ?></span>
@@ -174,7 +175,7 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
         <button class="btn-secondary" style="flex:1" onclick="document.getElementById('logoutModal').classList.add('hidden')">
           <i class="fas fa-times"></i> Cancel
         </button>
-        <a href="/gnhs-guidance/api/logout.php" class="btn-primary" style="flex:1;justify-content:center;text-decoration:none;display:inline-flex;align-items:center;gap:8px">
+        <a href="<?= $baseUrl ?>/api/logout.php" class="btn-primary" style="flex:1;justify-content:center;text-decoration:none;display:inline-flex;align-items:center;gap:8px">
           <i class="fas fa-sign-out-alt"></i> Yes, Logout
         </a>
       </div>
@@ -245,8 +246,9 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
   </main>
 </div>
 
-<script src="/gnhs-guidance/app.js"></script>
+<script src="<?= $baseUrl ?>/assets/js/app.js"></script>
 <script>
+const APP_BASE = "<?= $baseUrl ?>";
 async function toggleNotifs() {
   const dd = document.getElementById('notifDropdown');
   dd.classList.toggle('hidden');
@@ -254,7 +256,7 @@ async function toggleNotifs() {
 }
 async function loadNotifs() {
   try {
-    const r = await fetch('/gnhs-guidance/api/get_notifications.php');
+    const r = await fetch(APP_BASE + '/api/get_notifications.php');
     const d = await r.json();
     const dot = document.getElementById('notifDot');
     if (d.unread > 0 && dot) dot.classList.remove('hidden');
@@ -274,7 +276,7 @@ async function loadNotifs() {
   } catch(e) {}
 }
 async function markAllRead() {
-  await fetch('/gnhs-guidance/api/get_notifications.php?mark_read=1');
+  await fetch(APP_BASE + '/api/get_notifications.php?mark_read=1');
   document.getElementById('notifDot')?.classList.add('hidden');
   document.querySelectorAll('.notif-item.unread').forEach(function(el){ el.classList.remove('unread'); });
 }
@@ -355,7 +357,7 @@ async function uploadAvatar(input) {
   formData.append('avatar', file);
 
   try {
-    const res  = await fetch('/gnhs-guidance/api/upload_avatar.php', { method:'POST', body:formData });
+    const res  = await fetch(APP_BASE + '/api/upload_avatar.php', { method:'POST', body:formData });
     const data = await res.json();
     if (data.success) {
       showToast('Profile picture updated! ✅', 'success');
@@ -373,7 +375,7 @@ async function uploadAvatar(input) {
 async function removeAvatar() {
   if (!confirm('Remove your profile picture?')) return;
   try {
-    const res  = await fetch('/gnhs-guidance/api/remove_avatar.php');
+    const res  = await fetch(APP_BASE + '/api/remove_avatar.php');
     const data = await res.json();
     if (data.success) {
       showToast('Profile picture removed.', 'info');

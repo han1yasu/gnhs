@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GNHS — Guidance Case Management System</title>
+  <link rel="stylesheet" href="style.css?v=2.4" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,600;1,400&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <script>
+    (function () {
+      var t = localStorage.getItem('theme') || 'light';
+      var c = localStorage.getItem('colorTheme') || 'maroon';
+      document.documentElement.setAttribute('data-theme', t);
+      document.documentElement.setAttribute('data-color', c);
+    })();
+  </script>
+</head>
+
+<body class="landing-page">
+  <nav class="navbar">
+    <div class="nav-brand" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+      <div class="school-logo"><img src="gnhs.jpg" alt="GNHS"
+          style="width:100%;height:100%;object-fit:cover;border-radius:10px;" /></div>
+      <div class="school-info">
+        <span class="school-name">Guinayang National High School</span>
+        <span class="school-sub">Guidance Case Management System</span>
+      </div>
+    </div>
+    <div class="nav-links" id="navLinks">
+      <a href="#home" class="nav-link active">Home</a>
+      <a href="#features" class="nav-link">Features</a>
+      <a href="#about" class="nav-link">About</a>
+      <a href="#contact" class="nav-link">Contact</a>
+      <div class="theme-container" style="position:relative; display:inline-block;">
+        <button class="nav-link" style="background:none;border:none;cursor:pointer;font-size:16px;color:var(--text);"
+          onclick="toggleThemeMenu()"><i class="fas fa-palette"></i></button>
+        <div class="theme-panel" id="themePanel">
+          <button class="tp-mode-toggle" id="tpModeToggle"
+            onclick="setTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark')">
+            <i class="fas fa-moon"></i> Dark Mode
+          </button>
+          <div style="font-size:12px;font-weight:800;color:var(--text-3);text-align:center;margin-top:4px">COLOR THEME
+          </div>
+          <div class="tp-row">
+            <div class="tp-color active" style="background:#550000" data-color="maroon"
+              onclick="setColorMode('maroon')"></div>
+            <div class="tp-color" style="background:#2563eb" data-color="blue" onclick="setColorMode('blue')"></div>
+            <div class="tp-color" style="background:#059669" data-color="emerald" onclick="setColorMode('emerald')">
+            </div>
+            <div class="tp-color" style="background:#7c3aed" data-color="violet" onclick="setColorMode('violet')"></div>
+          </div>
+        </div>
+      </div>
+      <button class="btn-login" onclick="openLoginModal()"><i class="fas fa-sign-in-alt"></i> Login</button>
+    </div>
+    <button class="nav-toggle" onclick="toggleMenu()"><i class="fas fa-bars"></i></button>
+  </nav>
+
+  <section class="hero" id="home">
+    <div class="hero-bg">
+      <div class="bg-blob b1"></div>
+      <div class="bg-blob b2"></div>
+      <div class="bg-blob b3"></div>
+    </div>
+    <div class="hero-content">
+      <div class="hero-badge"><i class="fas fa-shield-heart"></i>&nbsp; Student Welfare Platform</div>
+      <h1 class="hero-title">Guidance Case<br><em>Management System</em></h1>
+      <p class="hero-desc">A secure, digital platform for students to report concerns, teachers to submit referrals, and
+        guidance counselors to manage student welfare — efficiently and confidentially.</p>
+      <div class="hero-actions">
+        <button class="btn-primary" onclick="openLoginModal()">Get Started &nbsp;<i
+            class="fas fa-arrow-right"></i></button>
+        <button class="btn-ghost"
+          onclick="document.getElementById('features').scrollIntoView({behavior:'smooth'})">Learn More</button>
+      </div>
+      <div class="hero-stats">
+        <div class="stat"><span class="stat-num">3</span><span class="stat-label">User Roles</span></div>
+        <div class="stat-divider"></div>
+        <div class="stat"><span class="stat-num">AI</span><span class="stat-label">Powered Summary</span></div>
+        <div class="stat-divider"></div>
+        <div class="stat"><span class="stat-num">100%</span><span class="stat-label">Confidential</span></div>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="floating-card card-1"><i class="fas fa-check-circle"></i><span>Case Resolved</span></div>
+      <div class="floating-card card-2"><i class="fas fa-exclamation-triangle"></i><span>High Priority</span></div>
+      <div class="floating-card card-3"><i class="fas fa-robot"></i><span>AI Summary Ready</span></div>
+      <div class="dashboard-preview">
+        <div class="preview-header">
+          <span class="preview-dot r"></span><span class="preview-dot y"></span><span class="preview-dot g"></span>
+          <span class="preview-title">Guidance Dashboard</span>
+        </div>
+        <div class="preview-stats">
+          <div class="ps"><span>12</span><small>Active</small></div>
+          <div class="ps"><span>3</span><small>Pending</small></div>
+          <div class="ps"><span>28</span><small>Resolved</small></div>
+        </div>
+        <div class="preview-bar">
+          <div class="pb-fill" style="width:70%;background:#dc2626"></div>
+        </div>
+        <div class="preview-bar">
+          <div class="pb-fill" style="width:45%;background:#d97706"></div>
+        </div>
+        <div class="preview-bar">
+          <div class="pb-fill" style="width:85%;background:#16a34a"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class="features-section" id="features">
+    <div class="section-header">
+      <div class="section-tag">Key Features</div>
+      <h2>Everything the Guidance Office Needs</h2>
+      <p>A complete solution managing student concerns from submission to resolution.</p>
+    </div>
+    <div class="features-marquee-wrapper">
+      <div class="features-marquee-content">
+        <div class="feature-card">
+          <div class="feat-icon" style="background:var(--maroon-pale);color:var(--maroon)"><i class="fas fa-robot"></i>
+          </div>
+          <h3>AI-Assisted Summarization</h3>
+          <p>Automatically summarizes lengthy concern reports so counselors quickly understand key issues.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feat-icon" style="background:#f0f4ff;color:#2563eb"><i class="fas fa-file-alt"></i></div>
+          <h3>Digital Concern Reporting</h3>
+          <p>Students and teachers submit concerns through a secure online form — anytime, from any device.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feat-icon" style="background:#f0fff4;color:#16a34a"><i class="fas fa-user-secret"></i></div>
+          <h3>Anonymous Reporting</h3>
+          <p>Students may submit sensitive concerns anonymously for issues like bullying or harassment.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feat-icon" style="background:#fffbeb;color:#d97706"><i class="fas fa-layer-group"></i></div>
+          <h3>Case Severity Classification</h3>
+          <p>Cases are classified as Low, Medium, or High Priority so counselors respond appropriately.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feat-icon" style="background:#fdf4ff;color:#7c3aed"><i class="fas fa-chart-bar"></i></div>
+          <h3>Analytics Dashboard</h3>
+          <p>Visualize patterns in student concerns and generate reports for school administration.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feat-icon" style="background:#f0fdfa;color:#0d9488"><i class="fas fa-bell"></i></div>
+          <h3>Notification System</h3>
+          <p>Real-time alerts for session schedules, case status changes, and guidance office responses.</p>
+        </div>
+
+        <!-- Duplicate for infinite scroll -->
+        <div class="feature-card">
+          <div class="feat-icon" style="background:var(--maroon-pale);color:var(--maroon)"><i class="fas fa-robot"></i>
+          </div>
+          <h3>AI-Assisted Summarization</h3>
+          <p>Automatically summarizes lengthy concern reports so counselors quickly understand key issues.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feat-icon" style="background:#f0f4ff;color:#2563eb"><i class="fas fa-file-alt"></i></div>
+          <h3>Digital Concern Reporting</h3>
+          <p>Students and teachers submit concerns through a secure online form — anytime, from any device.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feat-icon" style="background:#f0fff4;color:#16a34a"><i class="fas fa-user-secret"></i></div>
+          <h3>Anonymous Reporting</h3>
+          <p>Students may submit sensitive concerns anonymously for issues like bullying or harassment.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feat-icon" style="background:#fffbeb;color:#d97706"><i class="fas fa-layer-group"></i></div>
+          <h3>Case Severity Classification</h3>
+          <p>Cases are classified as Low, Medium, or High Priority so counselors respond appropriately.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feat-icon" style="background:#fdf4ff;color:#7c3aed"><i class="fas fa-chart-bar"></i></div>
+          <h3>Analytics Dashboard</h3>
+          <p>Visualize patterns in student concerns and generate reports for school administration.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feat-icon" style="background:#f0fdfa;color:#0d9488"><i class="fas fa-bell"></i></div>
+          <h3>Notification System</h3>
+          <p>Real-time alerts for session schedules, case status changes, and guidance office responses.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section id="about" style="padding:80px 60px;background:var(--bg);">
+    <div class="section-header">
+      <div class="section-tag">About</div>
+      <h2>Built for Guinayang NHS</h2>
+      <p>Developed in compliance with the Data Privacy Act of 2012, keeping all student records secure.</p>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px;max-width:900px;margin:40px auto 0;">
+      <div
+        style="text-align:center;padding:28px 20px;background:var(--maroon-pale);border-radius:16px;border:1px solid var(--maroon-tint)">
+        <i class="fas fa-user-graduate" style="font-size:32px;color:var(--maroon);margin-bottom:12px;display:block"></i>
+        <strong style="display:block;font-size:16px;margin-bottom:6px">For Students</strong>
+        <p style="font-size:13px;color:var(--text-2)">Submit concerns and track counseling progress in a safe
+          environment.</p>
+      </div>
+      <div
+        style="text-align:center;padding:28px 20px;background:var(--maroon-pale);border-radius:16px;border:1px solid var(--maroon-tint)">
+        <i class="fas fa-chalkboard-teacher"
+          style="font-size:32px;color:var(--maroon);margin-bottom:12px;display:block"></i>
+        <strong style="display:block;font-size:16px;margin-bottom:6px">For Teachers</strong>
+        <p style="font-size:13px;color:var(--text-2)">Refer students who need guidance support quickly and easily.</p>
+      </div>
+      <div
+        style="text-align:center;padding:28px 20px;background:var(--maroon-pale);border-radius:16px;border:1px solid var(--maroon-tint)">
+        <i class="fas fa-user-tie" style="font-size:32px;color:var(--maroon);margin-bottom:12px;display:block"></i>
+        <strong style="display:block;font-size:16px;margin-bottom:6px">For Counselors</strong>
+        <p style="font-size:13px;color:var(--text-2)">Manage all cases, schedule sessions, and view analytics in one
+          place.</p>
+      </div>
+    </div>
+  </section>
+  <section id="contact"
+    style="padding:80px 60px;background:linear-gradient(135deg,var(--maroon-dark),var(--maroon));text-align:center;">
+    <h2 style="color:#fff;font-size:36px;font-weight:900;margin-bottom:12px">Need Help?</h2>
+    <p style="color:rgba(255,255,255,.8);font-size:16px;max-width:500px;margin:0 auto 32px">Contact the GNHS Guidance
+      Office directly for assistance.</p>
+    <div style="display:flex;gap:20px;justify-content:center;flex-wrap:wrap;">
+      <div
+        style="background:rgba(255,255,255,.12);color:#fff;border:2px solid rgba(255,255,255,.25);padding:14px 28px;border-radius:12px;font-weight:700;display:flex;align-items:center;gap:10px">
+        <i class="fas fa-map-marker-alt"></i> Jurado Compound, Guinayang, San Mateo, Rizal</div>
+      <button class="btn-login" style="background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.4)"
+        onclick="openLoginModal()"><i class="fas fa-sign-in-alt"></i> Login to System</button>
+    </div>
+  </section>
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-brand">
+        <div class="school-logo small" style="background:transparent;padding:2px"><img src="gnhs.jpg" alt="GNHS"
+            style="width:100%;height:100%;object-fit:cover;border-radius:8px;" /></div>
+        <div>
+          <div class="footer-school">Guinayang National High School</div>
+          <div class="footer-addr">Jurado Compound, Guinayang, San Mateo, Rizal</div>
+        </div>
+      </div>
+      <div class="footer-copy">© 2025 GNHS Guidance System. All rights reserved. | Data Privacy Act of 2012 Compliant
+      </div>
+    </div>
+  </footer>
+
+  <!-- LOGIN MODAL -->
+  <div class="modal-overlay hidden" id="loginModal" onclick="closeOnOverlay(event)">
+    <div class="modal-box">
+      <div class="modal-step" id="step-choose">
+        <button class="modal-close" onclick="closeLoginModal()"><i class="fas fa-times"></i></button>
+        <div class="modal-logo"><i class="fas fa-graduation-cap"></i></div>
+        <h2 class="modal-title">Welcome to <span>GNHS</span></h2>
+        <p class="modal-sub">Guidance Case Management System</p>
+        <div class="action-cards">
+          <div class="action-card" onclick="goToRoleSelect('login')"><i
+              class="fas fa-sign-in-alt"></i><strong>Login</strong><small>I already have an account</small></div>
+          <div class="action-card" onclick="goToRoleSelect('register')"><i class="fas fa-user-plus"></i><strong>Create
+              Account</strong><small>I'm new here</small></div>
+        </div>
+      </div>
+      <div class="modal-step hidden" id="step-role">
+        <button class="modal-close" onclick="closeLoginModal()"><i class="fas fa-times"></i></button>
+        <button class="modal-back" onclick="goBack('step-choose')"><i class="fas fa-arrow-left"></i> Back</button>
+        <div class="modal-logo"><i class="fas fa-users"></i></div>
+        <h2 class="modal-title">Select Your Role</h2>
+        <p class="modal-sub" id="role-sub-text">Who are you logging in as?</p>
+        <div class="role-cards">
+          <div class="role-card" onclick="selectRole('student')">
+            <div class="role-icon" style="background:#fff0f0;color:#550000"><i class="fas fa-user-graduate"></i></div>
+            <div><strong>Student</strong><small>Submit concerns &amp; track status</small></div>
+          </div>
+          <div class="role-card" onclick="selectRole('teacher')">
+            <div class="role-icon" style="background:#fff0f0;color:#7a0000"><i class="fas fa-chalkboard-teacher"></i>
+            </div>
+            <div><strong>Teacher</strong><small>Refer students for guidance</small></div>
+          </div>
+          <div class="role-card" onclick="selectRole('admin')">
+            <div class="role-icon" style="background:#fff0f0;color:#3a0000"><i class="fas fa-user-tie"></i></div>
+            <div><strong>Guidance Admin</strong><small>Manage all cases &amp; analytics</small></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-step hidden" id="step-login">
+        <button class="modal-close" onclick="closeLoginModal()"><i class="fas fa-times"></i></button>
+        <button class="modal-back" onclick="goBack('step-role')"><i class="fas fa-arrow-left"></i> Back</button>
+        <div class="modal-logo" id="login-role-badge"><i class="fas fa-user-graduate"></i></div>
+        <div class="modal-tab-header tab-login">
+          <div class="modal-tab-indicator"></div>
+          <div class="modal-tab-btn active" onclick="switchToLogin()">Login</div>
+          <div class="modal-tab-btn" onclick="switchToRegister()">Create Account</div>
+        </div>
+        <p class="modal-sub" id="login-role-label" style="margin-top:-10px;">Student Login</p>
+        <div id="login-msg" style="display:none"></div>
+        <div class="form-group"><label id="login-id-label">Email Address <span class="req">*</span></label>
+          <div class="input-wrap"><i class="fas fa-envelope"></i><input type="text" id="login-email-input"
+              placeholder="Enter your email" required /></div>
+        </div>
+        <div class="form-group"><label>Password <span class="req">*</span></label>
+          <div class="input-wrap"><i class="fas fa-lock"></i><input type="password" id="login-pass"
+              placeholder="Enter your password" required /><button class="toggle-pass" type="button"
+              onclick="togglePass('login-pass')"><i class="fas fa-eye"></i></button></div>
+        </div>
+        <div class="form-options"><label class="checkbox-label"><input type="checkbox"> Remember me</label><a href="#"
+            class="forgot-link" onclick="openForgotModal()">Forgot password?</a></div>
+        <button class="btn-submit" onclick="handleLogin()">Login &nbsp;<i class="fas fa-arrow-right"></i></button>
+      </div>
+
+      <!-- FORGOT PASSWORD STEP -->
+      <div class="modal-step hidden" id="step-forgot">
+        <button class="modal-close" onclick="closeLoginModal()"><i class="fas fa-times"></i></button>
+        <button class="modal-back" onclick="goBack('step-login')"><i class="fas fa-arrow-left"></i> Back</button>
+        <div class="modal-logo"><i class="fas fa-unlock-alt"></i></div>
+        <h2 class="modal-title">Reset Password</h2>
+        <p class="modal-sub">Enter your email to receive a 6-digit recovery code.</p>
+        <div id="forgot-msg" style="display:none"></div>
+        <div class="form-group"><label>Email Address</label>
+          <div class="input-wrap"><i class="fas fa-envelope"></i><input type="text" id="forgot-email"
+              placeholder="Enter your email" /></div>
+        </div>
+        <button class="btn-submit" onclick="handleForgot()">Send Code &nbsp;<i class="fas fa-paper-plane"></i></button>
+      </div>
+
+      <!-- RESET PASSWORD STEP -->
+      <div class="modal-step hidden" id="step-reset">
+        <button class="modal-close" onclick="closeLoginModal()"><i class="fas fa-times"></i></button>
+        <button class="modal-back" onclick="goBack('step-forgot')"><i class="fas fa-arrow-left"></i> Back</button>
+        <div class="modal-logo"><i class="fas fa-key"></i></div>
+        <h2 class="modal-title">New Password</h2>
+        <p class="modal-sub">Enter the 6-digit code and your new password.</p>
+        <div id="reset-msg" style="display:none"></div>
+        <div class="form-group"><label>6-Digit Code</label>
+          <div class="input-wrap"><i class="fas fa-hashtag"></i><input type="text" id="reset-code"
+              placeholder="Enter code" maxlength="6" style="text-align:center;letter-spacing:4px;font-weight:700;" />
+          </div>
+        </div>
+        <div class="form-group"><label>New Password</label>
+          <div class="input-wrap"><i class="fas fa-lock"></i><input type="password" id="reset-pass"
+              placeholder="Enter new password" /><button class="toggle-pass" type="button"
+              onclick="togglePass('reset-pass')"><i class="fas fa-eye"></i></button></div>
+        </div>
+        <button class="btn-submit" onclick="handleReset()">Save Password &nbsp;<i class="fas fa-check"></i></button>
+      </div>
+      <div class="modal-step hidden" id="step-register">
+        <button class="modal-close" onclick="closeLoginModal()"><i class="fas fa-times"></i></button>
+        <button class="modal-back" onclick="goBack('step-role')"><i class="fas fa-arrow-left"></i> Back</button>
+        <div class="modal-logo" id="reg-role-badge"><i class="fas fa-user-graduate"></i></div>
+        <div class="modal-tab-header tab-register">
+          <div class="modal-tab-indicator"></div>
+          <div class="modal-tab-btn" onclick="switchToLogin()">Login</div>
+          <div class="modal-tab-btn active" onclick="switchToRegister()">Create Account</div>
+        </div>
+        <p class="modal-sub" id="reg-role-label" style="margin-top:-10px;">Student Registration</p>
+        <div id="reg-msg" style="display:none"></div>
+        <div class="form-row">
+          <div class="form-group"><label>First Name <span class="req">*</span></label>
+            <div class="input-wrap"><i class="fas fa-user"></i><input type="text" id="reg-fname" placeholder="Juan" required /></div>
+          </div>
+          <div class="form-group"><label>Middle Name</label>
+            <div class="input-wrap"><i class="fas fa-user"></i><input type="text" id="reg-mname" placeholder="Optional" /></div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Last Name <span class="req">*</span></label>
+            <div class="input-wrap"><i class="fas fa-user"></i><input type="text" id="reg-lname" placeholder="Dela Cruz" required /></div>
+          </div>
+          <div class="form-group"><label>Suffix</label>
+            <div class="input-wrap"><i class="fas fa-user"></i><input type="text" id="reg-suffix" placeholder="e.g. Jr., III" /></div>
+          </div>
+        </div>
+        <div class="form-group" id="reg-lrn-field">
+          <label id="reg-lrn-label">LRN <span class="req">*</span></label>
+          <div class="input-wrap"><i class="fas fa-id-card"></i>
+            <input type="text" id="reg-lrn-input" placeholder="Enter your 12-digit LRN" required />
+          </div>
+        </div>
+        <div id="reg-grade-field">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Grade <span class="req">*</span></label>
+              <div class="select-wrap"><i class="fas fa-layer-group"></i>
+                <select id="reg-grade-level" onchange="regUpdateSections()">
+                  <option value="">Select Grade</option>
+                  <option value="7">Grade 7</option>
+                  <option value="8">Grade 8</option>
+                  <option value="9">Grade 9</option>
+                  <option value="10">Grade 10</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Section <span class="req">*</span></label>
+              <div class="select-wrap"><i class="fas fa-users"></i>
+                <select id="reg-section">
+                  <option value="">Select Grade First</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="form-group"><label>Email Address <span class="req">*</span></label>
+          <div class="input-wrap"><i class="fas fa-envelope"></i><input type="email" id="reg-email" placeholder="email@example.com" required />
+          </div>
+        </div>
+        <div class="form-group"><label>Password <span class="req">*</span></label>
+          <div class="input-wrap"><i class="fas fa-lock"></i><input type="password" id="reg-pass"
+              placeholder="Minimum 8 characters" required /><button class="toggle-pass" type="button"
+              onclick="togglePass('reg-pass')"><i class="fas fa-eye"></i></button></div>
+        </div>
+        <div class="form-group"><label>Confirm Password <span class="req">*</span></label>
+          <div class="input-wrap"><i class="fas fa-lock"></i><input type="password" id="reg-confirm"
+              placeholder="Re-enter your password" required /></div>
+        </div>
+        <button class="btn-submit" onclick="handleRegister()">Create Account &nbsp;<i
+            class="fas fa-arrow-right"></i></button>
+      </div>
+    </div>
+  </div>
+
+
+  </div>
+
+  <script src="theme.js?v=1.1"></script>
+  <script src="app.js"></script>
+  <script>
+    const GNHS_GRADE_SECTIONS = {
+      '7': ['Bonifacio', 'Luna', 'Rizal', 'Mabini', 'Aguinaldo', 'Jacinto'],
+      '8': ['Confucius', 'Goswami', 'Mandela', 'Socrates', 'Aristotle', 'Plato'],
+      '9': ['Dalton', 'Bohr', 'Lavoisier', 'Newton', 'Curie', 'Einstein'],
+      '10': ['Osmena', 'Quezon', 'Magsaysay', 'Aguinaldo', 'Macapagal', 'Marcos']
+    };
+    function regUpdateSections() {
+      const grade = document.getElementById('reg-grade-level').value;
+      const sel = document.getElementById('reg-section');
+      const secs = GNHS_GRADE_SECTIONS[grade] || [];
+      sel.innerHTML = secs.length
+        ? '<option value="">Select Section</option>' + secs.map(s => '<option value="' + s + '">' + s + '</option>').join('')
+        : '<option value="">Select Grade First</option>';
+    }
+    // LRN/Employee label handled in app.js selectRole()
+  </script>
+</body>
+
+</html>

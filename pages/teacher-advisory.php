@@ -22,20 +22,27 @@ $content = <<<HTML
 
 <div class="content-card" style="margin-top:20px">
   <div class="card-header">
-    <h3>Section: <strong><?= htmlspecialchars($advisoryClass ?: 'None Assigned') ?></strong></h3>
-  </div>
-  
-  <?php if (!$advisoryClass): ?>
+    <h3>Section: <strong>
+HTML;
+$content .= htmlspecialchars($advisoryClass ?: 'None Assigned');
+$content .= "</strong></h3>\n  </div>\n";
+
+if (!$advisoryClass) {
+    $content .= <<<HTML
     <div style="text-align:center;padding:40px 20px;color:var(--text-3)">
       <i class="fas fa-chalkboard-teacher" style="font-size:48px;color:var(--border);margin-bottom:16px;"></i>
       <p>You do not have an assigned advisory class.</p>
     </div>
-  <?php elseif (empty($students)): ?>
+HTML;
+} elseif (empty($students)) {
+    $content .= <<<HTML
     <div style="text-align:center;padding:40px 20px;color:var(--text-3)">
       <i class="fas fa-user-graduate" style="font-size:48px;color:var(--border);margin-bottom:16px;"></i>
       <p>No students found for this section.</p>
     </div>
-  <?php else: ?>
+HTML;
+} else {
+    $content .= <<<HTML
     <div class="table-responsive">
       <table class="data-table">
         <thead>
@@ -46,33 +53,40 @@ $content = <<<HTML
           </tr>
         </thead>
         <tbody>
-          <?php foreach (\$students as \$s): 
-            \$name = htmlspecialchars(\$s['first_name'].' '.\$s['last_name']);
-            \$photo = \$s['avatar_photo'];
-            \$initials = htmlspecialchars(\$s['avatar_initials'] ?? '');
-          ?>
+HTML;
+    foreach ($students as $s) {
+        $name = htmlspecialchars($s['first_name'].' '.$s['last_name']);
+        $photo = $s['avatar_photo'] ?? null;
+        $initials = htmlspecialchars($s['avatar_initials'] ?? '');
+        $idNum = htmlspecialchars($s['id_number']);
+        $email = htmlspecialchars($s['email']);
+        
+        $avatarHtml = $photo 
+            ? '<img src="'.htmlspecialchars($photo).'" style="width:100%;height:100%;object-fit:cover;">' 
+            : $initials;
+
+        $content .= <<<HTML
             <tr>
               <td>
                 <div style="display:flex;align-items:center;gap:12px">
                   <div style="width:32px;height:32px;border-radius:8px;overflow:hidden;flex-shrink:0;background:var(--maroon-pale);color:var(--maroon);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;">
-                    <?php if (\$photo): ?>
-                      <img src="<?= htmlspecialchars(\$photo) ?>" style="width:100%;height:100%;object-fit:cover;">
-                    <?php else: ?>
-                      <?= \$initials ?>
-                    <?php endif; ?>
+                    {$avatarHtml}
                   </div>
-                  <strong style="color:var(--text)"><?= \$name ?></strong>
+                  <strong style="color:var(--text)">{$name}</strong>
                 </div>
               </td>
-              <td><?= htmlspecialchars(\$s['id_number']) ?></td>
-              <td><a href="mailto:<?= htmlspecialchars(\$s['email']) ?>" style="color:var(--maroon);text-decoration:none;font-size:13px"><i class="fas fa-envelope"></i> <?= htmlspecialchars(\$s['email']) ?></a></td>
+              <td>{$idNum}</td>
+              <td><a href="mailto:{$email}" style="color:var(--maroon);text-decoration:none;font-size:13px"><i class="fas fa-envelope"></i> {$email}</a></td>
             </tr>
-          <?php endforeach; ?>
+HTML;
+    }
+    $content .= <<<HTML
         </tbody>
       </table>
     </div>
-  <?php endif; ?>
-</div>
 HTML;
+}
+
+$content .= "\n</div>\n";
 
 renderLayout($user, 'My Advisory Class', 'advisory', $content);

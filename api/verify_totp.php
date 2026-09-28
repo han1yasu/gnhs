@@ -50,7 +50,12 @@ try {
             'admin'   => '/gnhs-guidance/pages/admin-dashboard.php',
         ];
         
-        jsonOut(['success'=>true, 'redirect'=>$redirectMap[$role] ?? '/gnhs-guidance/index.html']);
+        $redirectUrl = $redirectMap[$role] ?? '/gnhs-guidance/index.html';
+        if ($role === 'student' && empty($_SESSION['user']['is_setup_complete'])) {
+            $redirectUrl = '/gnhs-guidance/pages/student-setup.php';
+        }
+        
+        jsonOut(['success'=>true, 'redirect'=>$redirectUrl]);
     } else {
         jsonOut(['success'=>false, 'message'=>'Incorrect code. Please try again.']);
     }

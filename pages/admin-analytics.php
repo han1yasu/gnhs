@@ -36,6 +36,12 @@ $byGrade = $db->query("SELECT
     WHERE s.grade_section IS NOT NULL
     GROUP BY grade_level ORDER BY grade_level ASC")->fetchAll();
 
+// Cases by AGE
+$byAge = $db->query("SELECT s.age, COUNT(c.id) as cnt
+    FROM cases c JOIN users s ON c.student_id=s.id
+    WHERE s.age IS NOT NULL
+    GROUP BY s.age ORDER BY s.age ASC")->fetchAll();
+
 // Cases by concern type PER GRADE
 $byTypePerGrade = $db->query("SELECT
     CASE
@@ -83,6 +89,8 @@ $sectionLabels= json_encode(array_column($topSections,'grade_section'));
 $sectionData  = json_encode(array_column($topSections,'cnt'));
 $highGradeLabels = json_encode(array_column($highByGrade,'grade_level'));
 $highGradeData   = json_encode(array_column($highByGrade,'cnt'));
+$ageLabels    = json_encode(array_column($byAge,'age'));
+$ageData      = json_encode(array_column($byAge,'cnt'));
 
 // --- Teacher Referrals Stats ---
 $totalReferrals = (int)$db->query("SELECT COUNT(*) FROM referrals")->fetchColumn();
@@ -160,15 +168,19 @@ $content = <<<HTML
   </div>
 </div>
 
-<!-- Row 2: Cases by Grade + High Priority by Grade -->
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-bottom:22px">
+<!-- Row 2: Cases by Grade + High Priority by Grade + Cases by Age -->
+<div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:22px;margin-bottom:22px">
   <div class="content-card">
     <div class="card-header"><h3><i class="fas fa-layer-group"></i> Cases by Grade Level</h3></div>
     <canvas id="gradeChart" height="160"></canvas>
   </div>
   <div class="content-card">
-    <div class="card-header"><h3><i class="fas fa-exclamation-triangle"></i> High Priority Cases by Grade</h3></div>
+    <div class="card-header"><h3><i class="fas fa-exclamation-triangle"></i> High Priority by Grade</h3></div>
     <canvas id="highGradeChart" height="160"></canvas>
+  </div>
+  <div class="content-card">
+    <div class="card-header"><h3><i class="fas fa-user-clock"></i> Cases by Age</h3></div>
+    <canvas id="ageChart" height="160"></canvas>
   </div>
 </div>
 
@@ -223,6 +235,7 @@ const monthLabels =$monthLabels;  const monthData =$monthData;
 const gradeLabels =$gradeLabels;  const gradeData =$gradeData;
 const sectionLabels=$sectionLabels; const sectionData=$sectionData;
 const highGradeLabels=$highGradeLabels; const highGradeData=$highGradeData;
+const ageLabels=$ageLabels; const ageData=$ageData;
 
 const refStatusLabels = $refStatusLabels; const refStatusData = $refStatusData;
 const refTypeLabels = $refTypeLabels; const refTypeData = $refTypeData;
@@ -235,6 +248,8 @@ new Chart(document.getElementById('statusChart'),{type:'doughnut',data:{labels:s
 new Chart(document.getElementById('gradeChart'),{type:'bar',data:{labels:gradeLabels,datasets:[{label:'Cases',data:gradeData,backgroundColor:[maroon,maroonMid,maroonLight,'#dc2626']}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}});
 
 new Chart(document.getElementById('highGradeChart'),{type:'bar',data:{labels:highGradeLabels,datasets:[{label:'High Priority',data:highGradeData,backgroundColor:'#dc2626'}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}});
+
+new Chart(document.getElementById('ageChart'),{type:'bar',data:{labels:ageLabels.map(a=>a+' yrs'),datasets:[{label:'Cases',data:ageData,backgroundColor:maroonLight}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}});
 
 new Chart(document.getElementById('typeChart'),{type:'bar',data:{labels:typeLabels.map(s=>s.replace(/_/g,' ')),datasets:[{label:'Cases',data:typeData,backgroundColor:[maroon,maroonMid,maroonLight,'#dc2626','#ef4444','#f87171','#fca5a5']}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}});
 

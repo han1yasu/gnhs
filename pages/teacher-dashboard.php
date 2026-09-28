@@ -51,6 +51,7 @@ $refRows = '';
 foreach ($recentRefs as $r) {
     $type = ucfirst(str_replace('_',' ',$r['concern_type']));
     $date = date('M d, Y', strtotime($r['submitted_at']));
+    $refData = htmlspecialchars(json_encode($r), ENT_QUOTES, 'UTF-8');
     $refRows .= "<tr>
         <td><strong style='color:var(--maroon)'>{$r['ref_number']}</strong></td>
         <td>".htmlspecialchars($r['student_name'])."</td>
@@ -59,9 +60,10 @@ foreach ($recentRefs as $r) {
         <td>".urgencyBadge($r['urgency'])."</td>
         <td>".statusBadge($r['status'])."</td>
         <td style='color:var(--text-3);font-size:12px'>$date</td>
+        <td><button class='btn-sm-outline' onclick='openRefModal(this)' data-ref='$refData'><i class='fas fa-eye'></i> View</button></td>
     </tr>";
 }
-if (!$refRows) $refRows = "<tr><td colspan='7' style='text-align:center;color:var(--text-3);padding:32px'>No referrals yet. <a href='teacher-referral.php' style='color:var(--maroon);font-weight:700'>Submit one →</a></td></tr>";
+if (!$refRows) $refRows = "<tr><td colspan='8' style='text-align:center;color:var(--text-3);padding:32px'>No referrals yet. <a href='teacher-referral.php' style='color:var(--maroon);font-weight:700'>Submit one →</a></td></tr>";
 
 // Advisory class section
 $advisoryHtml = '';
@@ -169,11 +171,56 @@ $advisoryHtml
   </div>
   <div class='table-wrap'>
     <table class='data-table'>
-      <thead><tr><th>Ref #</th><th>Student</th><th>Grade/Section</th><th>Concern</th><th>Urgency</th><th>Status</th><th>Date</th></tr></thead>
+      <thead><tr><th>Ref #</th><th>Student</th><th>Grade/Section</th><th>Concern</th><th>Urgency</th><th>Status</th><th>Date</th><th>Action</th></tr></thead>
       <tbody>$refRows</tbody>
     </table>
   </div>
 </div>";
+
+$content .= <<<HTML
+<!-- Referral Detail Modal -->
+<div class="modal-overlay hidden" id="refModal" onclick="if(event.target.id==='refModal')this.classList.add('hidden')">
+  <div class="modal-box" style="max-width:620px">
+    <button class="modal-close" onclick="document.getElementById('refModal').classList.add('hidden')"><i class="fas fa-times"></i></button>
+    <h2 class="modal-title"><i class="fas fa-exchange-alt" style="color:var(--maroon);margin-right:8px"></i>Referral Detail</h2>
+    <div id="refModalBody"></div>
+  </div>
+</div>
+HTML;
+
+$content .= '
+<script>
+function openRefModal(btn) {
+  const ref = JSON.parse(btn.getAttribute("data-ref"));
+  const urgMap   = {urgent:"priority-high", moderate:"priority-medium", low:"priority-low"};
+  const statMap  = {pending:"status-pending", under_review:"status-under_review", ongoing:"status-ongoing", resolved:"status-resolved"};
+  const statLabel = {pending:"Pending", under_review:"Under Review", ongoing:"Ongoing", resolved:"Resolved"};
+  const typeLabel = ref.concern_type.replace(/_/g," ").replace(/\b\w/g, l=>l.toUpperCase());
+
+  document.getElementById("refModalBody").innerHTML =
+    "<div class=\"review-meta\" style=\"margin-bottom:16px\">"
+    +"<div class=\"rm-row\"><label>Referral #</label><strong style=\"color:var(--maroon)\">"+ref.ref_number+"</strong></div>"
+    +"<div class=\"rm-row\"><label>Student Name</label><strong>"+ref.student_name+"</strong></div>"
+    +"<div class=\"rm-row\"><label>Grade / Section</label><span>"+ref.grade_section+"</span></div>"
+    +"<div class=\"rm-row\"><label>Concern Type</label><span>"+typeLabel+"</span></div>"
+    +"<div class=\"rm-row\"><label>Urgency</label><span class=\"priority-badge "+(urgMap[ref.urgency]||"priority-low")+"\"><i class=\"fas fa-circle\"></i> "+ref.urgency.charAt(0).toUpperCase()+ref.urgency.slice(1)+"</span></div>"
+    +"<div class=\"rm-row\"><label>Status</label><span class=\"status-badge "+(statMap[ref.status]||"status-pending")+"\">"+statLabel[ref.status]+"</span></div>"
+    +"<div class=\"rm-row\"><label>Date Submitted</label><span>"+ref.submitted_at+"</span></div>"
+    +"</div>"
+    +"<div class=\"form-group\">"
+    +"<label style=\"font-size:13px;font-weight:800;color:var(--text-2);display:block;margin-bottom:8px\"><i class=\"fas fa-clipboard\" style=\"color:var(--maroon)\"></i> My Observations</label>"
+    +"<div class=\"concern-text\" style=\"white-space:pre-wrap\">"+ref.observations+"</div>"
+    +"</div>"
+    +(ref.ai_summary ? "<div class=\"ai-box\" style=\"margin-top:14px\"><div class=\"ai-box-label\"><i class=\"fas fa-robot\"></i> AI Summary</div><div class=\"ai-box-text\">"+ref.ai_summary+"</div></div>" : "")
+    +"<div class=\"review-actions\" style=\"margin-top:16px\">"
+    +"<button class=\"btn-secondary\" onclick=\"document.getElementById(\'refModal\').classList.add(\'hidden\')\"><i class=\"fas fa-times\"></i> Close</button>"
+    +"<a href=\"teacher-referrals-chat.php?ref_id="+ref.id+"\" class=\"btn-primary\" style=\"text-decoration:none\"><i class=\"fas fa-comments\"></i> Go to Chat</a>"
+    +"</div>";
+
+  document.getElementById("refModal").classList.remove("hidden");
+}
+</script>
+';
 
 renderLayout($user, 'Teacher Dashboard', 'dashboard', $content);
 

@@ -33,10 +33,14 @@ function getAiSummary(string $concernType, string $studentName, string $observat
     if (empty($apiKey) || !function_exists('curl_init')) return '';
 
     $typeLabel = ucfirst(str_replace('_', ' ', $concernType));
+    $wordCount = str_word_count($observations);
+    $maxWords = max(10, (int)($wordCount * 0.5)); // ensure it's significantly shorter
+
     $prompt = "You are a school guidance counselor assistant at Guinayang National High School. "
-            . "A teacher has submitted a referral for a student. Provide a concise, professional summary of the teacher's observation in exactly 1 to 3 short sentences. "
-            . "CRITICAL INSTRUCTION: Your summary MUST be significantly shorter than the teacher's original observation. Extract only the most essential information about the context of the concern. "
-            . "Be objective. Do not give advice, do not use Markdown formatting, and do not use introductory text like \"Summary:\" — only summarize the teacher's report.\n\n"
+            . "A teacher has submitted a referral for a student. Provide a concise, professional summary of the teacher's observation.\n"
+            . "CRITICAL INSTRUCTION: Your summary MUST be significantly shorter than the teacher's original observation. "
+            . "Limit your summary to a MAXIMUM of {$maxWords} words. Extract only the most essential information.\n"
+            . "Be objective. Do not give advice, do not use Markdown formatting, and do not use introductory text like \"Summary:\".\n\n"
             . "Concern Type: {$typeLabel}\n"
             . "Student Name: {$studentName}\n"
             . "Teacher's Observation:\n{$observations}";

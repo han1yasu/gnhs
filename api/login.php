@@ -52,6 +52,8 @@ try {
         'avatar_initials' => $user['avatar_initials'] ?? strtoupper($user['first_name'][0].($user['last_name'][0]??'')),
         'avatar_photo'   => $user['avatar_photo'] ?? null,
         'advisory_class' => $user['advisory_class'] ?? null,
+        'is_setup_complete' => $user['is_setup_complete'] ?? 0,
+        'age'            => $user['age'] ?? null,
     ];
     
     jsonOut(['success'=>true, 'require_2fa'=>true, 'redirect'=>'/gnhs-guidance/pages/totp_verify.php']);
@@ -69,6 +71,8 @@ try {
         'avatar_initials' => $user['avatar_initials'] ?? strtoupper($user['first_name'][0].($user['last_name'][0]??'')),
         'avatar_photo'   => $user['avatar_photo'] ?? null,
         'advisory_class' => $user['advisory_class'] ?? null,
+        'is_setup_complete' => $user['is_setup_complete'] ?? 0,
+        'age'            => $user['age'] ?? null,
     ];
 
     $redirectMap = [
@@ -77,7 +81,12 @@ try {
         'admin'   => '/gnhs-guidance/pages/admin-dashboard.php',
     ];
 
-    jsonOut(['success'=>true,'redirect'=>$redirectMap[$user['role']] ?? '/gnhs-guidance/index.html','user'=>$_SESSION['user']]);
+    $redirectUrl = $redirectMap[$user['role']] ?? '/gnhs-guidance/index.html';
+    if ($user['role'] === 'student' && empty($user['is_setup_complete'])) {
+        $redirectUrl = '/gnhs-guidance/pages/student-setup.php';
+    }
+
+    jsonOut(['success'=>true,'redirect'=>$redirectUrl,'user'=>$_SESSION['user']]);
 
 } catch (Exception $e) {
     jsonOut(['success'=>false,'message'=>'Server error: ' . $e->getMessage()], 500);

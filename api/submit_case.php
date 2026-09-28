@@ -44,10 +44,14 @@ function getAiSummary(string $concernType, string $subject, string $description)
     if (empty($apiKey) || !function_exists('curl_init')) return '';
 
     $typeLabel = ucfirst(str_replace('_', ' ', $concernType));
+    $wordCount = str_word_count($description);
+    $maxWords = max(10, (int)($wordCount * 0.5)); // ensure it's significantly shorter
+
     $prompt = "You are a school guidance counselor assistant at Guinayang National High School. "
-            . "A student has submitted a concern. Provide a concise, professional summary of the student's concern in exactly 1 to 3 short sentences. "
-            . "CRITICAL INSTRUCTION: Your summary MUST be significantly shorter than the student's original description. Extract only the most essential information. "
-            . "Be objective. Do not give advice, do not use Markdown formatting, and do not use introductory text like \"Summary:\" — only summarize what the student reported.\n\n"
+            . "A student has submitted a concern. Provide a concise, professional summary of the student's concern.\n"
+            . "CRITICAL INSTRUCTION: Your summary MUST be significantly shorter than the student's original description. "
+            . "Limit your summary to a MAXIMUM of {$maxWords} words. Extract only the most essential information.\n"
+            . "Be objective. Do not give advice, do not use Markdown formatting, and do not use introductory text like \"Summary:\".\n\n"
             . "Concern Type: {$typeLabel}\n"
             . "Subject: {$subject}\n"
             . "Student's Description:\n{$description}";
@@ -62,7 +66,7 @@ function getAiSummary(string $concernType, string $subject, string $description)
         ]
     ]);
 
-    $ch = curl_init('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent?key='.$apiKey);
+    $ch = curl_init('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key='.$apiKey);
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_POST           => true,

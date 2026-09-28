@@ -30,6 +30,8 @@ function getDB(): PDO {
         )");
         try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS middle_name VARCHAR(50) DEFAULT NULL"); } catch(Exception $e){}
         try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS suffix VARCHAR(10) DEFAULT NULL"); } catch(Exception $e){}
+        try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS age INT DEFAULT NULL"); } catch(Exception $e){}
+        try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_setup_complete TINYINT(1) DEFAULT 0"); } catch(Exception $e){}
     }
     return $pdo;
 }
@@ -46,6 +48,13 @@ function requireLogin(string $role = ''): array {
     $u = $_SESSION['user'];
     if ($role && $u['role'] !== $role && !($role === 'staff' && in_array($u['role'], ['admin','teacher']))) {
         header('Location: /gnhs-guidance/index.html'); exit;
+    }
+
+    if ($u['role'] === 'student' && empty($u['is_setup_complete']) && basename($_SERVER['PHP_SELF']) !== 'student-setup.php' && strpos($_SERVER['PHP_SELF'], '/api/') === false) {
+        header('Location: student-setup.php'); exit;
+    }
+    if ($u['role'] === 'teacher' && empty($u['is_setup_complete']) && basename($_SERVER['PHP_SELF']) !== 'teacher-setup.php' && strpos($_SERVER['PHP_SELF'], '/api/') === false) {
+        header('Location: teacher-setup.php'); exit;
     }
 
     // Always refresh avatar_photo and advisory_class from DB so changes persist across pages

@@ -26,8 +26,8 @@ try {
     $db = getDB();
     $userId = $_SESSION['pending_user']['id'];
     
-    // Fetch the user's secret from the database
-    $stmt = $db->prepare("SELECT totp_secret FROM users WHERE id = ? LIMIT 1");
+    // Fetch the user's secret and totp_enabled status from the database
+    $stmt = $db->prepare("SELECT totp_secret, totp_enabled FROM users WHERE id = ? LIMIT 1");
     $stmt->execute([$userId]);
     $user = $stmt->fetch();
     
@@ -40,6 +40,12 @@ try {
     // Verify the TOTP code
     if (PureOTP::verifyCode($secret, $code, 3)) { // 3 slices = +/- 90 seconds tolerance
         // Code is correct, promote pending_user to full user session
+        
+        if (empty($user['totp_enabled'])) {
+            $db->prepare("UPDATE users SET totp_enabled = 1 WHERE id = ?")->execute([$userId]);
+            $_SESSION['pending_user']['totp_enabled'] = 1;
+        }
+
         $_SESSION['user'] = $_SESSION['pending_user'];
         unset($_SESSION['pending_user']);
         

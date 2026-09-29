@@ -1,9 +1,9 @@
 <?php
 // ── GNHS Guidance System — Config & DB ────────────────────────
-define('DB_HOST', 'localhost');
-define('DB_USER', 'root');
-define('DB_PASS', '');
-define('DB_NAME', 'gnhs_guidance');
+define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
+define('DB_USER', getenv('DB_USER') ?: 'root');
+define('DB_PASS', getenv('DB_PASS') ?: '');
+define('DB_NAME', getenv('DB_NAME') ?: 'gnhs_guidance');
 
 function getDB(): PDO {
     static $pdo = null;

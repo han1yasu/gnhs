@@ -13,6 +13,7 @@ $stmt = $db->prepare("SELECT totp_secret, totp_enabled FROM users WHERE id = ? L
 $stmt->execute([$pendingUser['id']]);
 $u = $stmt->fetch();
 $secret = $u['totp_secret'] ?? '';
+$isTotpEnabled = !empty($u['totp_enabled']);
 
 $email = urlencode($pendingUser['email']);
 $issuer = urlencode('GNHS Guidance System');
@@ -50,6 +51,7 @@ $qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" . urle
 
     <button class="glass-btn" id="btnSubmit" onclick="verifyOTP()">Verify Code</button>
 
+    <?php if (!$isTotpEnabled): ?>
     <button class="glass-setup-link" onclick="document.getElementById('setupSection').style.display='block'; this.style.display='none';">First time setting up?</button>
 
     <div class="glass-setup-box" id="setupSection">
@@ -59,6 +61,7 @@ $qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" . urle
         </div>
         <p style="font-size: 12px; color: rgba(255,255,255,0.7);">Manual setup key: <br><strong style="color:#fff; font-size:14px; letter-spacing:2px;"><?= htmlspecialchars($secret) ?></strong></p>
     </div>
+    <?php endif; ?>
 
     <div style="margin-top: 24px; text-align: center;">
         <a href="/gnhs-guidance/index.html" style="color: rgba(255,255,255,0.8); font-size: 13px; text-decoration: none; display: inline-block; padding: 8px;"><i class="fas fa-arrow-left"></i> Go back to login page</a>

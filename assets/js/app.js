@@ -11,6 +11,9 @@ let _activeCaseId = null;
 // â”€â”€ Utilities â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const $  = id  => document.getElementById(id);
 const $$ = sel => document.querySelectorAll(sel);
+const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+})[ch]);
 
 async function apiPost(url, data) {
   const r = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
@@ -37,7 +40,7 @@ function showToast(msg, type = 'success') {
   const t = document.createElement('div');
   t.className = `toast toast-${type}`;
   const icons = {success:'check-circle',error:'times-circle',info:'info-circle'};
-  t.innerHTML = `<i class="fas fa-${icons[type]||'info-circle'}"></i>${msg}`;
+  t.innerHTML = `<i class="fas fa-${icons[type]||'info-circle'}"></i>${escapeHtml(msg)}`;
   c.appendChild(t);
   setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity .3s'; setTimeout(()=>t.remove(),300); }, 3200);
 }
@@ -58,6 +61,8 @@ function showStep(id) {
 
 function goToRoleSelect(action) {
   _action = action;
+  const adminRole = document.getElementById('admin-role-card');
+  if (adminRole) adminRole.style.display = action === 'register' ? 'none' : '';
   const sub = $('role-sub-text');
   if (sub) sub.textContent = action==='login' ? 'Who are you logging in as?' : 'Create an account as:';
   showStep('step-role');
@@ -66,6 +71,7 @@ function goToRoleSelect(action) {
 function goBack(stepId) { showStep(stepId); }
 function switchToRegister() { 
   _action='register'; 
+  if (_role === 'admin') { goToRoleSelect('register'); return; }
   if (_role) selectRole(_role);
   else showStep('step-role'); 
 }
@@ -76,6 +82,7 @@ function switchToLogin() {
 }
 
 function selectRole(role) {
+  if (_action === 'register' && role === 'admin') return;
   _role = role;
   const icons  = { student:'fa-user-graduate', teacher:'fa-chalkboard-teacher', admin:'fa-user-tie' };
   const labels = { student:'Student', teacher:'Teacher', admin:'Guidance Counselor' };
@@ -144,16 +151,15 @@ async function handleLogin() {
   setLoading(btn, true); hideEl('login-msg');
 
   try {
-    const res = await apiPost('/gnhs-guidance/api/login.php', { email, password, role:_role });
+    const res = await apiPost('/api/login.php', { email, password, role:_role });
     if (res.success) { 
       document.body.classList.add('page-exiting');
       setTimeout(() => { window.location.href = res.redirect; }, 250);
     }
     else { showMsg('login-msg', res.message||'Invalid credentials. Please try again.'); setLoading(btn,false); }
   } catch {
-    // Demo fallback — redirect based on role
-    const map = { student:'pages/student-dashboard.php', teacher:'pages/teacher-dashboard.php', admin:'pages/admin-dashboard.php' };
-    window.location.href = map[_role];
+    showMsg('login-msg', 'Cannot reach the server. Please try again.');
+    setLoading(btn, false);
   }
 }
 
@@ -171,11 +177,10 @@ async function handleForgot() {
   setLoading(btn, true); hideEl('forgot-msg');
   
   try {
-    const res = await apiPost('/gnhs-guidance/api/forgot_password.php', { email });
+    const res = await apiPost('/api/forgot_password.php', { email });
     setLoading(btn, false);
     if (res.success) {
-      // Demo: Show code in alert instead of real email
-      alert(`DEMO MODE:\n\nIf this was a real email, you'd get this code: ${res.demo_token || '123456'}\n\nPlease copy this code.`);
+      if (res.dev_token) alert(`Local reset code: ${res.dev_token}`);
       showStep('step-reset');
     } else {
       showMsg('forgot-msg', res.message || 'Error occurred.');
@@ -197,7 +202,7 @@ async function handleReset() {
   setLoading(btn, true); hideEl('reset-msg');
   
   try {
-    const res = await apiPost('/gnhs-guidance/api/reset_password.php', { email, token: code, password: pass });
+    const res = await apiPost('/api/reset_password.php', { email, token: code, password: pass });
     setLoading(btn, false);
     if (res.success) {
       alert("Password reset successfully! You can now log in.");
@@ -240,7 +245,7 @@ async function handleRegister() {
   setLoading(btn, true); hideEl('reg-msg');
 
   try {
-    const res = await apiPost('/gnhs-guidance/api/register.php', {
+    const res = await apiPost('/api/register.php', {
       first_name:firstName, middle_name:middleName, last_name:lastName, suffix:suffix, id_number:lrn,
       grade_section:grade, email, password:pass, confirm, role:_role
     });
@@ -249,8 +254,7 @@ async function handleRegister() {
       setTimeout(() => { _action='login'; selectRole(_role); }, 2000);
     } else { showMsg('reg-msg', res.message||'Registration failed.'); }
   } catch {
-    showMsg('reg-msg','Account created! Please log in.','success');
-    setTimeout(() => { _action='login'; selectRole(_role); }, 2000);
+    showMsg('reg-msg','Cannot reach the server. Please try again.');
   }
   setLoading(btn, false);
 }
@@ -283,7 +287,7 @@ document.addEventListener('click', e => {
 });
 
 async function markAllRead() {
-  try { await fetch('/gnhs-guidance/api/get_notifications.php?mark_read=1'); } catch {}
+  try { await fetch('/api/get_notifications.php?mark_read=1'); } catch {}
   $$('.np-item.unread').forEach(el => el.classList.remove('unread'));
   $$('.notif-dot').forEach(d => d.classList.add('hidden'));
   showToast('All notifications marked as read.','info');
@@ -315,7 +319,7 @@ async function submitConcern() {
   setLoading(btn, true); hideEl('submitMsg');
 
   try {
-    const res = await apiPost('/gnhs-guidance/api/submit_case.php', {
+    const res = await apiPost('/api/submit_case.php', {
       concern_type:concernType, subject, description:desc,
       is_anonymous:isAnonymous, incident_date:incidentDate,
       preferred_contact:contact, priority
@@ -362,7 +366,7 @@ async function submitReferral() {
   setLoading(btn, true); hideEl('refMsg');
 
   try {
-    const res = await apiPost('/gnhs-guidance/api/submit_referral.php', {
+    const res = await apiPost('/api/submit_referral.php', {
       student_name: studentName, grade_section: gradeSection,
       concern_type: concernType, urgency, observations
     });
@@ -401,7 +405,7 @@ async function openCaseReview(caseId, caseNum, status, priority, subject, descri
   if (body) body.innerHTML = spinner;
 
   try {
-    const res = await fetch('/gnhs-guidance/api/get_case.php?id='+caseId);
+    const res = await fetch('/api/get_case.php?id='+caseId);
     const d   = await res.json();
     if (d.success) buildReviewModal(d.case, d.notes, d.session);
     else {
@@ -512,7 +516,7 @@ async function saveCase() {
   setLoading(btn,true);
 
   try {
-    const res = await apiPost('/gnhs-guidance/api/update_case.php', {
+    const res = await apiPost('/api/update_case.php', {
       case_id:_activeCaseId, priority, status, session_date:session, session_type:sessionType, location:location
     });
     if (res.success) {
@@ -521,8 +525,8 @@ async function saveCase() {
       setTimeout(() => location.reload(), 1500);
     } else { showToast(res.message||'Update failed.','error'); setLoading(btn,false); }
   } catch {
-    $('caseReviewModal').classList.add('hidden');
-    showToast('Case updated! (demo mode)','success');
+    showToast('Cannot reach the server. Please try again.','error');
+    setLoading(btn,false);
   }
 }
 
@@ -540,7 +544,7 @@ async function openCaseModal(caseId) {
   if (body) body.innerHTML='<div style="text-align:center;padding:40px"><span class="spinner" style="border-color:rgba(85,0,0,.2);border-top-color:var(--maroon);display:inline-block"></span></div>';
 
   try {
-    const res = await fetch('/gnhs-guidance/api/get_case.php?id='+caseId);
+    const res = await fetch('/api/get_case.php?id='+caseId);
     const d   = await res.json();
     if (d.success) {
       const c=d.case, notes=d.notes||[], session=d.session;
@@ -600,21 +604,21 @@ async function saveNewUser() {
 
   const btn=$('saveUserBtn'); setLoading(btn,true); hideEl('nuMsg');
   try{
-    const res=await apiPost('/gnhs-guidance/api/register.php',{first_name:first,last_name:last,email,password:pass,confirm:pass,role,id_number:idnum,grade_section:grade});
+    const res=await apiPost('/api/register.php',{first_name:first,last_name:last,email,password:pass,confirm:pass,role,id_number:idnum,grade_section:grade});
     if(res.success){showToast('User added!','success');$('addUserModal').classList.add('hidden');setTimeout(()=>location.reload(),1200);}
     else{showMsg('nuMsg',res.message||'Failed.');}
-  }catch{showToast('User added (demo)','success');$('addUserModal')?.classList.add('hidden');}
+  }catch{showMsg('nuMsg','Cannot reach the server. Please try again.');}
   setLoading(btn,false);
 }
 
 async function deleteUser(userId, name) {
   if(!confirm(`Are you sure you want to deactivate the account of ${name}?`)) return;
   try{
-    const r=await fetch('/gnhs-guidance/api/update_user.php?action=deactivate&id='+userId);
+    const r=await fetch('/api/update_user.php?action=deactivate&id='+userId);
     const d=await r.json();
     if(d.success){showToast('User deactivated.','info');setTimeout(()=>location.reload(),1200);}
     else showToast(d.message||'Failed.','error');
-  }catch{showToast('Done (demo).','info');document.querySelector(`[data-user-id="${userId}"]`)?.closest('.user-card')?.remove();}
+  }catch{showToast('Cannot reach the server. Please try again.','error');}
 }
 
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -669,7 +673,7 @@ let isFloatingInboxOpen = false;
 
 async function loadInbox() {
   try {
-    const res = await fetch('/gnhs-guidance/api/get_chat_inbox.php');
+    const res = await fetch('/api/get_chat_inbox.php');
     const data = await res.json();
     if (data.success) {
       const list = document.getElementById('chatInboxList');
@@ -788,7 +792,7 @@ function openChat(caseId, studentName, subtext) {
 async function loadMessages() {
   if (!currentChatCaseId) return;
   try {
-    const res = await fetch('/gnhs-guidance/api/get_messages.php?case_id=' + currentChatCaseId);
+    const res = await fetch('/api/get_messages.php?case_id=' + currentChatCaseId);
     const data = await res.json();
     if (data.success) {
       const container = document.getElementById('chatMessages');
@@ -806,7 +810,7 @@ async function loadMessages() {
           <div style="display:flex;flex-direction:column;align-items:${align};width:100%">
             ${roleBadge}
             <div style="background:${bg};color:${color};border:${border};padding:10px 14px;border-radius:18px;max-width:85%;font-size:14px;line-height:1.4;box-shadow:0 1px 2px rgba(0,0,0,0.05);">
-              ${m.message}
+              ${escapeHtml(m.message)}
             </div>
             <div style="font-size:10px;color:var(--text-3);margin-top:4px;">${new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
           </div>`;
@@ -832,13 +836,13 @@ async function sendChatMessage() {
   container.innerHTML += `
     <div style="display:flex;flex-direction:column;align-items:flex-end;width:100%">
       <div style="background:var(--maroon);color:#fff;border:none;padding:10px 14px;border-radius:18px;max-width:85%;font-size:14px;line-height:1.4;opacity:0.7;box-shadow:0 1px 2px rgba(0,0,0,0.05);">
-        ${msg}
+        ${escapeHtml(msg)}
       </div>
     </div>`;
   container.scrollTop = container.scrollHeight;
 
   try {
-    const res = await apiPost('/gnhs-guidance/api/send_message.php', { case_id: currentChatCaseId, message: msg });
+    const res = await apiPost('/api/send_message.php', { case_id: currentChatCaseId, message: msg });
     if (res.success) {
       loadMessages();
     } else {

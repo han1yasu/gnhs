@@ -77,7 +77,7 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title><?= htmlspecialchars($pageTitle) ?> — GNHS Guidance</title>
-  <link rel="stylesheet" href="/gnhs-guidance/style.css?v=2.4"/>
+  <link rel="stylesheet" href="/assets/css/style.css?v=2.4"/>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" rel="stylesheet"/>
@@ -95,7 +95,7 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
 <!-- SIDEBAR -->
 <aside class="sidebar" id="sidebar">
   <div class="sb-brand">
-    <img src="/gnhs-guidance/gnhs.jpg" alt="GNHS Logo" class="sb-logo-img"/>
+    <img src="/assets/images/gnhs.jpg" alt="GNHS Logo" class="sb-logo-img"/>
     <div>
       <div class="sb-school">GNHS</div>
       <div class="sb-sub">Guidance System</div>
@@ -130,7 +130,7 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
         <i class="fas fa-bars"></i>
       </button>
       <div class="topbar-brand">
-        <img src="/gnhs-guidance/gnhs.jpg" alt="GNHS Logo" class="topbar-logo-img"/>
+        <img src="/assets/images/gnhs.jpg" alt="GNHS Logo" class="topbar-logo-img"/>
         <div class="topbar-school-info">
           <span class="topbar-school-name">Guinayang National High School</span>
           <span class="topbar-page-title"><?= htmlspecialchars($pageTitle) ?></span>
@@ -207,7 +207,7 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
         <button class="btn-secondary" style="flex:1" onclick="document.getElementById('logoutModal').classList.add('hidden')">
           <i class="fas fa-times"></i> Cancel
         </button>
-        <a href="/gnhs-guidance/api/logout.php" class="btn-primary" style="flex:1;justify-content:center;text-decoration:none;display:inline-flex;align-items:center;gap:8px">
+        <a href="/api/logout.php" class="btn-primary" style="flex:1;justify-content:center;text-decoration:none;display:inline-flex;align-items:center;gap:8px">
           <i class="fas fa-sign-out-alt"></i> Yes, Logout
         </a>
       </div>
@@ -297,8 +297,8 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
-<script src="/gnhs-guidance/theme.js?v=1.1"></script>
-<script src="/gnhs-guidance/app.js?v=2.4"></script>
+<script src="/assets/js/theme.js?v=1.1"></script>
+<script src="/assets/js/app.js?v=2.4"></script>
 <script>
 async function toggleNotifs() {
   const dd = document.getElementById('notifDropdown');
@@ -307,7 +307,7 @@ async function toggleNotifs() {
 }
 async function loadNotifs() {
   try {
-    const r = await fetch('/gnhs-guidance/api/get_notifications.php');
+    const r = await fetch('/api/get_notifications.php');
     const d = await r.json();
     const dot = document.getElementById('notifDot');
     if (d.unread > 0 && dot) dot.classList.remove('hidden');
@@ -322,15 +322,15 @@ async function loadNotifs() {
       var url = '#';
       var role = "<?= $role ?>";
       if (n.type === 'chat') {
-        url = role === 'admin' ? '/gnhs-guidance/pages/admin-chats.php' : '/gnhs-guidance/pages/student-chats.php';
+        url = role === 'admin' ? '/pages/admin-chats.php' : '/pages/student-chats.php';
       } else if (n.type === 'case_update') {
-        url = role === 'admin' ? '/gnhs-guidance/pages/admin-cases.php' : '/gnhs-guidance/pages/student-cases.php';
+        url = role === 'admin' ? '/pages/admin-cases.php' : '/pages/student-cases.php';
       } else if (n.type === 'referral') {
-        url = role === 'admin' ? '/gnhs-guidance/pages/admin-referrals.php' : '/gnhs-guidance/pages/teacher-referrals.php';
+        url = role === 'admin' ? '/pages/admin-referrals.php' : '/pages/teacher-referrals.php';
       } else if (n.type === 'session') {
-        url = role === 'admin' ? '/gnhs-guidance/pages/admin-sessions.php' : '/gnhs-guidance/pages/student-sessions.php';
+        url = role === 'admin' ? '/pages/admin-sessions.php' : '/pages/student-sessions.php';
       } else if (n.type === 'appeal') {
-        url = role === 'admin' ? '/gnhs-guidance/pages/admin-followups.php' : '#';
+        url = role === 'admin' ? '/pages/admin-followups.php' : '#';
       }
 
       return '<div class="notif-item' + (n.is_read ? '' : ' unread') + '" onclick="window.location.href=\'' + url + '\'" style="cursor:pointer">'
@@ -342,7 +342,7 @@ async function loadNotifs() {
   } catch(e) {}
 }
 async function markAllRead() {
-  await fetch('/gnhs-guidance/api/get_notifications.php?mark_read=1');
+  await fetch('/api/get_notifications.php?mark_read=1');
   document.getElementById('notifDot')?.classList.add('hidden');
   document.querySelectorAll('.notif-item.unread').forEach(function(el){ el.classList.remove('unread'); });
 }
@@ -474,7 +474,7 @@ async function confirmCrop() {
     formData.append('avatar', blob, currentAvatarFile.name);
 
     try {
-      const res = await fetch('/gnhs-guidance/api/upload_avatar.php', { method:'POST', body:formData });
+      const res = await fetch('/api/upload_avatar.php', { method:'POST', body:formData });
       const data = await res.json();
       if (data.success) {
         showToast('Profile picture updated! ✅', 'success');
@@ -496,7 +496,7 @@ async function confirmCrop() {
 async function removeAvatar() {
   if (!confirm('Remove your profile picture?')) return;
   try {
-    const res  = await fetch('/gnhs-guidance/api/remove_avatar.php');
+    const res  = await fetch('/api/remove_avatar.php');
     const data = await res.json();
     if (data.success) {
       showToast('Profile picture removed.', 'info');

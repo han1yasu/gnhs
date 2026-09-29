@@ -25,23 +25,23 @@ try {
     }
     
     // Generate 6-digit token
-    $token = sprintf("%06d", mt_rand(100000, 999999));
+    $token = (string)random_int(100000, 999999);
     
     // Invalidate old tokens for this email
     $db->prepare("DELETE FROM password_resets WHERE email=?")->execute([$email]);
     
     // Insert new token, valid for 15 minutes
-    $insert = $db->prepare("INSERT INTO password_resets (email, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 15 MINUTE))");
-    $insert->execute([$email, $token]);
-    
-    // NOTE: In a real system, you would send an email here using mail() or PHPMailer.
-    // For local development / demonstration, we return the token in the API response 
-    // so the frontend can display it in an alert box.
-    jsonOut([
-        'success' => true,
-        'demo_token' => $token, // Exposing token purely for dev/demo purposes
-        'message' => 'Reset code generated successfully.'
-    ]);
+    $insert = $db->prepare("INSERT INTO password_resets (email, token_hash, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 15 MINUTE))");
+    $insert->execute([$email, password_hash($token, PASSWORD_DEFAULT)]);
+
+    if (getenv('APP_ENV') === 'local') {
+        jsonOut(['success'=>true, 'dev_token'=>$token, 'message'=>'Local reset code generated.']);
+    }
+    if (!mail($email, 'GNHS password reset code', "Your GNHS reset code is $token. It expires in 15 minutes.")) {
+        $db->prepare('DELETE FROM password_resets WHERE email=?')->execute([$email]);
+        jsonOut(['success'=>false, 'message'=>'Email delivery is unavailable. Contact an administrator.'], 503);
+    }
+    jsonOut(['success'=>true, 'message'=>'If this email is registered, a code has been sent.']);
     
 } catch (Exception $e) {
     jsonOut(['success'=>false, 'message'=>'Server error: ' . $e->getMessage()]);

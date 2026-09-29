@@ -48,7 +48,7 @@ try {
 
 $filename = 'avatar_' . $user['id'] . '_' . time() . '.jpg';
 $destPath = $uploadDir . $filename;
-$webPath  = '/gnhs-guidance/uploads/avatars/' . $filename;
+$webPath  = '/uploads/avatars/' . $filename;
 
 // ── Try GD resize (best quality, always 200×200) ────────────
 $gdAvailable = extension_loaded('gd') && function_exists('imagecreatefromjpeg');
@@ -101,7 +101,7 @@ if (!$saved) {
         $newPath     = $uploadDir . $newFilename;
         rename($destPath, $newPath);
         $destPath = $newPath;
-        $webPath  = '/gnhs-guidance/uploads/avatars/' . $newFilename;
+        $webPath  = '/uploads/avatars/' . $newFilename;
     }
 }
 

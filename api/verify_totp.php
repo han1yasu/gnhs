@@ -38,7 +38,7 @@ try {
     $secret = $user['totp_secret'];
 
     // Verify the TOTP code
-    if (PureOTP::verifyCode($secret, $code, 3)) { // 3 slices = +/- 90 seconds tolerance
+    if (PureOTP::verifyCode($secret, $code, 1)) {
         // Code is correct, promote pending_user to full user session
         
         if (empty($user['totp_enabled'])) {
@@ -46,19 +46,23 @@ try {
             $_SESSION['pending_user']['totp_enabled'] = 1;
         }
 
+        session_regenerate_id(true);
         $_SESSION['user'] = $_SESSION['pending_user'];
         unset($_SESSION['pending_user']);
         
         $role = $_SESSION['user']['role'];
         $redirectMap = [
-            'student' => '/gnhs-guidance/pages/student-dashboard.php',
-            'teacher' => '/gnhs-guidance/pages/teacher-dashboard.php',
-            'admin'   => '/gnhs-guidance/pages/admin-dashboard.php',
+            'student' => '/pages/student-dashboard.php',
+            'teacher' => '/pages/teacher-dashboard.php',
+            'admin'   => '/pages/admin-dashboard.php',
         ];
         
-        $redirectUrl = $redirectMap[$role] ?? '/gnhs-guidance/index.html';
+        $redirectUrl = $redirectMap[$role] ?? '/index.html';
         if ($role === 'student' && empty($_SESSION['user']['is_setup_complete'])) {
-            $redirectUrl = '/gnhs-guidance/pages/student-setup.php';
+            $redirectUrl = '/pages/student-setup.php';
+        }
+        if ($role === 'teacher' && empty($_SESSION['user']['is_setup_complete'])) {
+            $redirectUrl = '/pages/teacher-setup.php';
         }
         
         jsonOut(['success'=>true, 'redirect'=>$redirectUrl]);

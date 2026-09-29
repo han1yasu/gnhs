@@ -6,7 +6,9 @@ $db   = getDB();
 
 // Stats
 $uid = $user['id'];
-$totalCases  = (int)$db->prepare("SELECT COUNT(*) FROM cases WHERE student_id=?")->execute([$uid]) ? $db->query("SELECT COUNT(*) FROM cases WHERE student_id=$uid")->fetchColumn() : 0;
+$totalStmt = $db->prepare("SELECT COUNT(*) FROM cases WHERE student_id=?");
+$totalStmt->execute([$uid]);
+$totalCases = (int)$totalStmt->fetchColumn();
 $pending     = (int)$db->query("SELECT COUNT(*) FROM cases WHERE student_id=$uid AND status IN ('pending','under_review')")->fetchColumn();
 $resolved    = (int)$db->query("SELECT COUNT(*) FROM cases WHERE student_id=$uid AND status='resolved'")->fetchColumn();
 $unread      = (int)$db->query("SELECT COUNT(*) FROM notifications WHERE user_id=$uid AND is_read=0")->fetchColumn();

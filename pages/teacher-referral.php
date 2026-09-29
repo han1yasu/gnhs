@@ -160,7 +160,7 @@ async function submitReferral() {
   setLoading(btn, true); hideEl('refMsg');
 
   try {
-    const res = await apiPost('/gnhs-guidance/api/submit_referral.php', {
+    const res = await apiPost('/api/submit_referral.php', {
       student_name: studentName, grade_section: gradeSection,
       concern_type: concernType, urgency, observations
     });

@@ -29,7 +29,7 @@ if (containsProfanity($studentName) || containsProfanity($observations)) {
 
 // ── AI Summarization via Gemini API ──────────────────────────────────────────────────────────
 function getAiSummary(string $concernType, string $studentName, string $observations): string {
-    $apiKey = 'AQ.Ab8RN6KnxxiItAmADJTCOpW5golOyfCXwYGZ6IAVBceSpHqZkQ';
+    $apiKey = getenv('GEMINI_API_KEY') ?: '';
     if (empty($apiKey) || !function_exists('curl_init')) return '';
 
     $typeLabel = ucfirst(str_replace('_', ' ', $concernType));
@@ -50,14 +50,14 @@ function getAiSummary(string $concernType, string $studentName, string $observat
         'generationConfig' => ['maxOutputTokens' => 1500, 'temperature' => 0.4]
     ]);
 
-    $ch = curl_init('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key='.$apiKey);
+    $model = getenv('GEMINI_MODEL') ?: 'gemini-3.8-flash';
+    $ch = curl_init('https://generativelanguage.googleapis.com/v1beta/models/'.rawurlencode($model).':generateContent');
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_POST           => true,
         CURLOPT_POSTFIELDS     => $payload,
         CURLOPT_TIMEOUT        => 20,
-        CURLOPT_SSL_VERIFYPEER => false,
-        CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+        CURLOPT_HTTPHEADER     => ['Content-Type: application/json', 'x-goog-api-key: '.$apiKey],
     ]);
 
     $response = curl_exec($ch);

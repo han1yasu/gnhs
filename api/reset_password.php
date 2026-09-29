@@ -9,7 +9,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $raw = json_decode(file_get_contents('php://input'), true);
 $email = trim($raw['email'] ?? '');
 $token = trim($raw['token'] ?? '');
-$password = trim($raw['password'] ?? '');
+$password = (string)($raw['password'] ?? '');
 
 if (!$email || !$token || !$password) {
     jsonOut(['success'=>false, 'message'=>'All fields are required.']);
@@ -22,11 +22,11 @@ try {
     $db = getDB();
     
     // Check if token is valid and not expired
-    $stmt = $db->prepare("SELECT id FROM password_resets WHERE email=? AND token=? AND expires_at > NOW() LIMIT 1");
-    $stmt->execute([$email, $token]);
+    $stmt = $db->prepare("SELECT id, token_hash FROM password_resets WHERE email=? AND expires_at > NOW() ORDER BY id DESC LIMIT 1");
+    $stmt->execute([$email]);
     $reset = $stmt->fetch();
     
-    if (!$reset) {
+    if (!$reset || !password_verify($token, $reset['token_hash'] ?? '')) {
         jsonOut(['success'=>false, 'message'=>'Invalid or expired reset code.']);
     }
     

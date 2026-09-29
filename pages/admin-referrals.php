@@ -160,7 +160,7 @@ async function updateRefStatus(id) {
   const btn    = document.getElementById("saveRefBtn");
   if (btn) { btn.disabled=true; btn.innerHTML="<span class=\"spinner\"></span> Saving…"; }
   try {
-    const r = await fetch("/gnhs-guidance/api/update_referral.php?id="+id+"&status="+status);
+    const r = await fetch("/api/update_referral.php?id="+id+"&status="+status);
     const d = await r.json();
     if (d.success) {
       showToast("Referral status updated!","success");

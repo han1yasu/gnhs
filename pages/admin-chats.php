@@ -86,7 +86,7 @@ async function pageLoadInbox() {
   try {
     const params = new URLSearchParams(window.location.search);
     const archiveId = params.get('archive_id') || '';
-    const res = await fetch('/gnhs-guidance/api/get_chat_inbox.php' + (archiveId ? '?archive_id=' + archiveId : ''));
+    const res = await fetch('/api/get_chat_inbox.php' + (archiveId ? '?archive_id=' + archiveId : ''));
     const data = await res.json();
     if (data.success) {
       const list = document.getElementById('pageChatInbox');
@@ -179,7 +179,7 @@ function pageOpenChat(id, title, sub, status) {
 async function pageLoadMessages() {
   if (!pageCurrentCaseId) return;
   try {
-    const res = await fetch('/gnhs-guidance/api/get_messages.php?case_id=' + pageCurrentCaseId);
+    const res = await fetch('/api/get_messages.php?case_id=' + pageCurrentCaseId);
     const data = await res.json();
     if (data.success) {
       const container = document.getElementById('pageChatMessages');
@@ -197,7 +197,7 @@ async function pageLoadMessages() {
           <div style="display:flex;flex-direction:column;align-items:${align};width:100%">
             ${roleBadge}
             <div style="background:${bg};color:${color};border:${border};padding:12px 18px;border-radius:20px;max-width:75%;font-size:15px;line-height:1.5;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
-              ${m.message}
+              ${escapeHtml(m.message)}
             </div>
             <div style="font-size:11px;color:var(--text-3);margin-top:6px;">${new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
           </div>`;
@@ -223,13 +223,13 @@ async function pageSendMessage() {
   container.innerHTML += `
     <div style="display:flex;flex-direction:column;align-items:flex-end;width:100%">
       <div style="background:var(--maroon);color:#fff;border:none;padding:12px 18px;border-radius:20px;max-width:75%;font-size:15px;line-height:1.5;opacity:0.7;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
-        ${msg}
+        ${escapeHtml(msg)}
       </div>
     </div>`;
   container.scrollTop = container.scrollHeight;
 
   try {
-    const res = await apiPost('/gnhs-guidance/api/send_message.php', { case_id: pageCurrentCaseId, message: msg });
+    const res = await apiPost('/api/send_message.php', { case_id: pageCurrentCaseId, message: msg });
     if (res.success) {
       pageLoadMessages();
       pageLoadInbox();

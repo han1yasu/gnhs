@@ -39,7 +39,7 @@ if (!$isAnon) {
 
 // â”€â”€ AI Summarization via Anthropic API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function getAiSummary(string $concernType, string $subject, string $description): string {
-    $apiKey = 'AQ.Ab8RN6KnxxiItAmADJTCOpW5golOyfCXwYGZ6IAVBceSpHqZkQ';
+    $apiKey = getenv('GEMINI_API_KEY') ?: '';
 
     if (empty($apiKey) || !function_exists('curl_init')) return '';
 
@@ -66,15 +66,16 @@ function getAiSummary(string $concernType, string $subject, string $description)
         ]
     ]);
 
-    $ch = curl_init('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key='.$apiKey);
+    $model = getenv('GEMINI_MODEL') ?: 'gemini-3.8-flash';
+    $ch = curl_init('https://generativelanguage.googleapis.com/v1beta/models/'.rawurlencode($model).':generateContent');
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_POST           => true,
         CURLOPT_POSTFIELDS     => $payload,
         CURLOPT_TIMEOUT        => 20,
-        CURLOPT_SSL_VERIFYPEER => false,
         CURLOPT_HTTPHEADER     => [
-            'Content-Type: application/json'
+            'Content-Type: application/json',
+            'x-goog-api-key: '.$apiKey
         ],
     ]);
 

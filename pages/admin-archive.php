@@ -126,7 +126,7 @@ async function viewArchivedCase(id) {
   const body = document.getElementById('archiveModalBody');
   body.innerHTML = '<div style="text-align:center;padding:40px"><span class="spinner" style="border-color:rgba(85,0,0,.2);border-top-color:var(--maroon);display:inline-block"></span></div>';
   try {
-    const r = await fetch('/gnhs-guidance/api/get_case.php?id='+id);
+    const r = await fetch('/api/get_case.php?id='+id);
     const d = await r.json();
     if (d.success) {
       const c = d.case, notes = d.notes||[];

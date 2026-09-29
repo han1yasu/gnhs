@@ -5,6 +5,7 @@ header('Content-Type: application/json');
 
 $id = (int)($_GET['id'] ?? 0);
 if (!$id) jsonOut(['success'=>false,'message'=>'Case ID required.']);
+if (empty($_SESSION['user'])) jsonOut(['success'=>false,'message'=>'Login required.'], 401);
 
 try {
     $db = getDB();
@@ -20,11 +21,12 @@ try {
     if (!$case) jsonOut(['success'=>false,'message'=>'Case not found.']);
 
     // Access control
-    if (!empty($_SESSION['user'])) {
-        $u = $_SESSION['user'];
-        if ($u['role']==='student' && $case['student_id'] != $u['id']) {
-            jsonOut(['success'=>false,'message'=>'Access denied.']);
-        }
+    $u = $_SESSION['user'];
+    if ($u['role'] === 'student' && (int)$case['student_id'] !== (int)$u['id']) {
+        jsonOut(['success'=>false,'message'=>'Access denied.'], 403);
+    }
+    if ($u['role'] !== 'student' && $u['role'] !== 'admin') {
+        jsonOut(['success'=>false,'message'=>'Access denied.'], 403);
     }
 
     // Notes

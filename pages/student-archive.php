@@ -9,14 +9,15 @@ $stmt = $db->prepare("SELECT * FROM cases WHERE student_id=? AND status='resolve
 $stmt->execute([$user['id']]);
 $cases = $stmt->fetchAll();
 
-$content = <<<HTML
+ob_start();
+?>
 <div class="header-card">
   <h2><i class="fas fa-archive" style="color:var(--maroon);margin-right:10px"></i> Case Archive</h2>
   <p style="color:var(--text-2);margin-top:6px;">View your past resolved cases. If you feel a concern was not properly resolved, you may submit an appeal or follow up.</p>
 </div>
 
 <div class="content-card" style="margin-top:20px">
-  <?php if (empty(\$cases)): ?>
+  <?php if (empty($cases)): ?>
     <div style="text-align:center;padding:40px 20px;color:var(--text-3)">
       <i class="fas fa-box-open" style="font-size:48px;color:var(--border);margin-bottom:16px;"></i>
       <p>You have no resolved cases in your archive.</p>
@@ -34,20 +35,20 @@ $content = <<<HTML
           </tr>
         </thead>
         <tbody>
-          <?php foreach (\$cases as \$c): 
-             \$typeLabel = ucwords(str_replace('_',' ',\$c['concern_type']));
-             \$dateLabel = \$c['updated_at'] ? date('M j, Y g:i A', strtotime(\$c['updated_at'])) : 'Unknown';
+          <?php foreach ($cases as $c):
+             $typeLabel = ucwords(str_replace('_',' ',$c['concern_type']));
+             $dateLabel = $c['updated_at'] ? date('M j, Y g:i A', strtotime($c['updated_at'])) : 'Unknown';
           ?>
             <tr>
-              <td><strong><?= htmlspecialchars(\$c['case_number']) ?></strong></td>
-              <td><?= htmlspecialchars(\$c['subject']) ?></td>
-              <td><?= htmlspecialchars(\$typeLabel) ?></td>
-              <td><span style="color:var(--text-2);font-size:13px;"><?= \$dateLabel ?></span></td>
+              <td><strong><?= htmlspecialchars($c['case_number']) ?></strong></td>
+              <td><?= htmlspecialchars($c['subject']) ?></td>
+              <td><?= htmlspecialchars($typeLabel) ?></td>
+              <td><span style="color:var(--text-2);font-size:13px;"><?= $dateLabel ?></span></td>
               <td>
-                <?php if (\$c['is_follow_up']): ?>
+                <?php if ($c['is_follow_up']): ?>
                   <span style="font-size:12px;color:var(--text-3);background:var(--bg2);padding:4px 8px;border-radius:4px;font-weight:600;"><i class="fas fa-reply"></i> Appealed</span>
                 <?php else: ?>
-                  <button class="btn-secondary" style="padding:6px 12px;font-size:12px;" onclick="openAppealModal(<?= \$c['id'] ?>, '<?= htmlspecialchars(\$c['case_number']) ?>')">
+                  <button class="btn-secondary" style="padding:6px 12px;font-size:12px;" onclick="openAppealModal(<?= $c['id'] ?>, '<?= htmlspecialchars($c['case_number']) ?>')">
                     <i class="fas fa-reply"></i> Appeal
                   </button>
                 <?php endif; ?>
@@ -102,7 +103,7 @@ async function submitAppeal() {
     }
     
     try {
-        const res = await fetch('/gnhs-guidance/api/submit_appeal.php', {
+        const res = await fetch('/api/submit_appeal.php', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ case_id: id, message: desc })
@@ -122,6 +123,7 @@ async function submitAppeal() {
     }
 }
 </script>
-HTML;
+<?php
+$content = ob_get_clean();
 
 renderLayout($user, 'Case Archive', 'archive', $content);

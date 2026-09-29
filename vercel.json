@@ -6,6 +6,10 @@
   },
   "routes": [
     {
+      "src": "/(database|tools)/(.*)",
+      "status": 404
+    },
+    {
       "src": "/(.*)",
       "dest": "/$1"
     }

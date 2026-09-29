@@ -199,7 +199,7 @@ async function saveAdvisory() {
   const btn=document.getElementById('saveAdvisoryBtn');
   setLoading(btn,true); hideEl('advisoryMsg');
   try {
-    const r=await fetch('/gnhs-guidance/api/assign_advisory.php?user_id='+_advisoryUserId+'&class='+encodeURIComponent(cls));
+    const r=await fetch('/api/assign_advisory.php?user_id='+_advisoryUserId+'&class='+encodeURIComponent(cls));
     const d=await r.json();
     if(d.success){showToast('Advisory class assigned!','success');document.getElementById('advisoryModal').classList.add('hidden');setTimeout(()=>location.reload(),1200);}
     else{showMsg('advisoryMsg',d.message||'Failed.');setLoading(btn,false);}

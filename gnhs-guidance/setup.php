@@ -1,4 +1,5 @@
 <?php
+if (PHP_SAPI !== 'cli') { http_response_code(404); exit; }
 /**
  * GNHS Guidance System — One-time Setup Script
  * Run this ONCE after importing the SQL schema to:

@@ -1,5 +1,6 @@
 <?php
-$file = 'c:/xampp/htdocs/gnhs-guidance/includes/layout.php';
+if (PHP_SAPI !== 'cli') { http_response_code(404); exit; }
+$file = dirname(__DIR__, 2) . '/includes/layout.php';
 $content = file_get_contents($file);
 
 // Add the 'Cases Chat' to the sidebars

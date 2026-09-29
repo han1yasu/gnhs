@@ -208,7 +208,7 @@ $content = <<<HTML
 </div>
 
 <!-- Row 5: Teacher Referrals Analytics -->
-<h3 style="margin:40px 0 20px;border-bottom:1px solid var(--border);padding-bottom:10px;"><i class="fas fa-chalkboard-teacher"></i> Teacher Referrals Analytics (Total: <?=$totalReferrals?>)</h3>
+<h3 style="margin:40px 0 20px;border-bottom:1px solid var(--border);padding-bottom:10px;"><i class="fas fa-chalkboard-teacher"></i> Teacher Referrals Analytics (Total: {$totalReferrals})</h3>
 
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-bottom:22px">
   <div class="content-card">

@@ -130,7 +130,7 @@ async function submitConcern() {
   setLoading(btn, true); hideEl('submitMsg');
 
   try {
-    const res = await apiPost('/gnhs-guidance/api/submit_case.php', {
+    const res = await apiPost('/api/submit_case.php', {
       concern_type: concernType, subject, description, priority,
       is_anonymous: isAnonymous, incident_date: incidentDate, preferred_contact: preferredContact
     });

@@ -1,4 +1,5 @@
 <?php
+if (PHP_SAPI !== 'cli') { http_response_code(404); exit; }
 // TEMPORARY DEBUG FILE — DELETE AFTER TESTING
 require_once __DIR__ . '/../includes/config.php';
 header('Content-Type: text/html; charset=utf-8');
@@ -9,7 +10,7 @@ echo "<h2>AI Summary Debug Test</h2>";
 echo "<p><strong>cURL available:</strong> " . (function_exists('curl_init') ? '✅ YES' : '❌ NO') . "</p>";
 
 // Test API call
-$apiKey = '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';
+$apiKey = (getenv('ANTHROPIC_API_KEY') ?: '');
 
 $payload = json_encode([
     'model'      => 'claude-haiku-4-5-20251001',

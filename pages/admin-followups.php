@@ -26,14 +26,15 @@ $stmt = $db->prepare("SELECT c.*, u.first_name, u.last_name, u.grade_section
 $stmt->execute();
 $followups = $stmt->fetchAll();
 
-$content = <<<HTML
+ob_start();
+?>
 <div class="header-card">
   <h2><i class="fas fa-reply-all" style="color:var(--maroon);margin-right:10px"></i> Case Follow Ups</h2>
   <p style="color:var(--text-2);margin-top:6px;">Review cases that students have appealed or followed up on after being resolved.</p>
 </div>
 
 <div class="content-card" style="margin-top:20px">
-  <?php if (empty(\$followups)): ?>
+  <?php if (empty($followups)): ?>
     <div style="text-align:center;padding:40px 20px;color:var(--text-3)">
       <i class="fas fa-check-circle" style="font-size:48px;color:var(--success);margin-bottom:16px;"></i>
       <p>No active follow-ups. All clear!</p>
@@ -52,23 +53,23 @@ $content = <<<HTML
           </tr>
         </thead>
         <tbody>
-          <?php foreach (\$followups as \$f): 
-             \$studentName = \$f['is_anonymous'] ? 'Anonymous' : htmlspecialchars(\$f['first_name'].' '.\$f['last_name']);
-             \$dateLabel = \$f['follow_up_date'] ? date('M j, Y g:i A', strtotime(\$f['follow_up_date'])) : 'Unknown';
+          <?php foreach ($followups as $f):
+             $studentName = $f['is_anonymous'] ? 'Anonymous' : htmlspecialchars($f['first_name'].' '.$f['last_name']);
+             $dateLabel = $f['follow_up_date'] ? date('M j, Y g:i A', strtotime($f['follow_up_date'])) : 'Unknown';
           ?>
             <tr>
-              <td><strong><?= htmlspecialchars(\$f['case_number']) ?></strong></td>
-              <td><?= \$studentName ?></td>
-              <td><?= htmlspecialchars(\$f['subject']) ?></td>
+              <td><strong><?= htmlspecialchars($f['case_number']) ?></strong></td>
+              <td><?= $studentName ?></td>
+              <td><?= htmlspecialchars($f['subject']) ?></td>
               <td>
-                <div style="max-width:250px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px;color:var(--text-2);" title="<?= htmlspecialchars(\$f['follow_up_msg']) ?>">
-                  <?= htmlspecialchars(\$f['follow_up_msg']) ?>
+                <div style="max-width:250px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px;color:var(--text-2);" title="<?= htmlspecialchars($f['follow_up_msg']) ?>">
+                  <?= htmlspecialchars($f['follow_up_msg']) ?>
                 </div>
               </td>
-              <td><span style="font-size:13px;color:var(--text-2)"><?= \$dateLabel ?></span></td>
+              <td><span style="font-size:13px;color:var(--text-2)"><?= $dateLabel ?></span></td>
               <td>
                 <div style="display:flex;gap:8px;">
-                  <button class="btn-secondary" style="padding:4px 8px;font-size:12px;" onclick="viewFollowUp(<?= htmlspecialchars(json_encode(\$f)) ?>)"><i class="fas fa-eye"></i> View</button>
+                  <button class="btn-secondary" style="padding:4px 8px;font-size:12px;" onclick="viewFollowUp(<?= htmlspecialchars(json_encode($f)) ?>)"><i class="fas fa-eye"></i> View</button>
                 </div>
               </td>
             </tr>
@@ -114,6 +115,7 @@ function viewFollowUp(data) {
     document.getElementById('viewModal').classList.remove('hidden');
 }
 </script>
-HTML;
+<?php
+$content = ob_get_clean();
 
 renderLayout($user, 'Follow Ups', 'followups', $content);

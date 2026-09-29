@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GNHS — Guidance Case Management System</title>
-  <link rel="stylesheet" href="style.css?v=2.4" />
+  <link rel="stylesheet" href="/assets/css/style.css?v=2.4" />
   <link
     href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,600;1,400&display=swap"
     rel="stylesheet" />
@@ -23,7 +23,7 @@
 <body class="landing-page">
   <nav class="navbar">
     <div class="nav-brand" onclick="window.scrollTo({top:0,behavior:'smooth'})">
-      <div class="school-logo"><img src="gnhs.jpg" alt="GNHS"
+      <div class="school-logo"><img src="/assets/images/gnhs.jpg" alt="GNHS"
           style="width:100%;height:100%;object-fit:cover;border-radius:10px;" /></div>
       <div class="school-info">
         <span class="school-name">Guinayang National High School</span>
@@ -232,7 +232,7 @@
   <footer class="footer">
     <div class="footer-content">
       <div class="footer-brand">
-        <div class="school-logo small" style="background:transparent;padding:2px"><img src="gnhs.jpg" alt="GNHS"
+        <div class="school-logo small" style="background:transparent;padding:2px"><img src="/assets/images/gnhs.jpg" alt="GNHS"
             style="width:100%;height:100%;object-fit:cover;border-radius:8px;" /></div>
         <div>
           <div class="footer-school">Guinayang National High School</div>
@@ -275,7 +275,7 @@
             </div>
             <div><strong>Teacher</strong><small>Refer students for guidance</small></div>
           </div>
-          <div class="role-card" onclick="selectRole('admin')">
+          <div class="role-card" id="admin-role-card" onclick="selectRole('admin')">
             <div class="role-icon" style="background:#fff0f0;color:#3a0000"><i class="fas fa-user-tie"></i></div>
             <div><strong>Guidance Admin</strong><small>Manage all cases &amp; analytics</small></div>
           </div>
@@ -420,8 +420,8 @@
 
   </div>
 
-  <script src="theme.js?v=1.1"></script>
-  <script src="app.js"></script>
+  <script src="/assets/js/theme.js?v=1.1"></script>
+  <script src="/assets/js/app.js?v=2.4"></script>
   <script>
     const GNHS_GRADE_SECTIONS = {
       '7': ['Bonifacio', 'Luna', 'Rizal', 'Mabini', 'Aguinaldo', 'Jacinto'],

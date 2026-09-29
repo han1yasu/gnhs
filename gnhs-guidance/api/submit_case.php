@@ -27,7 +27,7 @@ if (!$isAnon) {
 // ── AI Summarization via Anthropic API ────────────────────────
 function getAiSummary(string $concernType, string $subject, string $description): string {
     // ✏️ PUT YOUR API KEY BELOW
-    $apiKey = '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';
+    $apiKey = (getenv('ANTHROPIC_API_KEY') ?: '');
 
     if (empty($apiKey) || !function_exists('curl_init')) return '';
 

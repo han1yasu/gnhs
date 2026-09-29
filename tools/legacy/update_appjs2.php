@@ -1,5 +1,6 @@
 <?php
-$file = 'c:/xampp/htdocs/gnhs-guidance/app.js';
+if (PHP_SAPI !== 'cli') { http_response_code(404); exit; }
+$file = dirname(__DIR__, 2) . '/assets/js/app.js';
 $content = file_get_contents($file);
 
 // Find the start of Chat Widget Logic
@@ -16,7 +17,7 @@ let isFloatingInboxOpen = false;
 
 async function loadInbox() {
   try {
-    const res = await fetch(\'/gnhs-guidance/api/get_chat_inbox.php\');
+    const res = await fetch(\'/api/get_chat_inbox.php\');
     const data = await res.json();
     if (data.success) {
       const list = document.getElementById(\'chatInboxList\');
@@ -135,7 +136,7 @@ function openChat(caseId, studentName, subtext) {
 async function loadMessages() {
   if (!currentChatCaseId) return;
   try {
-    const res = await fetch(\'/gnhs-guidance/api/get_messages.php?case_id=\' + currentChatCaseId);
+    const res = await fetch(\'/api/get_messages.php?case_id=\' + currentChatCaseId);
     const data = await res.json();
     if (data.success) {
       const container = document.getElementById(\'chatMessages\');
@@ -185,7 +186,7 @@ async function sendChatMessage() {
   container.scrollTop = container.scrollHeight;
 
   try {
-    const res = await apiPost(\'/gnhs-guidance/api/send_message.php\', { case_id: currentChatCaseId, message: msg });
+    const res = await apiPost(\'/api/send_message.php\', { case_id: currentChatCaseId, message: msg });
     if (res.success) {
       loadMessages();
     } else {

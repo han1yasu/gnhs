@@ -1,6 +1,7 @@
 <?php
+if (PHP_SAPI !== 'cli') { http_response_code(404); exit; }
 // Quick AI test page - DELETE after testing!
-$apiKey = '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';
+$apiKey = (getenv('ANTHROPIC_API_KEY') ?: '');
 
 echo "<h2>GNHS AI Summary Test</h2>";
 echo "<p>cURL available: " . (function_exists('curl_init') ? '<b style="color:green">YES ✅</b>' : '<b style="color:red">NO ❌</b>') . "</p>";

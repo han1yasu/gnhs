@@ -1,15 +1,15 @@
 <?php
+if (PHP_SAPI !== 'cli') { http_response_code(404); exit; }
 /**
  * GNHS Guidance System — One-time Setup Script
  * Run this ONCE after importing the SQL schema to:
  *   1. Create the database tables
  *   2. Insert seed users with proper bcrypt-hashed passwords
  *
- * Access via browser: http://localhost/gnhs-guidance/setup.php
- * DELETE this file after running!
+ * Run from the command line after importing database/schema.sql.
  */
 
-require_once __DIR__ . '/includes/config.php';
+require_once __DIR__ . '/../includes/config.php';
 
 // Safety: only allow if no users exist yet
 $db = getDB();
@@ -27,19 +27,22 @@ $users = [
 ];
 
 $stmt = $db->prepare("INSERT INTO users (first_name,last_name,email,id_number,password,role,grade_section,avatar_initials) VALUES (?,?,?,?,?,?,?,?)");
+$userIds = [];
 
 foreach ($users as [$fn,$ln,$em,$id,$pw,$role,$grade,$init]) {
   $hash = password_hash($pw, PASSWORD_BCRYPT);
   $stmt->execute([$fn,$ln,$em,$id,$hash,$role,$grade,$init]);
+  $userIds[$em] = (int)$db->lastInsertId();
 }
 
 // Insert sample cases for demo
-$u3 = $db->lastInsertId() - 2; // Juan's ID (3rd from last)
+$u3 = $userIds['jdelacruz@gnhs.edu.ph'];
+$adminId = $userIds['mreyes@gnhs.edu.ph'];
 $db->exec("
   INSERT INTO cases (case_number,student_id,is_anonymous,concern_type,subject,description,ai_summary,priority,status,assigned_to) VALUES
-  ('C-0001',$u3,0,'bullying','Bullying by classmates','Some of my classmates have been taking my belongings and making fun of me for three weeks now. It happens mostly during lunch.','Student reports a 3-week bullying incident involving theft and verbal harassment during lunch. Significant emotional impact noted.','high','under_review',1),
-  ('C-0002',$u3,0,'academic_stress','Failing grades this quarter','I have been struggling with Math and Science this quarter and my grades have been declining significantly.','Student struggling with two core subjects. Seeks academic support.','medium','resolved',1),
-  ('C-0003',$u3,0,'emotional','Feeling overwhelmed and anxious','I feel very anxious lately especially during exams. I cannot concentrate properly and I lose sleep over it.','Student experiencing anxiety and concentration difficulties. May benefit from counseling sessions.','medium','resolved',1)
+  ('C-0001',$u3,0,'bullying','Bullying by classmates','Some of my classmates have been taking my belongings and making fun of me for three weeks now. It happens mostly during lunch.','Student reports a 3-week bullying incident involving theft and verbal harassment during lunch. Significant emotional impact noted.','high','under_review',$adminId),
+  ('C-0002',$u3,0,'academic_stress','Failing grades this quarter','I have been struggling with Math and Science this quarter and my grades have been declining significantly.','Student struggling with two core subjects. Seeks academic support.','medium','resolved',$adminId),
+  ('C-0003',$u3,0,'emotional','Feeling overwhelmed and anxious','I feel very anxious lately especially during exams. I cannot concentrate properly and I lose sleep over it.','Student experiencing anxiety and concentration difficulties. May benefit from counseling sessions.','medium','resolved',$adminId)
 ");
 
 $db->exec("
@@ -47,7 +50,7 @@ $db->exec("
   ($u3,'Counselor Replied','Ms. Reyes has replied to your case #C-0001.','case_update',0),
   ($u3,'Session Scheduled','A counseling session has been scheduled for this week.','session_scheduled',0),
   ($u3,'Case Resolved','Your case #C-0002 has been marked as Resolved.','case_update',1),
-  (1,'New Case Submitted','A new High Priority case (bullying) has been submitted.','case_update',0)
+  ($adminId,'New Case Submitted','A new High Priority case (bullying) has been submitted.','case_update',0)
 ");
 
 echo '<!DOCTYPE html><html><head><style>body{font-family:sans-serif;max-width:600px;margin:60px auto;padding:20px}h2{color:#550000}.table{width:100%;border-collapse:collapse;margin:16px 0}.table td,.table th{padding:10px 14px;border:1px solid #e4e4e7;font-size:14px}.table th{background:#fff0f0;font-weight:700}.btn{display:inline-block;padding:12px 24px;background:#550000;color:#fff;border-radius:10px;text-decoration:none;font-weight:700;margin-top:16px}</style></head><body>

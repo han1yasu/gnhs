@@ -4,7 +4,7 @@ startSession();
 
 $pendingUser = $_SESSION['pending_user'] ?? null;
 if (!$pendingUser) {
-    header('Location: /gnhs-guidance/index.html');
+    header('Location: /index.html');
     exit;
 }
 
@@ -15,10 +15,6 @@ $u = $stmt->fetch();
 $secret = $u['totp_secret'] ?? '';
 $isTotpEnabled = !empty($u['totp_enabled']);
 
-$email = urlencode($pendingUser['email']);
-$issuer = urlencode('GNHS Guidance System');
-$otpauth = "otpauth://totp/$issuer:$email?secret=$secret&issuer=$issuer";
-$qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" . urlencode($otpauth);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -26,7 +22,7 @@ $qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" . urle
   <meta charset="UTF-8">
   <title>Two-Factor Authentication - GNHS Guidance</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="../style.css?v=2.3">
+  <link rel="stylesheet" href="/assets/css/style.css?v=2.3">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <script>
@@ -55,20 +51,17 @@ $qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" . urle
     <button class="glass-setup-link" onclick="document.getElementById('setupSection').style.display='block'; this.style.display='none';">First time setting up?</button>
 
     <div class="glass-setup-box" id="setupSection">
-        <p style="font-size: 13px; margin-bottom: 12px; color:rgba(255,255,255,0.9)">Scan this QR code with Google Authenticator or Authy to set up your account.</p>
-        <div style="background:#fff; padding:10px; border-radius:12px; display:inline-block; margin-bottom:12px;">
-            <img src="<?= htmlspecialchars($qrUrl) ?>" alt="QR Code" style="width: 150px; height: 150px; display:block; border-radius:8px;">
-        </div>
+        <p style="font-size: 13px; margin-bottom: 12px; color:rgba(255,255,255,0.9)">Add an account in your authenticator app using the setup key below.</p>
         <p style="font-size: 12px; color: rgba(255,255,255,0.7);">Manual setup key: <br><strong style="color:#fff; font-size:14px; letter-spacing:2px;"><?= htmlspecialchars($secret) ?></strong></p>
     </div>
     <?php endif; ?>
 
     <div style="margin-top: 24px; text-align: center;">
-        <a href="/gnhs-guidance/index.html" style="color: rgba(255,255,255,0.8); font-size: 13px; text-decoration: none; display: inline-block; padding: 8px;"><i class="fas fa-arrow-left"></i> Go back to login page</a>
+        <a href="/index.html" style="color: rgba(255,255,255,0.8); font-size: 13px; text-decoration: none; display: inline-block; padding: 8px;"><i class="fas fa-arrow-left"></i> Go back to login page</a>
     </div>
 </div>
 
-<script src="../theme.js?v=1.1"></script>
+<script src="/assets/js/theme.js?v=1.1"></script>
 <script>
 const input = document.getElementById('otpCode');
 
@@ -97,7 +90,7 @@ async function verifyOTP() {
     btn.style.opacity = '0.7';
 
     try {
-        const res = await fetch('/gnhs-guidance/api/verify_totp.php', {
+        const res = await fetch('/api/verify_totp.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ code: code })

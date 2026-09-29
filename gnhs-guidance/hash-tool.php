@@ -1,3 +1,4 @@
+<?php if (PHP_SAPI !== 'cli') { http_response_code(404); exit; } ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>

@@ -9,12 +9,14 @@ try {
     $stmt->execute([$user['id']]);
     $notifs = $stmt->fetchAll();
 
-    $unread = (int)$db->prepare("SELECT COUNT(*) FROM notifications WHERE user_id=? AND is_read=0")->execute([$user['id']]) ? 
-              $db->query("SELECT COUNT(*) FROM notifications WHERE user_id={$user['id']} AND is_read=0")->fetchColumn() : 0;
+    $countStmt = $db->prepare("SELECT COUNT(*) FROM notifications WHERE user_id=? AND is_read=0");
+    $countStmt->execute([$user['id']]);
+    $unread = (int)$countStmt->fetchColumn();
 
     // Mark all as read
     if ($_GET['mark_read'] ?? false) {
         $db->prepare("UPDATE notifications SET is_read=1 WHERE user_id=?")->execute([$user['id']]);
+        $unread = 0;
     }
 
     jsonOut(['success'=>true,'notifications'=>$notifs,'unread'=>$unread]);

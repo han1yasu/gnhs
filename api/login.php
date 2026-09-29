@@ -9,7 +9,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $raw  = json_decode(file_get_contents('php://input'), true);
 $email    = trim($raw['email']    ?? '');
-$password = trim($raw['password'] ?? '');
+$password = (string)($raw['password'] ?? '');
 $role     = trim($raw['role']     ?? '');
 
 if (!$email || !$password) {
@@ -18,8 +18,8 @@ if (!$email || !$password) {
 
 try {
     $db   = getDB();
-    $stmt = $db->prepare("SELECT * FROM users WHERE email = ? AND is_active = 1 LIMIT 1");
-    $stmt->execute([$email]);
+    $stmt = $db->prepare("SELECT * FROM users WHERE (email = ? OR id_number = ?) AND is_active = 1 LIMIT 1");
+    $stmt->execute([$email, $email]);
     $user = $stmt->fetch();
 
     if (!$user || !password_verify($password, $user['password'])) {
@@ -33,13 +33,14 @@ try {
     }
 
     // ── 2FA Check ──────────────────────────────────────────────────
-    $secret = $user['totp_secret'];
+    $secret = $user['totp_secret'] ?? null;
     if (empty($secret)) {
         require_once __DIR__ . '/../src/PureOTP.php';
         $secret = PureOTP::generateSecret();
         $db->prepare("UPDATE users SET totp_secret = ? WHERE id = ?")->execute([$secret, $user['id']]);
     }
     
+    session_regenerate_id(true);
     $_SESSION['pending_user'] = [
         'id'           => $user['id'],
         'email'        => $user['email'],
@@ -56,40 +57,11 @@ try {
         'age'            => $user['age'] ?? null,
     ];
     
-    jsonOut(['success'=>true, 'require_2fa'=>true, 'redirect'=>'/gnhs-guidance/pages/totp_verify.php']);
-
-    // Store session for normal login (No 2FA)
-    $_SESSION['user'] = [
-        'id'           => $user['id'],
-        'first_name'   => $user['first_name'],
-        'last_name'    => $user['last_name'],
-        'email'        => $user['email'],
-        'id_number'    => $user['id_number'],
-        'role'         => $user['role'],
-        'grade_section'=> $user['grade_section'],
-        'department'   => $user['department'] ?? null,
-        'avatar_initials' => $user['avatar_initials'] ?? strtoupper($user['first_name'][0].($user['last_name'][0]??'')),
-        'avatar_photo'   => $user['avatar_photo'] ?? null,
-        'advisory_class' => $user['advisory_class'] ?? null,
-        'is_setup_complete' => $user['is_setup_complete'] ?? 0,
-        'age'            => $user['age'] ?? null,
-    ];
-
-    $redirectMap = [
-        'student' => '/gnhs-guidance/pages/student-dashboard.php',
-        'teacher' => '/gnhs-guidance/pages/teacher-dashboard.php',
-        'admin'   => '/gnhs-guidance/pages/admin-dashboard.php',
-    ];
-
-    $redirectUrl = $redirectMap[$user['role']] ?? '/gnhs-guidance/index.html';
-    if ($user['role'] === 'student' && empty($user['is_setup_complete'])) {
-        $redirectUrl = '/gnhs-guidance/pages/student-setup.php';
-    }
-
-    jsonOut(['success'=>true,'redirect'=>$redirectUrl,'user'=>$_SESSION['user']]);
+    jsonOut(['success'=>true, 'require_2fa'=>true, 'redirect'=>'/pages/totp_verify.php']);
 
 } catch (Exception $e) {
-    jsonOut(['success'=>false,'message'=>'Server error: ' . $e->getMessage()], 500);
+    error_log($e->getMessage());
+    jsonOut(['success'=>false,'message'=>'Login is temporarily unavailable.'], 500);
 }
 
 

@@ -1,11 +1,12 @@
 <?php
+if (PHP_SAPI !== 'cli') { http_response_code(404); exit; }
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 session_start();
 $_SESSION['user_id'] = 1;
 $_SESSION['role'] = 'admin';
 
-require_once __DIR__ . '/../includes/config.php';
+require_once __DIR__ . '/../../includes/config.php';
 $user = requireLogin();
 $db = getDB();
 

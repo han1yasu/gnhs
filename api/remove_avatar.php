@@ -7,7 +7,7 @@ try {
     $db = getDB();
     $row = $db->query("SELECT avatar_photo FROM users WHERE id={$user['id']}")->fetch();
     if ($row && $row['avatar_photo']) {
-        $path = __DIR__ . '/../' . ltrim($row['avatar_photo'], '/gnhs-guidance/');
+        $path = __DIR__ . '/../uploads/avatars/' . basename($row['avatar_photo']);
         if (file_exists($path)) @unlink($path);
     }
     $db->prepare("UPDATE users SET avatar_photo=NULL WHERE id=?")->execute([$user['id']]);

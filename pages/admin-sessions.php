@@ -56,7 +56,7 @@ $content = <<<HTML
 <script>
 async function updateSessionStatus(id, status) {
   try {
-    const r = await fetch('/gnhs-guidance/api/update_session.php?id='+id+'&status='+status);
+    const r = await fetch('/api/update_session.php?id='+id+'&status='+status);
     const d = await r.json();
     if (d.success) showToast('Session updated!','success');
     else showToast(d.message||'Failed.','error');

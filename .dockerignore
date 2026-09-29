@@ -1,0 +1,8 @@
+.git
+.local-mysql-data
+.local-tmp
+gnhs-guidance
+tools
+uploads
+README.md
+.env

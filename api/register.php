@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../includes/config.php';
+startSession();
 header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -31,7 +32,8 @@ if ($password !== $confirm) {
 if (strlen($password) < 8) {
     jsonOut(['success'=>false,'message'=>'Password must be at least 8 characters.']);
 }
-if (!in_array($role, ['student','teacher','admin'])) {
+if (!in_array($role, ['student','teacher','admin'], true) ||
+    ($role === 'admin' && ($_SESSION['user']['role'] ?? '') !== 'admin')) {
     jsonOut(['success'=>false,'message'=>'Invalid role.']);
 }
 

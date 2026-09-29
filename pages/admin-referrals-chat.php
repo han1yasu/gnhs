@@ -86,7 +86,7 @@ async function pageLoadInbox() {
   try {
     const params = new URLSearchParams(window.location.search);
     const refIdParam = params.get('ref_id') || '';
-    const res = await fetch('/gnhs-guidance/api/get_referral_chat_inbox.php' + (refIdParam ? '?archive_id=' + refIdParam : ''));
+    const res = await fetch('/api/get_referral_chat_inbox.php' + (refIdParam ? '?archive_id=' + refIdParam : ''));
     const data = await res.json();
     if (data.success) {
       const list = document.getElementById('pageChatInbox');
@@ -191,7 +191,7 @@ function pageOpenChat(id, title, sub, status) {
 async function pageLoadMessages() {
   if (!pageCurrentRefId) return;
   try {
-    const res = await fetch('/gnhs-guidance/api/get_referral_messages.php?referral_id=' + pageCurrentRefId);
+    const res = await fetch('/api/get_referral_messages.php?referral_id=' + pageCurrentRefId);
     const data = await res.json();
     if (data.success) {
       const container = document.getElementById('pageChatMessages');
@@ -209,7 +209,7 @@ async function pageLoadMessages() {
           <div style="display:flex;flex-direction:column;align-items:${align};width:100%">
             ${roleBadge}
             <div style="background:${bg};color:${color};border:${border};padding:12px 18px;border-radius:20px;max-width:75%;font-size:15px;line-height:1.5;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
-              ${m.message}
+              ${escapeHtml(m.message)}
             </div>
             <div style="font-size:11px;color:var(--text-3);margin-top:6px;">${new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
           </div>`;
@@ -241,7 +241,7 @@ async function pageSendMessage() {
   container.scrollTop = container.scrollHeight;
 
   try {
-    const res = await fetch('/gnhs-guidance/api/send_referral_message.php', {
+    const res = await fetch('/api/send_referral_message.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ referral_id: pageCurrentRefId, message: msg })

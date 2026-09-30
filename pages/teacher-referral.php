@@ -44,7 +44,7 @@ $content = <<<HTML
         <div class="form-group">
           <label>Type of Concern <span class="req">*</span></label>
           <div class="select-wrap"><i class="fas fa-tag"></i>
-            <select id="concernType">
+            <select id="concernType" onchange="document.getElementById('otherConcernGroup').style.display = this.value === 'other' ? 'block' : 'none'">
               <option value="">Select</option>
               <option value="bullying">Bullying</option>
               <option value="academic">Academic</option>
@@ -55,6 +55,10 @@ $content = <<<HTML
               <option value="other">Other</option>
             </select>
           </div>
+        </div>
+        <div class="form-group" id="otherConcernGroup" style="display:none; width: 100%;">
+          <label>Please Specify <span class="req">*</span></label>
+          <div class="input-wrap"><i class="fas fa-edit"></i><input type="text" id="otherConcern" placeholder="Specify your concern type"/></div>
         </div>
         <div class="form-group">
           <label>Urgency Level <span class="req">*</span></label>
@@ -120,10 +124,10 @@ $content = <<<HTML
 
 <script>
 const GNHS_GRADE_SECTIONS = {
-  '7':  ['Bonifacio', 'Luna', 'Rizal', 'Mabini', 'Aguinaldo', 'Jacinto'],
-  '8':  ['Confucius', 'Goswami', 'Mandela', 'Socrates', 'Aristotle', 'Plato'],
-  '9':  ['Dalton', 'Bohr', 'Lavoisier', 'Newton', 'Curie', 'Einstein'],
-  '10': ['Osmena', 'Quezon', 'Magsaysay', 'Aguinaldo', 'Macapagal', 'Marcos']
+  '7':  ['Bonifacio', 'Burgos', 'Del Pilar', 'Diego Silang', 'Luna', 'Mabini', 'Malvar', 'Rizal'],
+  '8':  ['Abrahams', 'Basho', 'Confucius', 'Ghandi', 'Goswami', 'Kalidasa', 'Mandela', 'Mencius', 'Tagore', 'Valmiki', 'Voltaire'],
+  '9':  ['Bohr', 'Curie', 'Dalton', 'Darwin', 'Einstein', 'Faraday', 'Galileo', 'Newton'],
+  '10': ['Aguinaldo', 'Aquino', 'Garcia', 'Laurel', 'Macapagal', 'Magsaysay']
 };
 
 function updateSections(sectionId) {
@@ -144,7 +148,12 @@ async function submitReferral() {
   const studentName  = document.getElementById('studentName').value.trim();
   const grade        = document.getElementById('gradeLevel').value;
   const section      = document.getElementById('sectionName').value;
-  const concernType  = document.getElementById('concernType').value;
+  let concernType  = document.getElementById('concernType').value;
+  if (concernType === 'other') {
+    const otherVal = document.getElementById('otherConcern').value.trim();
+    if (!otherVal) { showMsg('refMsg', 'Please specify your other concern.'); return; }
+    concernType = 'Other: ' + otherVal;
+  }
   const urgency      = document.getElementById('urgency').value;
   const observations = document.getElementById('observations').value.trim();
 

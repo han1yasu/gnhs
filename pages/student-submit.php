@@ -13,7 +13,7 @@ $content = <<<HTML
       <div class="form-group">
         <label>Type of Concern <span class="req">*</span></label>
         <div class="select-wrap"><i class="fas fa-tag"></i>
-          <select id="concernType">
+          <select id="concernType" onchange="document.getElementById('otherConcernGroup').style.display = this.value === 'other' ? 'block' : 'none'">
             <option value="">Select Concern Type</option>
             <option value="bullying">Bullying</option>
             <option value="academic_stress">Academic Stress</option>
@@ -24,6 +24,11 @@ $content = <<<HTML
             <option value="other">Other</option>
           </select>
         </div>
+      </div>
+
+      <div class="form-group" id="otherConcernGroup" style="display:none">
+        <label>Please Specify <span class="req">*</span></label>
+        <div class="input-wrap"><i class="fas fa-edit"></i><input type="text" id="otherConcern" placeholder="Specify your concern type"/></div>
       </div>
 
       <div class="form-group">
@@ -113,7 +118,12 @@ document.getElementById('description')?.addEventListener('input', function(){
 });
 
 async function submitConcern() {
-  const concernType = document.getElementById('concernType').value;
+  let concernType = document.getElementById('concernType').value;
+  if (concernType === 'other') {
+    const otherVal = document.getElementById('otherConcern').value.trim();
+    if (!otherVal) { showMsg('submitMsg', 'Please specify your other concern.'); return; }
+    concernType = 'Other: ' + otherVal;
+  }
   const subject     = document.getElementById('subject').value.trim();
   const description = document.getElementById('description').value.trim();
   const priority    = document.querySelector('.prio-opt.selected')?.classList.contains('high-opt') ? 'high' :

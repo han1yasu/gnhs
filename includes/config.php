@@ -1,5 +1,6 @@
 <?php
 // ── GNHS Guidance System — Config & DB ────────────────────────
+date_default_timezone_set('Asia/Manila');
 define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
 define('DB_USER', getenv('DB_USER') ?: 'root');
 define('DB_PASS', getenv('DB_PASS') ?: '');
@@ -32,6 +33,9 @@ function getDB(): PDO {
         try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS suffix VARCHAR(10) DEFAULT NULL"); } catch(Exception $e){}
         try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS age INT DEFAULT NULL"); } catch(Exception $e){}
         try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_setup_complete TINYINT(1) DEFAULT 0"); } catch(Exception $e){}
+        try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_secret VARCHAR(64) DEFAULT NULL"); } catch(Exception $e){}
+        try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_enabled TINYINT(1) DEFAULT 0"); } catch(Exception $e){}
+        try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_reset_requested TINYINT(1) DEFAULT 0"); } catch(Exception $e){}
     }
     return $pdo;
 }

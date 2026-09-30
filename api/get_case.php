@@ -9,8 +9,10 @@ if (!$id) jsonOut(['success'=>false,'message'=>'Case ID required.']);
 try {
     $db = getDB();
     $stmt = $db->prepare("SELECT c.*,
-        CASE WHEN c.is_anonymous=1 THEN 'Anonymous' ELSE CONCAT(s.first_name,' ',s.last_name) END AS student_name,
-        s.grade_section, CONCAT(a.first_name,' ',a.last_name) AS assigned_counselor
+        CASE WHEN c.is_anonymous=1 THEN 'Anonymous Student' ELSE CONCAT(s.first_name,' ',s.last_name) END AS student_name,
+        CASE WHEN c.is_anonymous=1 THEN '—' ELSE s.grade_section END AS grade_section,
+        s.id_number,
+        CONCAT(a.first_name,' ',a.last_name) AS assigned_counselor
         FROM cases c
         LEFT JOIN users s ON c.student_id=s.id
         LEFT JOIN users a ON c.assigned_to=a.id
@@ -19,11 +21,20 @@ try {
     $case = $stmt->fetch();
     if (!$case) jsonOut(['success'=>false,'message'=>'Case not found.']);
 
-    // Access control
+    // Access control and privacy masking
     if (!empty($_SESSION['user'])) {
         $u = $_SESSION['user'];
-        if ($u['role']==='student' && $case['student_id'] != $u['id']) {
-            jsonOut(['success'=>false,'message'=>'Access denied.']);
+        if ($u['role']==='student') {
+            if ($case['student_id'] != $u['id']) {
+                jsonOut(['success'=>false,'message'=>'Access denied.']);
+            }
+            $case['is_own_anonymous'] = !empty($case['is_anonymous']);
+        } else if ($u['role']==='admin') {
+            if (!empty($case['is_anonymous'])) {
+                $case['student_name'] = 'Anonymous Student';
+                $case['grade_section'] = 'Confidential';
+                $case['id_number'] = 'Confidential';
+            }
         }
     }
 

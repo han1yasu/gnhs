@@ -24,8 +24,9 @@ $rows = '';
 foreach ($cases as $c) {
     $type = ucfirst(str_replace('_',' ',$c['concern_type']));
     $date = date('M d, Y', strtotime($c['submitted_at']));
+    $anonBadge = !empty($c['is_anonymous']) ? " <span style='font-size:11px;background:#f1f5f9;color:#475569;border:1px solid #cbd5e1;padding:2px 7px;border-radius:6px;font-weight:700;display:inline-flex;align-items:center;gap:4px;' title='Your identity is anonymous to the guidance counselor'><i class='fas fa-user-secret'></i> Anonymous</span>" : "";
     $rows .= "<tr>
-        <td><strong style='color:var(--maroon)'>{$c['case_number']}</strong></td>
+        <td><strong style='color:var(--maroon)'>{$c['case_number']}</strong>$anonBadge</td>
         <td>".htmlspecialchars($c['subject'])."</td>
         <td>$type</td>
         <td>".badge($c['status'])."</td>

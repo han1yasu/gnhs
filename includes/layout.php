@@ -39,14 +39,27 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
             ['icon'=>'fa-calendar-alt', 'label'=>'Sessions',        'href'=>'admin-sessions.php',    'key'=>'sessions'],
             ['icon'=>'fa-chart-bar',    'label'=>'Analytics',       'href'=>'admin-analytics.php',   'key'=>'analytics'],
             ['icon'=>'fa-users',        'label'=>'Users',           'href'=>'admin-users.php',       'key'=>'users'],
+            ['icon'=>'fa-shield-alt',   'label'=>'2FA Requests',    'href'=>'admin-2fa-requests.php','key'=>'2fa_requests'],
         ],
     ];
+
+    $pending2faCount = 0;
+    if ($role === 'admin') {
+        try {
+            $db = getDB();
+            $pending2faCount = (int)$db->query("SELECT COUNT(*) FROM users WHERE totp_reset_requested = 1")->fetchColumn();
+        } catch(Exception $e){}
+    }
 
     $links = $navLinks[$role] ?? [];
     $sidebarLinks = '';
     foreach ($links as $l) {
         $active = $l['key']===$activeNav ? 'active' : '';
-        $sidebarLinks .= "<a href='{$l['href']}' class='sb-link $active'><i class='fas {$l['icon']}'></i><span>{$l['label']}</span></a>";
+        $badge = '';
+        if ($l['key'] === '2fa_requests' && $pending2faCount > 0) {
+            $badge = "<span class='badge-notif' style='margin-left:auto;background:var(--danger);color:#fff;font-size:10px;font-weight:800;padding:2px 7px;border-radius:50px;min-width:20px;text-align:center'>$pending2faCount</span>";
+        }
+        $sidebarLinks .= "<a href='{$l['href']}' class='sb-link $active'><i class='fas {$l['icon']}'></i><span>{$l['label']}</span>$badge</a>";
     }
 
     // Split grade_section into grade and section display

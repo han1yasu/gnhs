@@ -24,6 +24,12 @@ try {
         jsonOut(['success'=>false,'message'=>'Access denied.'], 403);
     }
 
+    // Check if case is anonymous
+    $caseStmt = $db->prepare("SELECT is_anonymous FROM cases WHERE id = ?");
+    $caseStmt->execute([$caseId]);
+    $caseRow = $caseStmt->fetch();
+    $isCaseAnon = !empty($caseRow['is_anonymous']);
+
     // Get messages
     $stmt = $db->prepare("
         SELECT m.id, m.sender_id, m.message, m.created_at, CONCAT(u.first_name, ' ', u.last_name) as sender_name, u.role as sender_role
@@ -35,11 +41,21 @@ try {
     $stmt->execute([$caseId]);
     $messages = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+    // If viewer is counselor and case is anonymous, mask student sender name
+    if ($isCaseAnon && $user['role'] === 'admin') {
+        foreach ($messages as &$m) {
+            if ($m['sender_role'] === 'student') {
+                $m['sender_name'] = 'Anonymous Student';
+            }
+        }
+        unset($m);
+    }
+
     // Mark as read
     $db->prepare("UPDATE case_messages SET is_read=1 WHERE case_id=? AND sender_id != ?")
        ->execute([$caseId, $user['id']]);
 
-    jsonOut(['success'=>true,'messages'=>$messages, 'current_user_id' => $user['id']]);
+    jsonOut(['success'=>true,'messages'=>$messages, 'current_user_id' => $user['id'], 'is_anonymous' => $isCaseAnon]);
 } catch (Exception $e) {
     jsonOut(['success'=>false,'message'=>$e->getMessage()], 500);
 }

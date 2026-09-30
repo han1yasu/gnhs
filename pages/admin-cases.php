@@ -25,6 +25,9 @@ if ($filterGrade && $filterSection) {
     $g = addslashes($filterGrade);
     // Match "Grade 9 - X", "Grade 9 – X", or just starts with "Grade 9"
     $where .= " AND (s.grade_section LIKE 'Grade $g -%' OR s.grade_section LIKE 'Grade $g –%' OR s.grade_section LIKE 'Grade $g%')";
+} elseif ($filterSection) {
+    $s = addslashes($filterSection);
+    $where .= " AND s.grade_section LIKE '%$s%'";
 }
 if ($search) $where .= " AND (
     c.case_number LIKE '%".addslashes($search)."%'
@@ -42,13 +45,17 @@ $cases = $db->query("SELECT c.*,
     FIELD(c.priority,'high','medium','low'),
     c.submitted_at DESC")->fetchAll();
 
-function badge(string $s): string {
-    $map=['pending'=>'status-pending','under_review'=>'status-under_review','ongoing'=>'status-ongoing','resolved'=>'status-resolved','closed'=>'status-resolved'];
-    return "<span class='status-badge ".($map[$s]??'status-pending')."'>".str_replace('_',' ',ucfirst($s))."</span>";
+if (!function_exists('badge')) {
+    function badge(string $s): string {
+        $map=['pending'=>'status-pending','under_review'=>'status-under_review','ongoing'=>'status-ongoing','resolved'=>'status-resolved','closed'=>'status-resolved'];
+        return "<span class='status-badge ".($map[$s]??'status-pending')."'>".str_replace('_',' ',ucfirst($s))."</span>";
+    }
 }
-function prioBadge(string $p): string {
-    $map=['high'=>'priority-high','medium'=>'priority-medium','low'=>'priority-low'];
-    return "<span class='priority-badge ".($map[$p]??'priority-low')."'><i class='fas fa-circle'></i>".ucfirst($p)."</span>";
+if (!function_exists('prioBadge')) {
+    function prioBadge(string $p): string {
+        $map=['high'=>'priority-high','medium'=>'priority-medium','low'=>'priority-low'];
+        return "<span class='priority-badge ".($map[$p]??'priority-low')."'><i class='fas fa-circle'></i>".ucfirst($p)."</span>";
+    }
 }
 
 $rows = '';
@@ -84,6 +91,13 @@ $st4 = $filterType==='family'           ? 'selected' : '';
 $st5 = $filterType==='peer_conflict'    ? 'selected' : '';
 $st6 = $filterType==='behavioral'       ? 'selected' : '';
 $st7 = $filterType==='other'            ? 'selected' : '';
+$sg7  = $filterGrade==='7'              ? 'selected' : '';
+$sg8  = $filterGrade==='8'              ? 'selected' : '';
+$sg9  = $filterGrade==='9'              ? 'selected' : '';
+$sg10 = $filterGrade==='10'             ? 'selected' : '';
+
+$currentGradeJs   = json_encode($filterGrade);
+$currentSectionJs = json_encode($filterSection);
 
 $totalActive = count($cases);
 
@@ -126,16 +140,16 @@ $content = <<<HTML
       <option value="other"           $st7>Other</option>
     </select>
     <select class="status-select" id="gradeFilterSel" onchange="gradeFilterChange()">
-        <option value="">All Grades</option>
-        <option value="7">Grade 7</option>
-        <option value="8">Grade 8</option>
-        <option value="9">Grade 9</option>
-        <option value="10">Grade 10</option>
-      </select>
-      <select class="status-select" id="sectionFilterSel" onchange="applyFilter('section',this.value)">
-        <option value="">All Sections</option>
-      </select>
-      <button class="btn-sm-outline" onclick="clearFilters()"><i class="fas fa-times"></i> Clear</button>
+      <option value="">All Grades</option>
+      <option value="7"  $sg7>Grade 7</option>
+      <option value="8"  $sg8>Grade 8</option>
+      <option value="9"  $sg9>Grade 9</option>
+      <option value="10" $sg10>Grade 10</option>
+    </select>
+    <select class="status-select" id="sectionFilterSel" onchange="applyFilter('section',this.value)">
+      <option value="">All Sections</option>
+    </select>
+    <button class="btn-sm-outline" onclick="clearFilters()"><i class="fas fa-times"></i> Clear</button>
   </div>
   <div class="table-wrap">
     <table class="data-table">
@@ -154,40 +168,62 @@ $content = <<<HTML
 </div>
 
 <script>
+const CURRENT_GRADE   = $currentGradeJs;
+const CURRENT_SECTION = $currentSectionJs;
+
 const CASE_SECTIONS = {
-  '7':  ['Bonifacio','Luna','Rizal','Mabini','Aguinaldo','Jacinto'],
-  '8':  ['Confucius','Goswami','Mandela','Socrates','Aristotle','Plato'],
-  '9':  ['Dalton','Bohr','Lavoisier','Newton','Curie','Einstein'],
-  '10': ['Osmena','Quezon','Magsaysay','Aguinaldo','Macapagal','Marcos']
+  '7':  ['Bonifacio', 'Burgos', 'Del Pilar', 'Diego Silang', 'Luna', 'Mabini', 'Malvar', 'Rizal'],
+  '8':  ['Abrahams', 'Basho', 'Confucius', 'Ghandi', 'Goswami', 'Kalidasa', 'Mandela', 'Mencius', 'Tagore', 'Valmiki', 'Voltaire'],
+  '9':  ['Bohr', 'Curie', 'Dalton', 'Darwin', 'Einstein', 'Faraday', 'Galileo', 'Newton'],
+  '10': ['Aguinaldo', 'Aquino', 'Garcia', 'Laurel', 'Macapagal', 'Magsaysay', 'Marcos', 'Osmena', 'Quezon']
 };
+
+function populateSections(grade, selectedSec) {
+  const sel = document.getElementById('sectionFilterSel');
+  if (!sel) return;
+  const secs = CASE_SECTIONS[grade] || [];
+  let html = '<option value="">All Sections</option>';
+  secs.forEach(function(s) {
+    const selAttr = (s === selectedSec) ? ' selected' : '';
+    html += '<option value="' + s + '"' + selAttr + '>' + s + '</option>';
+  });
+  sel.innerHTML = html;
+}
+
 function gradeFilterChange() {
   const grade = document.getElementById('gradeFilterSel').value;
-  const sel   = document.getElementById('sectionFilterSel');
-  const secs  = CASE_SECTIONS[grade]||[];
-  sel.innerHTML = '<option value="">All Sections</option>'
-    + secs.map(s=>'<option value="'+s+'">'+s+'</option>').join('');
-  applyFilter('grade', grade);
+  const url = new URL(window.location);
+  if (grade) {
+    url.searchParams.set('grade', grade);
+  } else {
+    url.searchParams.delete('grade');
+  }
+  // When grade changes (or is cleared to All Grades), clear section from URL
+  url.searchParams.delete('section');
+  window.location = url;
 }
+
 function doSearch() {
   applyFilter('q', document.getElementById('searchQ').value.trim());
 }
+
 function applyFilter(key, val) {
   const url = new URL(window.location);
   if (val) url.searchParams.set(key, val);
   else url.searchParams.delete(key);
   window.location = url;
 }
+
 function clearFilters() {
   window.location = 'admin-cases.php';
 }
-// Pre-populate section dropdown if grade filter is active
+
+// Pre-populate section dropdown and preserve active section if grade filter is active
 document.addEventListener('DOMContentLoaded', function() {
-  const grade = document.getElementById('gradeFilterSel')?.value;
-  if (grade) {
-    const secs = CASE_SECTIONS[grade]||[];
-    const sel  = document.getElementById('sectionFilterSel');
-    sel.innerHTML = '<option value="">All Sections</option>'
-      + secs.map(s=>'<option value="'+s+'">'+s+'</option>').join('');
+  if (CURRENT_GRADE) {
+    populateSections(CURRENT_GRADE, CURRENT_SECTION);
+  } else {
+    populateSections('', '');
   }
 });
 </script>

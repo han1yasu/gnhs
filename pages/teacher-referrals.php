@@ -79,7 +79,7 @@ $content = <<<HTML
 
 <!-- Referral Detail Modal -->
 <div class="modal-overlay hidden" id="refModal" onclick="if(event.target.id==='refModal')this.classList.add('hidden')">
-  <div class="modal-box" style="max-width:620px">
+  <div class="modal-box" style="max-width:1000px; width:95%">
     <button class="modal-close" onclick="document.getElementById('refModal').classList.add('hidden')"><i class="fas fa-times"></i></button>
     <h2 class="modal-title"><i class="fas fa-exchange-alt" style="color:var(--maroon);margin-right:8px"></i>Referral Detail</h2>
     <div id="refModalBody"></div>
@@ -102,25 +102,43 @@ function openRefModal(btn) {
   const statLabel = {pending:"Pending", under_review:"Under Review", ongoing:"Ongoing", resolved:"Resolved"};
   const typeLabel = ref.concern_type.replace(/_/g," ").replace(/\b\w/g, l=>l.toUpperCase());
 
-  document.getElementById("refModalBody").innerHTML =
-    "<div class=\"review-meta\" style=\"margin-bottom:16px\">"
-    +"<div class=\"rm-row\"><label>Referral #</label><strong style=\"color:var(--maroon)\">"+ref.ref_number+"</strong></div>"
-    +"<div class=\"rm-row\"><label>Student Name</label><strong>"+ref.student_name+"</strong></div>"
-    +"<div class=\"rm-row\"><label>Grade / Section</label><span>"+ref.grade_section+"</span></div>"
-    +"<div class=\"rm-row\"><label>Concern Type</label><span>"+typeLabel+"</span></div>"
-    +"<div class=\"rm-row\"><label>Urgency</label><span class=\"priority-badge "+(urgMap[ref.urgency]||"priority-low")+"\"><i class=\"fas fa-circle\"></i> "+ref.urgency.charAt(0).toUpperCase()+ref.urgency.slice(1)+"</span></div>"
-    +"<div class=\"rm-row\"><label>Status</label><span class=\"status-badge "+(statMap[ref.status]||"status-pending")+"\">"+statLabel[ref.status]+"</span></div>"
-    +"<div class=\"rm-row\"><label>Date Submitted</label><span>"+ref.submitted_at+"</span></div>"
-    +"</div>"
-    +"<div class=\"form-group\">"
-    +"<label style=\"font-size:13px;font-weight:800;color:var(--text-2);display:block;margin-bottom:8px\"><i class=\"fas fa-clipboard\" style=\"color:var(--maroon)\"></i> My Observations</label>"
-    +"<div class=\"concern-text\" style=\"white-space:pre-wrap\">"+ref.observations+"</div>"
-    +"</div>"
-    +(ref.ai_summary ? "<div class=\"ai-box\" style=\"margin-top:14px\"><div class=\"ai-box-label\"><i class=\"fas fa-robot\"></i> AI Summary</div><div class=\"ai-box-text\">"+ref.ai_summary+"</div></div>" : "")
-    +"<div class=\"review-actions\" style=\"margin-top:16px\">"
-    +"<button class=\"btn-secondary\" onclick=\"document.getElementById(\'refModal\').classList.add(\'hidden\')\"><i class=\"fas fa-times\"></i> Close</button>"
-    +"<a href=\"teacher-referrals-chat.php?ref_id="+ref.id+"\" class=\"btn-primary\" style=\"text-decoration:none\"><i class=\"fas fa-comments\"></i> Go to Chat</a>"
-    +"</div>";
+  document.getElementById("refModalBody").innerHTML = `
+    <div class="review-header-strip" style="display:flex;flex-wrap:wrap;gap:15px;background:var(--bg2);padding:15px;border-radius:8px;margin-bottom:20px;border:1px solid var(--border)">
+      <div style="flex:1;min-width:120px"><label style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Referral ID</label><strong style="color:var(--maroon);font-size:16px">#${ref.ref_number}</strong></div>
+      <div style="flex:2;min-width:150px"><label style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Student</label><span style="font-size:15px;font-weight:600">${ref.student_name}</span></div>
+      <div style="flex:1.5;min-width:130px"><label style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Type</label><span class="status-badge status-ongoing">${typeLabel}</span></div>
+      <div style="flex:1.5;min-width:130px"><label style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Grade/Sec</label><span style="font-size:14px">${ref.grade_section}</span></div>
+      <div style="flex:1.5;min-width:130px"><label style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Submitted</label><span style="font-size:13px;color:var(--text-2)">${ref.submitted_at}</span></div>
+    </div>
+    
+    <div style="display:grid;grid-template-columns: 1.2fr 1fr; gap:25px; align-items:start">
+      <div>
+        ${ref.ai_summary ? `<div class="ai-box" style="margin-bottom:20px;border-left:4px solid var(--blue);background:rgba(37,99,235,0.05)"><div class="ai-box-label" style="color:var(--blue);font-size:14px;margin-bottom:8px"><i class="fas fa-magic"></i> AI Summary</div><div class="ai-box-text" style="font-size:15px;line-height:1.6">${ref.ai_summary}</div></div>` : \'\'}
+        <div style="margin-bottom:14px;background:var(--bg2);padding:20px;border-radius:8px;border:1px solid var(--border)">
+          <div style="font-size:13px;font-weight:800;color:var(--text-2);margin-bottom:12px;text-transform:uppercase;letter-spacing:1px"><i class="fas fa-quote-left" style="color:var(--maroon)"></i> My Observations</div>
+          <div class="concern-text" style="font-size:15px;line-height:1.7;color:var(--text);background:transparent;padding:0;border:none;white-space:pre-wrap;">${ref.observations}</div>
+        </div>
+      </div>
+      
+      <div style="background:var(--bg2);padding:20px;border-radius:8px;border:1px solid var(--border)">
+        <h3 style="margin-bottom:20px;font-size:16px;color:var(--text);border-bottom:1px solid var(--border);padding-bottom:10px"><i class="fas fa-info-circle" style="color:var(--maroon)"></i> Referral Info</h3>
+        <div class="form-group" style="margin-bottom:15px">
+          <label style="display:block;margin-bottom:8px">Urgency</label>
+          <span class="priority-badge ${urgMap[ref.urgency]||\'priority-low\'}"><i class="fas fa-circle"></i> ${ref.urgency.charAt(0).toUpperCase()+ref.urgency.slice(1)}</span>
+        </div>
+        <div class="form-group" style="margin-bottom:20px">
+          <label style="display:block;margin-bottom:8px">Current Status</label>
+          <span class="status-badge ${statMap[ref.status]||\'status-pending\'}">${statLabel[ref.status]}</span>
+        </div>
+        
+        <div class="review-actions" style="margin-top:20px;border-top:1px solid var(--border);padding-top:20px;display:flex;gap:10px;">
+          <button class="btn-secondary" style="flex:1" onclick="document.getElementById(\'refModal\').classList.add(\'hidden\')"><i class="fas fa-times"></i> Close</button>
+          <button class="btn-primary" style="flex:1;background:var(--blue)" onclick="window.location.href=\'teacher-referrals-chat.php?ref_id=${ref.id}\'">
+            <i class="fas fa-comment-dots"></i> Go to Chat
+          </button>
+        </div>
+      </div>
+    </div>`;
 
   document.getElementById("refModal").classList.remove("hidden");
 }

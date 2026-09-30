@@ -9,11 +9,12 @@ if (!$pendingUser) {
 }
 
 $db = getDB();
-$stmt = $db->prepare("SELECT totp_secret, totp_enabled FROM users WHERE id = ? LIMIT 1");
+$stmt = $db->prepare("SELECT totp_secret, totp_enabled, totp_reset_requested FROM users WHERE id = ? LIMIT 1");
 $stmt->execute([$pendingUser['id']]);
 $u = $stmt->fetch();
 $secret = $u['totp_secret'] ?? '';
 $isTotpEnabled = !empty($u['totp_enabled']);
+$isResetRequested = !empty($u['totp_reset_requested']);
 
 $email = urlencode($pendingUser['email']);
 $issuer = urlencode('GNHS Guidance System');
@@ -52,14 +53,36 @@ $qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" . urle
     <button class="glass-btn" id="btnSubmit" onclick="verifyOTP()">Verify Code</button>
 
     <?php if (!$isTotpEnabled): ?>
-    <button class="glass-setup-link" onclick="document.getElementById('setupSection').style.display='block'; this.style.display='none';">First time setting up?</button>
-
-    <div class="glass-setup-box" id="setupSection">
+    <div style="margin-top: 16px; background: rgba(16, 185, 129, 0.18); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 10px; padding: 10px 14px; color: #d1fae5; font-size: 13px;">
+        <i class="fas fa-qrcode" style="color:#34d399; margin-right:6px;"></i> Authenticator setup required. Scan the QR code below.
+    </div>
+    <div class="glass-setup-box" id="setupSection" style="display:block; margin-top:14px;">
         <p style="font-size: 13px; margin-bottom: 12px; color:rgba(255,255,255,0.9)">Scan this QR code with Google Authenticator or Authy to set up your account.</p>
         <div style="background:#fff; padding:10px; border-radius:12px; display:inline-block; margin-bottom:12px;">
             <img src="<?= htmlspecialchars($qrUrl) ?>" alt="QR Code" style="width: 150px; height: 150px; display:block; border-radius:8px;">
         </div>
         <p style="font-size: 12px; color: rgba(255,255,255,0.7);">Manual setup key: <br><strong style="color:#fff; font-size:14px; letter-spacing:2px;"><?= htmlspecialchars($secret) ?></strong></p>
+    </div>
+    <?php else: ?>
+    <div style="margin-top: 16px;">
+        <?php if ($isResetRequested): ?>
+        <div id="resetRequestedBadge" style="background: rgba(245, 158, 11, 0.2); border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 10px; padding: 12px; color: #fef08a; font-size: 13px; line-height: 1.4; text-align: left;">
+            <div style="display:flex; align-items:center; gap:8px; font-weight:700; color:#fbbf24; margin-bottom:4px;">
+                <i class="fas fa-clock"></i> 2FA Reset Requested
+            </div>
+            Your request is pending Counselor review. Once approved and reset, log in again to scan your new QR code.
+        </div>
+        <?php else: ?>
+        <button type="button" class="glass-setup-link" id="lostAuthBtn" onclick="requestTotpReset()">
+            <i class="fas fa-question-circle"></i> Lost your authenticator app? Request 2FA Reset
+        </button>
+        <div id="resetRequestedBadge" style="display:none; background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 10px; padding: 12px; color: #a7f3d0; font-size: 13px; line-height: 1.4; text-align: left;">
+            <div style="display:flex; align-items:center; gap:8px; font-weight:700; color:#34d399; margin-bottom:4px;">
+                <i class="fas fa-check-circle"></i> Request Sent!
+            </div>
+            Your 2FA reset request was submitted to the Guidance Counselor. Please wait for approval, then log in again.
+        </div>
+        <?php endif; ?>
     </div>
     <?php endif; ?>
 
@@ -127,6 +150,43 @@ async function verifyOTP() {
         btn.style.opacity = '1';
     }
 }
+
+async function requestTotpReset() {
+    if (!confirm("Did you lose access to your authenticator app?\n\nThis will send an official request to your Guidance Counselor to reset your Two-Factor Authentication so you can scan a new QR code.")) {
+        return;
+    }
+    const btn = document.getElementById('lostAuthBtn');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting request...';
+    }
+    
+    try {
+        const res = await fetch('/gnhs-guidance/api/request_totp_reset.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await res.json();
+        if (data.success) {
+            if (btn) btn.style.display = 'none';
+            const badge = document.getElementById('resetRequestedBadge');
+            if (badge) badge.style.display = 'block';
+        } else {
+            alert(data.message || 'Failed to submit request.');
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-question-circle"></i> Lost your authenticator app? Request 2FA Reset';
+            }
+        }
+    } catch (e) {
+        alert('Network error. Please try again.');
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-question-circle"></i> Lost your authenticator app? Request 2FA Reset';
+        }
+    }
+}
+
 window.addEventListener('load', () => input.focus());
 </script>
 </body>

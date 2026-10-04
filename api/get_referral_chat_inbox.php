@@ -18,7 +18,7 @@ if ($isCounselor) {
         $whereClause = "r.id = ?";
         $params = [$user['id'], $archiveId];
     } else {
-        $whereClause = "r.status != 'resolved'";
+        $whereClause = "r.status NOT IN ('resolved', 'closed')";
         $params = [$user['id']];
     }
     
@@ -39,7 +39,7 @@ if ($isCounselor) {
         $whereClause = "r.id = ? AND r.teacher_id = ?";
         $params = [$user['id'], $archiveId, $user['id']];
     } else {
-        $whereClause = "r.status != 'resolved' AND r.teacher_id = ?";
+        $whereClause = "r.status NOT IN ('resolved', 'closed') AND r.teacher_id = ?";
         $params = [$user['id'], $user['id']];
     }
     

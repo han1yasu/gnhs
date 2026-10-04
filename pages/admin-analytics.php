@@ -146,7 +146,11 @@ $ageLabels    = json_encode(array_column($byAge,'age'));
 $ageData      = json_encode(array_column($byAge,'cnt'));
 
 // --- Teacher Referrals Stats ---
-$totalReferrals = (int)$db->query("SELECT COUNT(*) FROM referrals")->fetchColumn();
+$totalReferrals    = (int)$db->query("SELECT COUNT(*) FROM referrals")->fetchColumn();
+$pendingReferrals  = (int)$db->query("SELECT COUNT(*) FROM referrals WHERE status='pending'")->fetchColumn();
+$ongoingReferrals  = (int)$db->query("SELECT COUNT(*) FROM referrals WHERE status IN ('under_review','ongoing')")->fetchColumn();
+$resolvedReferrals = (int)$db->query("SELECT COUNT(*) FROM referrals WHERE status IN ('resolved','closed')")->fetchColumn();
+$urgentReferrals   = (int)$db->query("SELECT COUNT(*) FROM referrals WHERE urgency='urgent'")->fetchColumn();
 
 // Referrals by Status
 $refByStatus = $db->query("SELECT status, COUNT(*) as cnt FROM referrals GROUP BY status")->fetchAll();
@@ -331,7 +335,35 @@ $content = <<<HTML
 </div>
 
 <!-- Row 5: Teacher Referrals Analytics -->
-<h3 style="margin:40px 0 20px;border-bottom:1px solid var(--border);padding-bottom:10px;"><i class="fas fa-chalkboard-teacher"></i> Teacher Referrals Analytics (Total: <?=$totalReferrals?>)</h3>
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin:40px 0 16px;border-bottom:1px solid var(--border);padding-bottom:12px;">
+  <h3 style="margin:0;font-size:18px;font-weight:800;color:var(--text);display:flex;align-items:center;gap:10px;">
+    <i class="fas fa-chalkboard-teacher" style="color:var(--maroon)"></i> Teacher Referrals Analytics 
+    <span style="font-size:14px;font-weight:600;color:var(--text-3);">(Total: $totalReferrals)</span>
+  </h3>
+  <div style="display:flex;gap:10px;align-items:center;">
+    <a href="admin-referrals.php" class="btn-sm-outline" style="text-decoration:none;"><i class="fas fa-list-alt"></i> Manage Referrals</a>
+    <a href="admin-referrals-archive.php" class="btn-sm-outline" style="text-decoration:none;"><i class="fas fa-archive"></i> Referrals Archive</a>
+  </div>
+</div>
+
+<div class="summary-cards" style="grid-template-columns:repeat(4,1fr);margin-bottom:22px">
+  <div class="sum-card">
+    <div class="sum-icon" style="background:#fff0f0;color:var(--maroon)"><i class="fas fa-exchange-alt"></i></div>
+    <div><div class="sum-num">$totalReferrals</div><div class="sum-label">Total Referrals</div></div>
+  </div>
+  <div class="sum-card">
+    <div class="sum-icon" style="background:#fffbeb;color:#d97706"><i class="fas fa-clock"></i></div>
+    <div><div class="sum-num">$pendingReferrals</div><div class="sum-label">Pending Review</div></div>
+  </div>
+  <div class="sum-card">
+    <div class="sum-icon" style="background:#eff6ff;color:#2563eb"><i class="fas fa-spinner"></i></div>
+    <div><div class="sum-num">$ongoingReferrals</div><div class="sum-label">In Progress</div></div>
+  </div>
+  <div class="sum-card">
+    <div class="sum-icon" style="background:#f0fdf4;color:#16a34a"><i class="fas fa-check-double"></i></div>
+    <div><div class="sum-num">$resolvedReferrals</div><div class="sum-label">Resolved / Archived</div></div>
+  </div>
+</div>
 
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-bottom:22px">
   <div class="content-card">
@@ -853,13 +885,142 @@ new Chart(document.getElementById('ageChart'),{type:'bar',data:{labels:ageLabels
 
 new Chart(document.getElementById('typeChart'),{type:'bar',data:{labels:typeLabels.map(s=>s.replace(/_/g,' ')),datasets:[{label:'Cases',data:typeData,backgroundColor:[maroon,maroonMid,maroonLight,'#dc2626','#ef4444','#f87171','#fca5a5']}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}});
 
-new Chart(document.getElementById('sectionChart'),{type:'horizontalBar'||'bar',data:{labels:sectionLabels,datasets:[{label:'Cases',data:sectionData,backgroundColor:maroon}]},options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{stepSize:1}}}}});
+new Chart(document.getElementById('sectionChart'), {
+  type: 'bar',
+  data: {
+    labels: sectionLabels,
+    datasets: [{
+      label: 'Cases',
+      data: sectionData,
+      backgroundColor: maroon,
+      borderRadius: 4
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { beginAtZero: true, ticks: { stepSize: 1, precision: 0 } }
+    }
+  }
+});
 
-new Chart(document.getElementById('refStatusChart'),{type:'doughnut',data:{labels:refStatusLabels.map(s=>s.replace('_',' ')),datasets:[{data:refStatusData,backgroundColor:['#d97706','#2563eb','#16a34a','#6b7280']}]},options:{plugins:{legend:{position:'bottom'}}}});
+// Teacher Referrals Status Chart
+const refStatusColorMap = {
+  'pending': '#d97706',
+  'under_review': '#2563eb',
+  'ongoing': '#7c3aed',
+  'resolved': '#16a34a',
+  'closed': '#6b7280'
+};
+const refStatusColors = refStatusLabels.map(function(s) {
+  return refStatusColorMap[s] || maroon;
+});
 
-new Chart(document.getElementById('refTeacherChart'),{type:'bar',data:{labels:topTeacherLabels,datasets:[{label:'Referrals',data:topTeacherData,backgroundColor:maroonMid}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}});
+new Chart(document.getElementById('refStatusChart'), {
+  type: 'doughnut',
+  data: {
+    labels: refStatusLabels.map(function(s) {
+      return s.replace(/_/g, ' ').replace(/\b\w/g, function(l) { return l.toUpperCase(); });
+    }),
+    datasets: [{
+      data: refStatusData,
+      backgroundColor: refStatusColors.length > 0 ? refStatusColors : ['#d97706', '#2563eb', '#7c3aed', '#16a34a', '#6b7280'],
+      hoverOffset: 6
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { position: 'bottom' },
+      tooltip: {
+        callbacks: {
+          label: function(ctx) {
+            var val = ctx.parsed;
+            return ' ' + ctx.label + ': ' + val + (val === 1 ? ' referral' : ' referrals');
+          }
+        }
+      }
+    }
+  }
+});
 
-new Chart(document.getElementById('refTypeChart'),{type:'bar',data:{labels:refTypeLabels.map(s=>s.replace(/_/g,' ')),datasets:[{label:'Referrals',data:refTypeData,backgroundColor:maroonLight}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}});
+// Top Referring Teachers Chart
+new Chart(document.getElementById('refTeacherChart'), {
+  type: 'bar',
+  data: {
+    labels: topTeacherLabels,
+    datasets: [{
+      label: 'Referrals',
+      data: topTeacherData,
+      backgroundColor: maroonMid,
+      borderRadius: 6
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: function(ctx) {
+            var val = ctx.parsed.y;
+            return ' ' + val + (val === 1 ? ' referral' : ' referrals');
+          }
+        }
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: { stepSize: 1, precision: 0 }
+      },
+      x: {
+        grid: { display: false }
+      }
+    }
+  }
+});
+
+// Referrals by Concern Type Chart
+new Chart(document.getElementById('refTypeChart'), {
+  type: 'bar',
+  data: {
+    labels: refTypeLabels.map(function(s) {
+      return s.replace(/_/g, ' ').replace(/\b\w/g, function(l) { return l.toUpperCase(); });
+    }),
+    datasets: [{
+      label: 'Referrals',
+      data: refTypeData,
+      backgroundColor: [maroon, maroonMid, maroonLight, '#dc2626', '#ef4444', '#f87171', '#fca5a5'],
+      borderRadius: 6
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: function(ctx) {
+            var val = ctx.parsed.y;
+            return ' ' + val + (val === 1 ? ' referral' : ' referrals');
+          }
+        }
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: { stepSize: 1, precision: 0 }
+      },
+      x: {
+        grid: { display: false }
+      }
+    }
+  }
+});
 </script>
 HTML;
 

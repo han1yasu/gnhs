@@ -26,6 +26,7 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
             ['icon'=>'fa-user-plus',    'label'=>'Submit Referral', 'href'=>'teacher-referral.php',  'key'=>'referral'],
             ['icon'=>'fa-list-alt',     'label'=>'My Referrals',    'href'=>'teacher-referrals.php', 'key'=>'referrals'],
             ['icon'=>'fa-comments',     'label'=>'Referrals Chat',  'href'=>'teacher-referrals-chat.php', 'key'=>'referrals_chat'],
+            ['icon'=>'fa-archive',      'label'=>'Referrals Archive','href'=>'teacher-referrals-archive.php','key'=>'referrals_archive'],
         ],
         'admin' => [
             ['icon'=>'fa-home',         'label'=>'Dashboard',       'href'=>'admin-dashboard.php',   'key'=>'dashboard'],
@@ -36,6 +37,7 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
             ['icon'=>'fa-history',      'label'=>'Chat Archive',    'href'=>'admin-chat-archive.php','key'=>'chat_archive'],
             ['icon'=>'fa-exchange-alt', 'label'=>'Referrals',       'href'=>'admin-referrals.php',   'key'=>'referrals'],
             ['icon'=>'fa-comments',     'label'=>'Referrals Chat',  'href'=>'admin-referrals-chat.php', 'key'=>'referrals_chat'],
+            ['icon'=>'fa-archive',      'label'=>'Referrals Archive','href'=>'admin-referrals-archive.php','key'=>'referrals_archive'],
             ['icon'=>'fa-calendar-alt', 'label'=>'Sessions',        'href'=>'admin-sessions.php',    'key'=>'sessions'],
             ['icon'=>'fa-chart-bar',    'label'=>'Analytics',       'href'=>'admin-analytics.php',   'key'=>'analytics'],
             ['icon'=>'fa-users',        'label'=>'Users',           'href'=>'admin-users.php',       'key'=>'users'],

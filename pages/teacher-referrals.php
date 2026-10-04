@@ -7,18 +7,37 @@ $uid  = $user['id'];
 
 $filterStatus  = $_GET['status']  ?? '';
 $filterUrgency = $_GET['urgency'] ?? '';
-$where = "WHERE r.teacher_id=$uid";
-if ($filterStatus)  $where .= " AND r.status='".addslashes($filterStatus)."'";
+$search        = trim($_GET['q']  ?? '');
+
+if ($filterStatus) {
+    $where = "WHERE r.teacher_id=$uid AND r.status='".addslashes($filterStatus)."'";
+} else {
+    $where = "WHERE r.teacher_id=$uid AND r.status NOT IN ('resolved','closed')";
+}
+
 if ($filterUrgency) $where .= " AND r.urgency='".addslashes($filterUrgency)."'";
 
+if ($search) {
+    $s = addslashes($search);
+    $where .= " AND (
+        r.ref_number LIKE '%$s%'
+        OR r.student_name LIKE '%$s%'
+        OR r.grade_section LIKE '%$s%'
+        OR r.observations LIKE '%$s%'
+    )";
+}
+
 $refs = $db->query("SELECT r.* FROM referrals r $where ORDER BY r.submitted_at DESC")->fetchAll();
+
+$archivedCount = (int)$db->query("SELECT COUNT(*) FROM referrals WHERE teacher_id=$uid AND status IN ('resolved','closed')")->fetchColumn();
+$activeCount   = (int)$db->query("SELECT COUNT(*) FROM referrals WHERE teacher_id=$uid AND status NOT IN ('resolved','closed')")->fetchColumn();
 
 function urgencyBadge(string $u): string {
     $map = ['urgent'=>'priority-high','moderate'=>'priority-medium','low'=>'priority-low'];
     return "<span class='priority-badge ".($map[$u]??'priority-low')."'><i class='fas fa-circle'></i>".ucfirst($u)."</span>";
 }
 function statusBadge(string $s): string {
-    $map=['pending'=>'status-pending','under_review'=>'status-under_review','ongoing'=>'status-ongoing','resolved'=>'status-resolved'];
+    $map=['pending'=>'status-pending','under_review'=>'status-under_review','ongoing'=>'status-ongoing','resolved'=>'status-resolved','closed'=>'status-resolved'];
     return "<span class='status-badge ".($map[$s]??'status-pending')."'>".str_replace('_',' ',ucfirst($s))."</span>";
 }
 
@@ -38,37 +57,66 @@ foreach ($refs as $r) {
         <td><button class='btn-sm-outline' onclick='openRefModal(this)' data-ref='$refData'><i class='fas fa-eye'></i> View</button></td>
     </tr>";
 }
-if (!$rows) $rows = "<tr><td colspan='8' style='text-align:center;color:var(--text-3);padding:40px'>No referrals found. <a href='teacher-referral.php' style='color:var(--maroon);font-weight:700'>Submit one →</a></td></tr>";
+if (!$rows) $rows = "<tr><td colspan='8' style='text-align:center;color:var(--text-3);padding:40px'>".($search ? "No referrals matching \"".htmlspecialchars($search)."\"." : "No active referrals found. <a href='teacher-referral.php' style='color:var(--maroon);font-weight:700'>Submit one →</a>")."</td></tr>";
 
+$sqVal = htmlspecialchars($search);
 $sSel1 = $filterStatus==='pending'      ? 'selected' : '';
 $sSel2 = $filterStatus==='under_review' ? 'selected' : '';
 $sSel3 = $filterStatus==='ongoing'      ? 'selected' : '';
 $sSel4 = $filterStatus==='resolved'     ? 'selected' : '';
+$sSel5 = $filterStatus==='closed'       ? 'selected' : '';
 $uSel1 = $filterUrgency==='urgent'      ? 'selected' : '';
 $uSel2 = $filterUrgency==='moderate'    ? 'selected' : '';
 $uSel3 = $filterUrgency==='low'         ? 'selected' : '';
 
 $content = <<<HTML
 <div class="content-card">
-  <div class="card-header">
-    <h3><i class="fas fa-list-alt"></i> My Referrals</h3>
+  <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+    <div>
+      <h3 style="margin:0;display:flex;align-items:center;gap:10px;">
+        <i class="fas fa-list-alt" style="color:var(--maroon)"></i> My Active Referrals
+        <span style="font-size:13px;font-weight:600;color:var(--text-3);">($activeCount active)</span>
+      </h3>
+    </div>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-      <select class="status-select" onchange="applyFilter('status',this.value)">
-        <option value="">All Statuses</option>
-        <option value="pending"      $sSel1>Pending</option>
-        <option value="under_review" $sSel2>Under Review</option>
-        <option value="ongoing"      $sSel3>Ongoing</option>
-        <option value="resolved"     $sSel4>Resolved</option>
-      </select>
-      <select class="status-select" onchange="applyFilter('urgency',this.value)">
-        <option value="">All Urgency</option>
-        <option value="urgent"   $uSel1>Urgent</option>
-        <option value="moderate" $uSel2>Moderate</option>
-        <option value="low"      $uSel3>Low</option>
-      </select>
-      <a href="teacher-referral.php" class="btn-sm-primary"><i class="fas fa-plus"></i> New Referral</a>
+      <a href="teacher-referrals-archive.php" class="btn-sm-outline" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;">
+        <i class="fas fa-archive"></i> Referrals Archive ($archivedCount)
+      </a>
+      <a href="teacher-referral.php" class="btn-sm-primary" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;">
+        <i class="fas fa-plus"></i> New Referral
+      </a>
     </div>
   </div>
+
+  <div class="filter-bar" style="margin-bottom:18px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+    <div style="display:flex;gap:8px;flex:1;min-width:240px">
+      <div class="input-wrap" style="flex:1">
+        <i class="fas fa-search"></i>
+        <input type="text" id="searchQ" value="$sqVal" placeholder="Search by student, ref #, or notes…"
+          onkeydown="if(event.key==='Enter')doSearch()"/>
+      </div>
+      <button class="btn-sm-primary" onclick="doSearch()"><i class="fas fa-search"></i> Search</button>
+    </div>
+
+    <select class="status-select" onchange="applyFilter('status',this.value)">
+      <option value="">Active Only (Pending, Review, Ongoing)</option>
+      <option value="pending"      $sSel1>Pending</option>
+      <option value="under_review" $sSel2>Under Review</option>
+      <option value="ongoing"      $sSel3>Ongoing</option>
+      <option value="resolved"     $sSel4>Resolved</option>
+      <option value="closed"       $sSel5>Closed</option>
+    </select>
+
+    <select class="status-select" onchange="applyFilter('urgency',this.value)">
+      <option value="">All Urgency</option>
+      <option value="urgent"   $uSel1>Urgent</option>
+      <option value="moderate" $uSel2>Moderate</option>
+      <option value="low"      $uSel3>Low</option>
+    </select>
+
+    <button class="btn-sm-outline" onclick="window.location='teacher-referrals.php'"><i class="fas fa-times"></i> Clear</button>
+  </div>
+
   <div class="table-wrap">
     <table class="data-table">
       <thead><tr><th>Ref #</th><th>Student Name</th><th>Grade/Section</th><th>Concern</th><th>Urgency</th><th>Status</th><th>Date</th><th>Action</th></tr></thead>
@@ -89,6 +137,10 @@ HTML;
 
 $content .= '
 <script>
+function doSearch() {
+  applyFilter("q", document.getElementById("searchQ").value.trim());
+}
+
 function applyFilter(key, val) {
   const url = new URL(window.location);
   if (val) url.searchParams.set(key, val); else url.searchParams.delete(key);
@@ -98,8 +150,8 @@ function applyFilter(key, val) {
 function openRefModal(btn) {
   const ref = JSON.parse(btn.getAttribute("data-ref"));
   const urgMap   = {urgent:"priority-high", moderate:"priority-medium", low:"priority-low"};
-  const statMap  = {pending:"status-pending", under_review:"status-under_review", ongoing:"status-ongoing", resolved:"status-resolved"};
-  const statLabel = {pending:"Pending", under_review:"Under Review", ongoing:"Ongoing", resolved:"Resolved"};
+  const statMap  = {pending:"status-pending", under_review:"status-under_review", ongoing:"status-ongoing", resolved:"status-resolved", closed:"status-resolved"};
+  const statLabel = {pending:"Pending", under_review:"Under Review", ongoing:"Ongoing", resolved:"Resolved", closed:"Closed"};
   const typeLabel = ref.concern_type.replace(/_/g," ").replace(/\b\w/g, l=>l.toUpperCase());
 
   document.getElementById("refModalBody").innerHTML = `
@@ -146,7 +198,3 @@ function openRefModal(btn) {
 ';
 
 renderLayout($user, 'My Referrals', 'referrals', $content);
-
-
-
-

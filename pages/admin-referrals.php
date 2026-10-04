@@ -6,22 +6,45 @@ $db   = getDB();
 
 $filterStatus  = $_GET['status']  ?? '';
 $filterUrgency = $_GET['urgency'] ?? '';
-$where = "WHERE 1=1";
-if ($filterStatus)  $where .= " AND r.status='".addslashes($filterStatus)."'";
+$search        = trim($_GET['q']  ?? '');
+
+if ($filterStatus) {
+    $where = "WHERE r.status='".addslashes($filterStatus)."'";
+} else {
+    // Default to active referrals (not resolved or closed)
+    $where = "WHERE r.status NOT IN ('resolved','closed')";
+}
+
 if ($filterUrgency) $where .= " AND r.urgency='".addslashes($filterUrgency)."'";
 
-$refs = $db->query("SELECT r.*,CONCAT(t.first_name,' ',t.last_name) AS teacher_name
+if ($search) {
+    $s = addslashes($search);
+    $where .= " AND (
+        r.ref_number LIKE '%$s%'
+        OR r.student_name LIKE '%$s%'
+        OR r.grade_section LIKE '%$s%'
+        OR r.observations LIKE '%$s%'
+        OR t.first_name LIKE '%$s%'
+        OR t.last_name LIKE '%$s%'
+        OR CONCAT(t.first_name,' ',t.last_name) LIKE '%$s%'
+    )";
+}
+
+$refs = $db->query("SELECT r.*, CONCAT(t.first_name,' ',t.last_name) AS teacher_name, t.email AS teacher_email
     FROM referrals r JOIN users t ON r.teacher_id=t.id
     $where ORDER BY
     FIELD(r.urgency,'urgent','moderate','low'),
     r.submitted_at DESC")->fetchAll();
+
+$archivedCount = (int)$db->query("SELECT COUNT(*) FROM referrals WHERE status IN ('resolved','closed')")->fetchColumn();
+$activeCount   = (int)$db->query("SELECT COUNT(*) FROM referrals WHERE status NOT IN ('resolved','closed')")->fetchColumn();
 
 function urgencyBadge(string $u): string {
     $map=['urgent'=>'priority-high','moderate'=>'priority-medium','low'=>'priority-low'];
     return "<span class='priority-badge ".($map[$u]??'priority-low')."'><i class='fas fa-circle'></i> ".ucfirst($u)."</span>";
 }
 function statusBadge(string $s): string {
-    $map=['pending'=>'status-pending','under_review'=>'status-under_review','ongoing'=>'status-ongoing','resolved'=>'status-resolved'];
+    $map=['pending'=>'status-pending','under_review'=>'status-under_review','ongoing'=>'status-ongoing','resolved'=>'status-resolved','closed'=>'status-resolved'];
     return "<span class='status-badge ".($map[$s]??'status-pending')."'>".str_replace('_',' ',ucfirst($s))."</span>";
 }
 
@@ -41,7 +64,8 @@ foreach ($refs as $r) {
         'observations' => $r['observations'],
         'ai_summary'   => $r['ai_summary'] ?? null,
         'teacher_name' => $r['teacher_name'],
-        'submitted_at' => date('M d, Y', strtotime($r['submitted_at'])),
+        'teacher_email'=> $r['teacher_email'] ?? '',
+        'submitted_at' => date('M d, Y g:i A', strtotime($r['submitted_at'])),
     ], JSON_HEX_QUOT | JSON_HEX_APOS);
 
     $rows .= "<tr>
@@ -57,36 +81,63 @@ foreach ($refs as $r) {
           <i class='fas fa-eye'></i> View</button></td>
     </tr>";
 }
-if (!$rows) $rows = "<tr><td colspan='9' style='text-align:center;color:var(--text-3);padding:40px'>No referrals found.</td></tr>";
+if (!$rows) $rows = "<tr><td colspan='9' style='text-align:center;color:var(--text-3);padding:40px'>".($search ? "No referrals matching \"".htmlspecialchars($search)."\"." : "No referrals found.")."</td></tr>";
 
+$sqVal = htmlspecialchars($search);
 $ss1 = $filterStatus==='pending'      ? 'selected' : '';
 $ss2 = $filterStatus==='under_review' ? 'selected' : '';
 $ss3 = $filterStatus==='ongoing'      ? 'selected' : '';
 $ss4 = $filterStatus==='resolved'     ? 'selected' : '';
+$ss5 = $filterStatus==='closed'       ? 'selected' : '';
 $su1 = $filterUrgency==='urgent'      ? 'selected' : '';
 $su2 = $filterUrgency==='moderate'    ? 'selected' : '';
 $su3 = $filterUrgency==='low'         ? 'selected' : '';
 
 $content = <<<HTML
 <div class="content-card">
-  <div class="card-header">
-    <h3><i class="fas fa-exchange-alt"></i> All Referrals</h3>
-    <div class="filter-bar">
-      <select class="status-select" onchange="applyFilter('status',this.value)">
-        <option value="">All Status</option>
-        <option value="pending"      $ss1>Pending</option>
-        <option value="under_review" $ss2>Under Review</option>
-        <option value="ongoing"      $ss3>Ongoing</option>
-        <option value="resolved"     $ss4>Resolved</option>
-      </select>
-      <select class="status-select" onchange="applyFilter('urgency',this.value)">
-        <option value="">All Urgency</option>
-        <option value="urgent"   $su1>Urgent</option>
-        <option value="moderate" $su2>Moderate</option>
-        <option value="low"      $su3>Low</option>
-      </select>
+  <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+    <div>
+      <h3 style="margin:0;display:flex;align-items:center;gap:10px;">
+        <i class="fas fa-exchange-alt" style="color:var(--maroon)"></i> Active Referrals
+        <span style="font-size:13px;font-weight:600;color:var(--text-3);">($activeCount active)</span>
+      </h3>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <a href="admin-referrals-archive.php" class="btn-sm-outline" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;">
+        <i class="fas fa-archive"></i> Referrals Archive <span style="font-weight:700">($archivedCount)</span>
+      </a>
     </div>
   </div>
+
+  <div class="filter-bar" style="margin-bottom:18px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+    <div style="display:flex;gap:8px;flex:1;min-width:240px">
+      <div class="input-wrap" style="flex:1">
+        <i class="fas fa-search"></i>
+        <input type="text" id="searchQ" value="$sqVal" placeholder="Search referrals by student, teacher, ref #…"
+          onkeydown="if(event.key==='Enter')doSearch()"/>
+      </div>
+      <button class="btn-sm-primary" onclick="doSearch()"><i class="fas fa-search"></i> Search</button>
+    </div>
+
+    <select class="status-select" onchange="applyFilter('status',this.value)">
+      <option value="">Active Only (Pending, Review, Ongoing)</option>
+      <option value="pending"      $ss1>Pending</option>
+      <option value="under_review" $ss2>Under Review</option>
+      <option value="ongoing"      $ss3>Ongoing</option>
+      <option value="resolved"     $ss4>Resolved</option>
+      <option value="closed"       $ss5>Closed</option>
+    </select>
+
+    <select class="status-select" onchange="applyFilter('urgency',this.value)">
+      <option value="">All Urgency</option>
+      <option value="urgent"   $su1>Urgent</option>
+      <option value="moderate" $su2>Moderate</option>
+      <option value="low"      $su3>Low</option>
+    </select>
+
+    <button class="btn-sm-outline" onclick="window.location='admin-referrals.php'"><i class="fas fa-times"></i> Clear</button>
+  </div>
+
   <div class="table-wrap">
     <table class="data-table">
       <thead><tr><th>Ref #</th><th>Student</th><th>Grade/Section</th><th>Concern</th><th>Urgency</th><th>Referred By</th><th>Status</th><th>Date</th><th>Action</th></tr></thead>
@@ -108,6 +159,10 @@ HTML;
 // JS is outside heredoc to prevent PHP variable interpolation issues
 $content .= '
 <script>
+function doSearch() {
+  applyFilter("q", document.getElementById("searchQ").value.trim());
+}
+
 function applyFilter(key, val) {
   const url = new URL(window.location);
   if (val) url.searchParams.set(key, val); else url.searchParams.delete(key);
@@ -117,11 +172,10 @@ function applyFilter(key, val) {
 function openRefModal(btn) {
   const ref = JSON.parse(btn.getAttribute("data-ref"));
   const urgMap   = {urgent:"priority-high", moderate:"priority-medium", low:"priority-low"};
-  const statMap  = {pending:"status-pending", under_review:"status-under_review", ongoing:"status-ongoing", resolved:"status-resolved"};
-  const statLabel = {pending:"Pending", under_review:"Under Review", ongoing:"Ongoing", resolved:"Resolved"};
+  const statLabel = {pending:"Pending", under_review:"Under Review", ongoing:"Ongoing", resolved:"Resolved", closed:"Closed"};
   const typeLabel = ref.concern_type.replace(/_/g," ").replace(/\b\w/g, l=>l.toUpperCase());
 
-  const selOpts = ["pending","under_review","ongoing","resolved"].map(s =>
+  const selOpts = ["pending","under_review","ongoing","resolved","closed"].map(s =>
     "<option value=\""+s+"\""+(s===ref.status?" selected":"")+">"+statLabel[s]+"</option>"
   ).join("");
 
@@ -158,13 +212,18 @@ function openRefModal(btn) {
         <div class="form-group" style="margin-top:20px;border-top:1px solid var(--border);padding-top:20px">
           <label>Referred By</label>
           <div style="font-weight:600;margin-bottom:15px;">${ref.teacher_name}</div>
-          <button class="btn-primary" style="width:100%;background:var(--blue)" onclick="window.location.href=\'admin-referrals-chat.php?ref_id=${ref.id}\'">
+          <button class="btn-primary" style="width:100%;background:var(--blue);display:flex;align-items:center;justify-content:center;gap:8px" onclick="window.location.href=\'admin-referrals-chat.php?ref_id=${ref.id}\'">
             <i class="fas fa-comment-dots"></i> Message Teacher
           </button>
         </div>
         <div class="review-actions" style="margin-top:16px;display:flex;gap:10px;">
           <button class="btn-secondary" style="flex:1" onclick="document.getElementById(\'refModal\').classList.add(\'hidden\')"><i class="fas fa-times"></i> Cancel</button>
           <button class="btn-primary" style="flex:1" id="saveRefBtn" onclick="updateRefStatus(${ref.id})"><i class="fas fa-save"></i> Save</button>
+        </div>
+        <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px;">
+          <button type="button" class="btn-sm-outline" style="width:100%;border-color:#16a34a;color:#16a34a;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;" onclick="archiveReferralDirect(${ref.id})">
+            <i class="fas fa-check-circle"></i> Mark Resolved & Archive
+          </button>
         </div>
       </div>
     </div>`;
@@ -180,7 +239,11 @@ async function updateRefStatus(id) {
     const r = await fetch("/gnhs-guidance/api/update_referral.php?id="+id+"&status="+status);
     const d = await r.json();
     if (d.success) {
-      showToast("Referral status updated!","success");
+      if (status === "resolved" || status === "closed") {
+        showToast("Referral resolved and moved to Referrals Archive!","success");
+      } else {
+        showToast("Referral status updated!","success");
+      }
       document.getElementById("refModal").classList.add("hidden");
       setTimeout(()=>location.reload(), 1200);
     } else {
@@ -192,9 +255,23 @@ async function updateRefStatus(id) {
     if (btn) { btn.disabled=false; btn.innerHTML="<i class=\"fas fa-save\"></i> Save Status"; }
   }
 }
+
+async function archiveReferralDirect(id) {
+  if (!confirm("Are you sure you want to resolve and archive this referral?")) return;
+  try {
+    const r = await fetch("/gnhs-guidance/api/update_referral.php?id="+id+"&status=resolved");
+    const d = await r.json();
+    if (d.success) {
+      showToast("Referral marked as resolved and moved to archive!", "success");
+      document.getElementById("refModal").classList.add("hidden");
+      setTimeout(() => location.reload(), 1200);
+    } else {
+      showToast(d.message || "Failed to archive referral.", "error");
+    }
+  } catch(e) {
+    showToast("Error archiving referral.", "error");
+  }
+}
 </script>';
 
 renderLayout($user, 'Referrals', 'referrals', $content);
-
-
-

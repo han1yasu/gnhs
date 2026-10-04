@@ -194,7 +194,7 @@ new Chart(document.getElementById('highGradeChart'),{type:'bar',data:{labels:hig
 
 new Chart(document.getElementById('typeChart'),{type:'bar',data:{labels:typeLabels.map(s=>s.replace(/_/g,' ')),datasets:[{label:'Cases',data:typeData,backgroundColor:[maroon,maroonMid,maroonLight,'#dc2626','#ef4444','#f87171','#fca5a5']}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}});
 
-new Chart(document.getElementById('sectionChart'),{type:'horizontalBar'||'bar',data:{labels:sectionLabels,datasets:[{label:'Cases',data:sectionData,backgroundColor:maroon}]},options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{stepSize:1}}}}});
+new Chart(document.getElementById('sectionChart'),{type:'bar',data:{labels:sectionLabels,datasets:[{label:'Cases',data:sectionData,backgroundColor:maroon}]},options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{stepSize:1}}}}});
 </script>
 HTML;
 

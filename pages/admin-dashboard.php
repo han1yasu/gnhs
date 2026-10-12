@@ -84,7 +84,7 @@ foreach ($recentCases as $c) {
         <td class='cell-date'>$date</td>
         <td class='cell-actions'>
           <div class='row-actions'>
-            <button type='button' class='btn-row-action' onclick='openCaseReview({$c['id']},\"{$c['case_number']}\",\"{$c['status']}\",\"{$c['priority']}\",".json_encode($c['subject']).",".json_encode($c['description']).")'>
+            <button type='button' class='btn-row-action' onclick='openCaseReview({$c['id']})'>
               <i class='fas fa-file-lines'></i> Review</button>
             <button type='button' class='btn-row-action btn-action-chat' onclick=\"window.location.href='admin-chats.php?case_id={$c['id']}'\">
               <i class='fas fa-comment-dots'></i> Chat</button>

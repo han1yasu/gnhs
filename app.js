@@ -671,7 +671,7 @@ function buildReviewModal(c, notes, session) {
   const isPeer = (c.is_peer_report == 1 || c.is_peer_report === '1');
   const studentDisplay = isPeer
     ? `<div><span style="font-size:15px;font-weight:700;color:#9d174d">${escapeHtml(c.reported_student_name||'Target Student')}</span> <span style="font-size:11.5px;color:#be185d">(${escapeHtml(c.reported_student_grade||'Grade —')})</span><div style="font-size:11px;color:var(--text-3);margin-top:2px"><i class="fas fa-user-tag"></i> Rep by: ${escapeHtml(c.student_name||'Anonymous')}</div></div>`
-    : `<span style="font-size:15px;font-weight:600">${c.student_name||'Anonymous'}</span>`;
+    : `<span style="font-size:15px;font-weight:600">${escapeHtml(c.student_name||'Anonymous')}</span>`;
 
   const peerReportCard = isPeer ? `
     <div style="background:#fdf2f8;border:1.5px solid #fbcfe8;border-radius:8px;padding:12px 16px;margin-bottom:18px;display:flex;align-items:center;gap:12px">
@@ -692,11 +692,11 @@ function buildReviewModal(c, notes, session) {
 
   body.innerHTML = `
   <div class="review-header-strip" style="display:flex;flex-wrap:wrap;gap:15px;background:var(--bg2);padding:15px;border-radius:8px;margin-bottom:20px;border:1px solid var(--border)">
-      <div style="flex:1;min-width:120px"><label style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Case ID</label><strong style="color:var(--maroon);font-size:16px">#${c.case_number}</strong></div>
+      <div style="flex:1;min-width:120px"><label style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Case ID</label><strong style="color:var(--maroon);font-size:16px">#${escapeHtml(c.case_number)}</strong></div>
       <div style="flex:2;min-width:150px"><label style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Student</label>${studentDisplay}</div>
-      <div style="flex:1.5;min-width:130px"><label style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Type</label><span class="status-badge status-ongoing">${(c.concern_type||'').replace(/_/g,' ').replace(/\b\w/g,l=>l.toUpperCase())}</span></div>
-      <div style="flex:1.5;min-width:130px"><label style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Grade/Sec</label><span style="font-size:14px">${c.grade_section||'—'}</span></div>
-      <div style="flex:1.5;min-width:130px"><label style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Submitted</label><span style="font-size:13px;color:var(--text-2)">${c.submitted_at||'—'}</span></div>
+      <div style="flex:1.5;min-width:130px"><label style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Type</label><span class="status-badge status-ongoing">${escapeHtml((c.concern_type||'').replace(/_/g,' ').replace(/\b\w/g,l=>l.toUpperCase()))}</span></div>
+      <div style="flex:1.5;min-width:130px"><label style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Grade/Sec</label><span style="font-size:14px">${escapeHtml(c.grade_section||'—')}</span></div>
+      <div style="flex:1.5;min-width:130px"><label style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Submitted</label><span style="font-size:13px;color:var(--text-2)">${escapeHtml(c.submitted_at||'—')}</span></div>
     </div>
     ${peerReportCard}
     <div class="review-grid" style="grid-template-columns: 1.2fr 1fr; gap:25px; align-items:start">
@@ -704,7 +704,7 @@ function buildReviewModal(c, notes, session) {
       ${c.ai_summary ? `<div class="ai-box" style="margin-bottom:20px;border-left:4px solid var(--blue);background:rgba(37,99,235,0.05)"><div class="ai-box-label" style="color:var(--blue);font-size:14px;margin-bottom:8px"><i class="fas fa-magic"></i> AI Summary</div><div class="ai-box-text" style="font-size:15px;line-height:1.6">${c.ai_summary}</div></div>` : ''}
       <div style="margin-bottom:14px;background:var(--bg2);padding:20px;border-radius:8px;border:1px solid var(--border)">
         <div style="font-size:13px;font-weight:800;color:var(--text-2);margin-bottom:12px;text-transform:uppercase;letter-spacing:1px"><i class="fas fa-quote-left" style="color:var(--maroon)"></i> Student's Description</div>
-        <div class="concern-text" style="font-size:15px;line-height:1.7;color:var(--text);background:transparent;padding:0;border:none">${c.description}</div>
+        <div class="concern-text" style="font-size:15px;line-height:1.7;color:var(--text);background:transparent;padding:0;border:none;white-space:pre-wrap">${escapeHtml(c.description)}</div>
       </div>
 
       ${c.witnesses ? `
@@ -798,7 +798,7 @@ function buildReviewModal(c, notes, session) {
         <div class="input-wrap"><i class="fas fa-map-marker-alt"></i><input type="text" id="session-location" value="Guidance Office" placeholder="Guidance Office or Zoom Link"></div>
       </div>
       <div class="form-group" style="margin-top:20px;border-top:1px solid var(--border);padding-top:20px">
-        <button class="btn-primary" style="width:100%;background:var(--blue)" onclick="window.location.href=window.location.href.includes('admin')?'admin-chats.php?case_id='+(c.id||_activeCaseId):'student-chats.php?case_id='+(c.id||_activeCaseId)">
+        <button class="btn-primary" style="width:100%;background:var(--blue)" onclick="window.location.href=window.location.href.includes('admin')?'admin-chats.php?case_id=${c.id || _activeCaseId}':'student-chats.php?case_id=${c.id || _activeCaseId}'">
           <i class="fas fa-comment-dots"></i> Message Student
         </button>
       </div>

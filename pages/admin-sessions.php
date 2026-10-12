@@ -104,8 +104,11 @@ foreach ($sessions as $s) {
         <td>".ucfirst($s['session_type'] ?? 'In-person')."</td>
         <td>$statusBadge</td>
         <td>
-          <div style='display:inline-flex;gap:8px;align-items:center'>
+          <div style='display:inline-flex;gap:6px;align-items:center'>
             $actionBtn
+            <button type='button' class='btn-row-action btn-action-chat' onclick=\"event.stopPropagation(); window.location.href='admin-chats.php?case_id={$s['case_id']}'\" title='Open chat with student' style='font-size:11.5px;padding:5px 9px'>
+              <i class='fas fa-comment-dots'></i> Chat
+            </button>
             <select class='status-select' style='font-size:12px;padding:5px 8px' onchange='updateSessionStatus({$s['id']},this.value,event)'>
               <option value='scheduled' ".($s['status']==='scheduled'?'selected':'').">Scheduled</option>
               <option value='in_progress' ".($s['status']==='in_progress'?'selected':'').">In Progress</option>
@@ -548,23 +551,16 @@ function renderSessionConsole(data) {
 
   container.innerHTML = `
     <!-- Top Header Strip -->
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border)">
-      <div>
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
-          <span style="background:var(--maroon-pale);color:var(--maroon);font-weight:900;font-size:14px;padding:3px 10px;border-radius:6px;border:1px solid var(--maroon-tint)">#\${s.case_number}</span>
-          <h2 style="font-size:20px;font-weight:900;color:var(--text);margin:0">\${escapeHtml(s.student_name || 'Student')}</h2>
-          <span class="status-badge status-under_review" style="font-size:11px">\${(s.concern_type||'').replace(/_/g,' ')}</span>
-        </div>
-        <div style="font-size:13px;color:var(--text-2);display:flex;align-items:center;gap:14px">
-          <span><i class="fas fa-graduation-cap"></i> \${escapeHtml(s.grade_section || '—')}</span>
-          <span><i class="fas fa-id-card"></i> ID: \${escapeHtml(s.id_number || '—')}</span>
-          <span><i class="fas fa-calendar"></i> Appointed: \${formattedDate} at \${formattedTime}</span>
-        </div>
+    <div style="margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border);padding-right:45px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap">
+        <span style="background:var(--maroon-pale);color:var(--maroon);font-weight:900;font-size:14px;padding:3px 10px;border-radius:6px;border:1px solid var(--maroon-tint)">#\${s.case_number}</span>
+        <h2 style="font-size:20px;font-weight:900;color:var(--text);margin:0">\${escapeHtml(s.student_name || 'Student')}</h2>
+        <span class="status-badge status-under_review" style="font-size:11px">\${(s.concern_type||'').replace(/_/g,' ')}</span>
       </div>
-      <div>
-        <button type="button" class="btn-sm-outline" onclick="window.location.href='admin-chats.php?case_id=\${s.case_id}'" title="Open student chat channel">
-          <i class="fas fa-comment-dots"></i> Chat Student
-        </button>
+      <div style="font-size:13px;color:var(--text-2);display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+        <span><i class="fas fa-graduation-cap"></i> \${escapeHtml(s.grade_section || '—')}</span>
+        <span><i class="fas fa-id-card"></i> ID: \${escapeHtml(s.id_number || '—')}</span>
+        <span><i class="fas fa-calendar"></i> Appointed: \${formattedDate} at \${formattedTime}</span>
       </div>
     </div>
 
@@ -632,6 +628,22 @@ function renderSessionConsole(data) {
             </div>` : ''}
 
           \${evidenceHtml}
+        </div>
+
+        <!-- Student Messaging & Communication Card -->
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:36px;height:36px;border-radius:8px;background:rgba(37,99,235,0.12);color:#2563eb;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">
+              <i class="fas fa-comment-dots"></i>
+            </div>
+            <div>
+              <strong style="font-size:13px;color:var(--text);display:block">Student Direct Channel</strong>
+              <span style="font-size:11.5px;color:var(--text-3)">Message \${escapeHtml(s.student_name || 'Student')} directly</span>
+            </div>
+          </div>
+          <button type="button" class="btn-sm-primary" style="background:#2563eb;color:#ffffff;display:inline-flex;align-items:center;gap:6px;padding:8px 14px;font-size:12.5px;font-weight:700;white-space:nowrap;border:none;border-radius:8px;cursor:pointer" onclick="window.location.href='admin-chats.php?case_id=\${s.case_id}'">
+            <i class="fas fa-comment-dots"></i> Chat Student
+          </button>
         </div>
 
         <!-- Multi-Session Continuous Progress Tracker -->

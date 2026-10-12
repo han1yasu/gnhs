@@ -23,6 +23,13 @@ $priority    = trim($raw['priority']          ?? 'medium');
 $incidentDate= trim($raw['incident_date']     ?? '');
 $contact     = trim($raw['preferred_contact'] ?? 'in_person');
 $witnesses   = trim($raw['witnesses']         ?? '');
+$isPeerReport = isset($raw['is_peer_report']) ? (int)($raw['is_peer_report'] === '1' || $raw['is_peer_report'] === true || $raw['is_peer_report'] === 'true' || $raw['is_peer_report'] === 1) : 0;
+$reportedStudentName = trim($raw['reported_student_name'] ?? '');
+$reportedStudentGrade = trim($raw['reported_student_grade'] ?? '');
+
+if ($isPeerReport && empty($reportedStudentName)) {
+    jsonOut(['success'=>false, 'message'=>'Please provide the name of the student you are reporting for.']);
+}
 
 if (!empty($incidentDate)) {
     $today = date('Y-m-d');
@@ -167,23 +174,26 @@ try {
     $assignedTo = $counselor ? $counselor['id'] : null;
 
     $stmt = $db->prepare("INSERT INTO cases
-        (case_number,student_id,is_anonymous,anon_token,concern_type,subject,description,ai_summary,priority,status,incident_date,preferred_contact,witnesses,evidence_files,assigned_to)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+        (case_number,student_id,is_anonymous,anon_token,concern_type,subject,description,ai_summary,priority,status,incident_date,preferred_contact,witnesses,evidence_files,assigned_to,is_peer_report,reported_student_name,reported_student_grade)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
     $stmt->execute([
         $caseNum, $studentId, (int)$isAnon, $anonToken,
         $concernType, $subject, $description, $aiSummary ?: null,
         $priority, 'pending', $incidentDate ?: null, $contact,
-        $witnesses ?: null, $evidenceJson, $assignedTo
+        $witnesses ?: null, $evidenceJson, $assignedTo,
+        $isPeerReport, $reportedStudentName ?: null, $reportedStudentGrade ?: null
     ]);
     $caseId = $db->lastInsertId();
 
     // Notify counselor
     if ($assignedTo) {
-        $counselorNotifTitle = "New " . ($isAnon ? "Anonymous " : "") . "Case: $caseNum";
+        $peerTitle = $isPeerReport ? "Peer Report " : "";
+        $counselorNotifTitle = "New " . ($isAnon ? "Anonymous " : "") . $peerTitle . "Case: $caseNum";
         $extraDetails = [];
+        if ($isPeerReport && $reportedStudentName) $extraDetails[] = "Reported for: $reportedStudentName";
         if (!empty($evidenceFiles)) $extraDetails[] = count($evidenceFiles) . ' media evidence file(s)';
         if (!empty($witnesses)) $extraDetails[] = 'witness information';
-        $extraStr = !empty($extraDetails) ? ' (Attached: ' . implode(', ', $extraDetails) . ')' : '';
+        $extraStr = !empty($extraDetails) ? ' (' . implode(', ', $extraDetails) . ')' : '';
 
         $db->prepare("INSERT INTO notifications (user_id,title,message,type) VALUES (?,?,?,?)")
            ->execute([$assignedTo, $counselorNotifTitle,

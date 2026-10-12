@@ -32,6 +32,10 @@ foreach ($cases as $c) {
     if (!empty($c['witnesses'])) {
         $mediaBadges .= "<span class='badge-witness' title='Witnesses mentioned in case report'><i class='fas fa-user-group'></i> Witness</span>";
     }
+    if (!empty($c['is_peer_report'])) {
+        $peerName = htmlspecialchars($c['reported_student_name'] ?: 'Peer');
+        $mediaBadges .= "<span class='badge-witness' style='background:#fdf2f8;color:#be185d;border-color:#fbcfe8' title='Reported for: {$peerName}'><i class='fas fa-hand-holding-heart'></i> For: {$peerName}</span>";
+    }
     $date = date('M d, Y', strtotime($c['submitted_at']));
     $anonBadge = !empty($c['is_anonymous']) ? "<span class='badge-anon' title='Your identity is anonymous to the guidance counselor'><i class='fas fa-user-secret'></i> Anon</span>" : "";
     $rows .= "<tr>

@@ -12,19 +12,31 @@ if ($statusFilter) {
     $where .= " AND cs.status = '" . addslashes($statusFilter) . "'";
 }
 if ($search) {
+    $sq = addslashes($search);
+    $sqUnderscore = addslashes(str_replace(' ', '_', $search));
     $where .= " AND (
-        c.case_number LIKE '%" . addslashes($search) . "%'
-        OR s.first_name LIKE '%" . addslashes($search) . "%'
-        OR s.last_name LIKE '%" . addslashes($search) . "%'
-        OR CONCAT(s.first_name, ' ', s.last_name) LIKE '%" . addslashes($search) . "%'
-        OR cs.location LIKE '%" . addslashes($search) . "%'
+        LOWER(c.case_number) LIKE LOWER('%$sq%')
+        OR LOWER(c.subject) LIKE LOWER('%$sq%')
+        OR LOWER(c.description) LIKE LOWER('%$sq%')
+        OR LOWER(c.concern_type) LIKE LOWER('%$sq%')
+        OR LOWER(c.concern_type) LIKE LOWER('%$sqUnderscore%')
+        OR LOWER(REPLACE(c.concern_type, '_', ' ')) LIKE LOWER('%$sq%')
+        OR LOWER(s.first_name) LIKE LOWER('%$sq%')
+        OR LOWER(s.last_name) LIKE LOWER('%$sq%')
+        OR LOWER(CONCAT(s.first_name, ' ', s.last_name)) LIKE LOWER('%$sq%')
+        OR LOWER(s.grade_section) LIKE LOWER('%$sq%')
+        OR LOWER(COALESCE(c.reported_student_name, '')) LIKE LOWER('%$sq%')
+        OR LOWER(COALESCE(c.reported_student_grade, '')) LIKE LOWER('%$sq%')
+        OR LOWER(cs.location) LIKE LOWER('%$sq%')
+        OR (c.is_anonymous=1 AND LOWER('anonymous') LIKE LOWER('%$sq%'))
     )";
 }
 
 $sessions = $db->query("SELECT cs.*,
     CASE WHEN c.is_anonymous = 1 THEN 'Anonymous Student' ELSE CONCAT(s.first_name,' ',s.last_name) END AS student_name,
     CASE WHEN c.is_anonymous = 1 THEN 'Confidential' ELSE s.grade_section END AS grade_section,
-    c.case_number, c.subject AS case_subject, c.concern_type, c.priority AS case_priority
+    c.case_number, c.subject AS case_subject, c.concern_type, c.priority AS case_priority,
+    c.is_peer_report, c.reported_student_name, c.reported_student_grade
     FROM counseling_sessions cs
     LEFT JOIN users s ON cs.student_id=s.id
     JOIN cases c ON cs.case_id=c.id
@@ -32,13 +44,15 @@ $sessions = $db->query("SELECT cs.*,
     ORDER BY 
       CASE WHEN cs.status = 'in_progress' THEN 1
            WHEN cs.status = 'scheduled' THEN 2
-           ELSE 3 END,
+           WHEN cs.status = 'ongoing' THEN 3
+           ELSE 4 END,
       cs.session_date DESC")->fetchAll();
 
 // Counts for summary metrics
 $countTotal     = (int)$db->query("SELECT COUNT(*) FROM counseling_sessions")->fetchColumn();
 $countScheduled = (int)$db->query("SELECT COUNT(*) FROM counseling_sessions WHERE status='scheduled'")->fetchColumn();
 $countLive      = (int)$db->query("SELECT COUNT(*) FROM counseling_sessions WHERE status='in_progress'")->fetchColumn();
+$countOngoing   = (int)$db->query("SELECT COUNT(*) FROM counseling_sessions WHERE status='ongoing'")->fetchColumn();
 $countCompleted = (int)$db->query("SELECT COUNT(*) FROM counseling_sessions WHERE status='completed'")->fetchColumn();
 
 $rows = '';
@@ -48,6 +62,7 @@ foreach ($sessions as $s) {
     $statusBadge = match($s['status']) {
         'scheduled'   => "<span class='status-badge' style='background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;font-weight:700'><i class='fas fa-calendar-alt'></i> Scheduled</span>",
         'in_progress' => "<span class='status-badge' style='background:#dcfce7;color:#15803d;border:1px solid #86efac;font-weight:700;display:inline-flex;align-items:center;gap:6px'><span class='live-pulse-dot'></span> Live In-Session</span>",
+        'ongoing'     => "<span class='status-badge status-ongoing' style='background:#fef3c7;color:#92400e;border:1px solid #fde68a;font-weight:700'><i class='fas fa-clock-rotate-left'></i> Ongoing Progress</span>",
         'completed'   => "<span class='status-badge status-resolved'><i class='fas fa-check-circle'></i> Completed</span>",
         'cancelled'   => "<span class='status-badge' style='background:#fef2f2;color:#991b1b'>Cancelled</span>",
         'no_show'     => "<span class='status-badge' style='background:#fffbeb;color:#92400e'>No Show</span>",
@@ -63,15 +78,25 @@ foreach ($sessions as $s) {
         $actionBtn = "<button type='button' class='btn-sm-primary' style='background:#16a34a;display:inline-flex;align-items:center;gap:6px' onclick='openSessionConsole({$s['id']})' title='Session currently in progress'>
             <i class='fas fa-headset'></i> Active Console
         </button>";
+    } elseif ($s['status'] === 'ongoing') {
+        $actionBtn = "<button type='button' class='btn-sm-primary' style='background:#b45309;display:inline-flex;align-items:center;gap:6px' onclick='openSessionConsole({$s['id']})' title='Continuous progress tracking active'>
+            <i class='fas fa-clock-rotate-left'></i> Progress
+        </button>";
     } else {
         $actionBtn = "<button type='button' class='btn-sm-outline' onclick='openSessionConsole({$s['id']})' style='display:inline-flex;align-items:center;gap:6px'>
             <i class='fas fa-eye'></i> View Details
         </button>";
     }
 
+    $studentCol = "<strong>".htmlspecialchars($s['student_name']??'—')."</strong>";
+    if (!empty($s['is_peer_report'])) {
+        $studentCol = "<strong>".htmlspecialchars($s['reported_student_name']?:'Target Student')."</strong>"
+            . "<div style='font-size:11px;color:#be185d'><i class='fas fa-user-tag'></i> Rep by: ".htmlspecialchars($s['student_name']??'Anon')."</div>";
+    }
+
     $rows .= "<tr style='cursor:pointer' onclick='if(!event.target.closest(\"select\") && !event.target.closest(\"button\")) openSessionConsole({$s['id']})'>
         <td><strong style='color:var(--maroon);font-size:14px'>{$s['case_number']}</strong></td>
-        <td><strong>".htmlspecialchars($s['student_name']??'—')."</strong></td>
+        <td>$studentCol</td>
         <td>".htmlspecialchars($s['grade_section']??'—')."</td>
         <td>".$dt->format('M d, Y')."</td>
         <td style='font-weight:600'>".$dt->format('h:i A')."</td>
@@ -84,6 +109,7 @@ foreach ($sessions as $s) {
             <select class='status-select' style='font-size:12px;padding:5px 8px' onchange='updateSessionStatus({$s['id']},this.value,event)'>
               <option value='scheduled' ".($s['status']==='scheduled'?'selected':'').">Scheduled</option>
               <option value='in_progress' ".($s['status']==='in_progress'?'selected':'').">In Progress</option>
+              <option value='ongoing' ".($s['status']==='ongoing'?'selected':'').">Ongoing</option>
               <option value='completed' ".($s['status']==='completed'?'selected':'').">Completed</option>
               <option value='cancelled' ".($s['status']==='cancelled'?'selected':'').">Cancelled</option>
               <option value='no_show'   ".($s['status']==='no_show'?'selected':'').">No Show</option>
@@ -95,15 +121,16 @@ foreach ($sessions as $s) {
 if (!$rows) $rows = "<tr><td colspan='9' style='text-align:center;color:var(--text-3);padding:40px'>No counseling sessions match the filter.</td></tr>";
 
 $sqVal = htmlspecialchars($search);
-$fAll = $statusFilter === '' ? 'selected' : '';
+$fAll   = $statusFilter === '' ? 'selected' : '';
 $fSched = $statusFilter === 'scheduled' ? 'selected' : '';
 $fProg  = $statusFilter === 'in_progress' ? 'selected' : '';
+$fOng   = $statusFilter === 'ongoing' ? 'selected' : '';
 $fComp  = $statusFilter === 'completed' ? 'selected' : '';
 $fCanc  = $statusFilter === 'cancelled' ? 'selected' : '';
 
 $content = <<<HTML
 <!-- Summary Metric Strip -->
-<div class="summary-cards" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 22px;">
+<div class="summary-cards" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-bottom: 22px;">
   <div class="sum-card">
     <div class="sum-icon" style="background:rgba(85,0,0,0.1);color:var(--maroon)"><i class="fas fa-calendar-check"></i></div>
     <div><div class="sum-num">$countTotal</div><div class="sum-label">Total Sessions</div></div>
@@ -115,6 +142,10 @@ $content = <<<HTML
   <div class="sum-card" style="border: 1px solid rgba(22,163,74,0.3); background: rgba(22,163,74,0.06);">
     <div class="sum-icon" style="background:rgba(22,163,74,0.15);color:#16a34a"><i class="fas fa-headset"></i></div>
     <div><div class="sum-num" style="color:#15803d">$countLive</div><div class="sum-label" style="font-weight:700;color:#166534">Live In-Session</div></div>
+  </div>
+  <div class="sum-card" style="border: 1px solid rgba(217,119,6,0.3); background: rgba(254,243,199,0.5);">
+    <div class="sum-icon" style="background:rgba(217,119,6,0.15);color:#b45309"><i class="fas fa-clock-rotate-left"></i></div>
+    <div><div class="sum-num" style="color:#b45309">$countOngoing</div><div class="sum-label" style="font-weight:700;color:#92400e">Ongoing Progress</div></div>
   </div>
   <div class="sum-card">
     <div class="sum-icon" style="background:rgba(22,163,74,0.12);color:#16a34a"><i class="fas fa-check-double"></i></div>
@@ -133,7 +164,7 @@ $content = <<<HTML
     <div style="display:flex;gap:8px;flex:1;min-width:240px">
       <div class="input-wrap" style="flex:1">
         <i class="fas fa-search"></i>
-        <input type="text" id="sessionSearchQ" value="$sqVal" placeholder="Search by case #, student name, location…" onkeydown="if(event.key==='Enter') doSessionSearch()"/>
+        <input type="text" id="sessionSearchQ" value="$sqVal" placeholder="Search by case #, student name, concern, location…" onkeydown="if(event.key==='Enter') doSessionSearch()"/>
       </div>
       <button class="btn-sm-primary" onclick="doSessionSearch()"><i class="fas fa-search"></i> Search</button>
     </div>
@@ -141,6 +172,7 @@ $content = <<<HTML
       <option value="" $fAll>All Statuses</option>
       <option value="scheduled" $fSched>Scheduled (Appointed)</option>
       <option value="in_progress" $fProg>Live In-Session</option>
+      <option value="ongoing" $fOng>Ongoing Progress</option>
       <option value="completed" $fComp>Completed</option>
       <option value="cancelled" $fCanc>Cancelled</option>
     </select>
@@ -357,6 +389,7 @@ function renderSessionConsole(data) {
 
   const isLive = (s.status === 'in_progress');
   const isScheduled = (s.status === 'scheduled');
+  const isOngoing = (s.status === 'ongoing');
   const isCompleted = (s.status === 'completed');
 
   const dt = new Date(s.session_date);
@@ -398,12 +431,32 @@ function renderSessionConsole(data) {
             <div style="font-size:12px;opacity:0.85">Started at \${s.started_at ? new Date(s.started_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Just now'} &bull; Location: \${escapeHtml(s.location || 'Guidance Office')}</div>
           </div>
         </div>
-        <div style="display:flex;align-items:center;gap:14px">
+        <div style="display:flex;align-items:center;gap:10px">
           <div class="session-timer-badge">
             <i class="fas fa-stopwatch" style="margin-right:6px"></i><span id="sessionTimerDisplay">00:00:00</span>
           </div>
+          <button type="button" class="btn-secondary" style="background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.45);color:#fff;padding:9px 14px;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:.2s" onclick="cancelLiveSession(\${s.id})" title="Accidentally clicked start? Revert back to Scheduled">
+            <i class="fas fa-undo"></i> Cancel Session
+          </button>
           <button type="button" class="btn-danger" style="background:#dc2626;border:none;color:#fff;padding:10px 18px;border-radius:10px;font-weight:800;font-size:13.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:0 4px 12px rgba(220,38,38,0.3)" onclick="openEndSessionModal()">
             <i class="fas fa-check-circle"></i> End Session
+          </button>
+        </div>
+      </div>`;
+  } else if (isOngoing) {
+    sessionControlBar = `
+      <div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:12px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <i class="fas fa-clock-rotate-left" style="color:#d97706;font-size:18px"></i>
+          <div>
+            <strong style="color:#b45309;font-size:15px;display:block">Counseling Session In Ongoing Progress</strong>
+            <span style="font-size:12px;color:#92400e">Continuous case tracking is active. Session concluded on \${s.ended_at ? new Date(s.ended_at).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'}) : 'Recently'}. Next steps are being tracked until complete resolution.</span>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="status-badge status-ongoing" style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;font-weight:700">Ongoing Progress</span>
+          <button type="button" class="btn-primary" style="background:var(--maroon);padding:8px 14px;font-size:12.5px" onclick="startPersonalSession(\${s.id})">
+            <i class="fas fa-play"></i> Resume Session
           </button>
         </div>
       </div>`;
@@ -419,6 +472,37 @@ function renderSessionConsole(data) {
         </div>
         <div>
           <span class="status-badge status-resolved">Completed</span>
+        </div>
+      </div>`;
+  }
+
+  // Multi-Session Continuous Progress Tracker HTML
+  const allSessions = data.all_sessions || [];
+  let allSessionsHtml = '';
+  if (allSessions.length > 0) {
+    allSessionsHtml = `
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:18px">
+        <div style="font-size:13px;font-weight:800;color:var(--text-2);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
+          <span><i class="fas fa-timeline" style="color:var(--maroon)"></i> Counseling Progress Tracker (\${allSessions.length})</span>
+          <span style="font-size:11px;font-weight:700;color:#92400e;background:#fef3c7;padding:2px 8px;border-radius:10px">Continuous Record</span>
+        </div>
+        <p style="font-size:12px;color:var(--text-3);margin:0 0 10px 0;line-height:1.4">Progress tracking session after session won't stop until counselor confirms student progress and completes the case.</p>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          \${allSessions.map((sess, idx) => {
+            const isCur = (sess.id === s.id);
+            const sessDate = new Date(sess.session_date).toLocaleString([], { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            const sBadgeClass = sess.status === 'completed' ? 'status-resolved' : (sess.status === 'ongoing' ? 'status-ongoing' : (sess.status === 'in_progress' ? 'status-resolved' : 'status-under_review'));
+            const sBadgeLabel = sess.status === 'ongoing' ? 'Ongoing Progress' : (sess.status === 'in_progress' ? 'Live Now' : sess.status.charAt(0).toUpperCase() + sess.status.slice(1));
+            return `
+              <div style="background:var(--bg);border:\${isCur ? '1.5px solid var(--maroon)' : '1px solid var(--border)'};border-radius:8px;padding:10px 12px">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+                  <span style="font-size:12.5px;font-weight:700;color:var(--text)">Session #\${idx + 1} \${isCur ? '<span style="font-size:10px;background:var(--maroon);color:#fff;padding:1px 6px;border-radius:4px;margin-left:4px">Selected</span>' : ''}</span>
+                  <span class="status-badge \${sBadgeClass}" style="font-size:10.5px;padding:2px 8px">\${sBadgeLabel}</span>
+                </div>
+                <div style="font-size:11.5px;color:var(--text-2)"><i class="fas fa-calendar-alt"></i> \${sessDate} &bull; \${escapeHtml(sess.location || 'Guidance Office')} (\${escapeHtml(sess.session_type || 'In-person')})</div>
+                \${sess.notes ? `<div style="margin-top:6px;font-size:12px;background:var(--bg2);padding:6px 10px;border-radius:6px;border-left:3px solid var(--maroon);white-space:pre-wrap;color:var(--text)"><strong>Notes:</strong> \${escapeHtml(sess.notes)}</div>` : ''}
+              </div>`;
+          }).join('')}
         </div>
       </div>`;
   }
@@ -444,6 +528,24 @@ function renderSessionConsole(data) {
   // Active / draft notes value
   const currentNotesVal = escapeHtml(s.notes || '');
 
+  // Peer report info banner
+  const peerReportBanner = (s.is_peer_report == 1 || s.is_peer_report === '1') ? `
+    <div style="background:#fdf2f8;border:1.5px solid #fbcfe8;border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
+      <div style="width:34px;height:34px;border-radius:50%;background:#f472b6;color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0"><i class="fas fa-hand-holding-heart"></i></div>
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:11px;font-weight:700;background:#be185d;color:#fff;padding:2px 8px;border-radius:12px;text-transform:uppercase;letter-spacing:0.5px">Peer Report</span>
+          <span style="font-size:12px;color:#9d174d;font-weight:600">Reported on behalf of another student</span>
+        </div>
+        <div style="margin-top:3px;font-size:13px;color:#831843">
+          <strong>Affected Student:</strong> <span style="font-weight:700;color:#9d174d">\${escapeHtml(s.reported_student_name || 'Not specified')}</span>
+          \${s.reported_student_grade ? `<span style="color:#be185d;font-size:12px;margin-left:4px">(\${escapeHtml(s.reported_student_grade)})</span>` : ''}
+          <span style="margin:0 8px;color:#f472b6">•</span>
+          <strong>Referring Student:</strong> <span style="font-weight:600;color:#9d174d">\${escapeHtml(s.student_name || 'Anonymous')}</span>
+        </div>
+      </div>
+    </div>` : '';
+
   container.innerHTML = `
     <!-- Top Header Strip -->
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border)">
@@ -465,6 +567,9 @@ function renderSessionConsole(data) {
         </button>
       </div>
     </div>
+
+    <!-- Peer Report Info Banner if applicable -->
+    \${peerReportBanner}
 
     <!-- Session Control Header -->
     \${sessionControlBar}
@@ -529,6 +634,9 @@ function renderSessionConsole(data) {
           \${evidenceHtml}
         </div>
 
+        <!-- Multi-Session Continuous Progress Tracker -->
+        \${allSessionsHtml}
+
         \${s.resolution ? `
           <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:16px">
             <div style="font-weight:800;color:#166534;font-size:13px;margin-bottom:6px"><i class="fas fa-check-circle"></i> Recorded Case Resolution</div>
@@ -585,6 +693,33 @@ async function startPersonalSession(sessionId) {
     }
   } catch (err) {
     showToast('Session started.', 'success');
+  }
+}
+
+// ── CANCEL LIVE SESSION (REVERT ACCIDENTAL START) ─────────────────
+async function cancelLiveSession(sessionId) {
+  if (!confirm("Are you sure you want to cancel this live session?\\n\\nThis will stop the active timer and return the session status to Scheduled if it was started by accident.")) {
+    return;
+  }
+  try {
+    const apiUrl = window.location.pathname.includes('/gnhs-guidance/gnhs-guidance/')
+      ? '/gnhs-guidance/gnhs-guidance/api/cancel_session_start.php'
+      : '/gnhs-guidance/api/cancel_session_start.php';
+    const res = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: sessionId })
+    });
+    const data = await res.json();
+    if (data.success) {
+      if (_sessionTimerInterval) clearInterval(_sessionTimerInterval);
+      showToast('Live session canceled. Reverted to Scheduled status.', 'success');
+      setTimeout(() => openSessionConsole(sessionId), 400);
+    } else {
+      showToast(data.message || 'Could not cancel session.', 'error');
+    }
+  } catch (err) {
+    showToast('Network error while canceling session.', 'error');
   }
 }
 

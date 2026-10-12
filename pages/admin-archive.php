@@ -9,13 +9,24 @@ $filterType = $_GET['type'] ?? '';
 
 $where = "WHERE c.status IN ('resolved','closed') AND COALESCE(c.is_follow_up, 0) = 0";
 if ($filterType) $where .= " AND c.concern_type='".addslashes($filterType)."'";
-if ($search)     $where .= " AND (
-    c.case_number LIKE '%".addslashes($search)."%'
-    OR c.subject LIKE '%".addslashes($search)."%'
-    OR s.first_name LIKE '%".addslashes($search)."%'
-    OR s.last_name LIKE '%".addslashes($search)."%'
-    OR CONCAT(s.first_name,' ',s.last_name) LIKE '%".addslashes($search)."%'
-)";
+if ($search) {
+    $sq = addslashes($search);
+    $sqUnderscore = addslashes(str_replace(' ', '_', $search));
+    $where .= " AND (
+        LOWER(c.case_number) LIKE LOWER('%$sq%')
+        OR LOWER(c.subject) LIKE LOWER('%$sq%')
+        OR LOWER(c.description) LIKE LOWER('%$sq%')
+        OR LOWER(c.concern_type) LIKE LOWER('%$sq%')
+        OR LOWER(c.concern_type) LIKE LOWER('%$sqUnderscore%')
+        OR LOWER(REPLACE(c.concern_type, '_', ' ')) LIKE LOWER('%$sq%')
+        OR LOWER(s.first_name) LIKE LOWER('%$sq%')
+        OR LOWER(s.last_name) LIKE LOWER('%$sq%')
+        OR LOWER(CONCAT(s.first_name,' ',s.last_name)) LIKE LOWER('%$sq%')
+        OR LOWER(s.grade_section) LIKE LOWER('%$sq%')
+        OR LOWER(COALESCE(c.reported_student_name, '')) LIKE LOWER('%$sq%')
+        OR (c.is_anonymous=1 AND LOWER('anonymous') LIKE LOWER('%$sq%'))
+    )";
+}
 
 $cases = $db->query("SELECT c.*,
     CASE WHEN c.is_anonymous=1 THEN 'Anonymous' ELSE CONCAT(s.first_name,' ',s.last_name) END AS student_name,

@@ -29,13 +29,25 @@ if ($filterGrade && $filterSection) {
     $s = addslashes($filterSection);
     $where .= " AND s.grade_section LIKE '%$s%'";
 }
-if ($search) $where .= " AND (
-    c.case_number LIKE '%".addslashes($search)."%'
-    OR c.subject LIKE '%".addslashes($search)."%'
-    OR s.first_name LIKE '%".addslashes($search)."%'
-    OR s.last_name LIKE '%".addslashes($search)."%'
-    OR CONCAT(s.first_name,' ',s.last_name) LIKE '%".addslashes($search)."%'
-)";
+if ($search) {
+    $sq = addslashes($search);
+    $sqUnderscore = addslashes(str_replace(' ', '_', $search));
+    $where .= " AND (
+        LOWER(c.case_number) LIKE LOWER('%$sq%')
+        OR LOWER(c.subject) LIKE LOWER('%$sq%')
+        OR LOWER(c.description) LIKE LOWER('%$sq%')
+        OR LOWER(c.concern_type) LIKE LOWER('%$sq%')
+        OR LOWER(c.concern_type) LIKE LOWER('%$sqUnderscore%')
+        OR LOWER(REPLACE(c.concern_type, '_', ' ')) LIKE LOWER('%$sq%')
+        OR LOWER(s.first_name) LIKE LOWER('%$sq%')
+        OR LOWER(s.last_name) LIKE LOWER('%$sq%')
+        OR LOWER(CONCAT(s.first_name,' ',s.last_name)) LIKE LOWER('%$sq%')
+        OR LOWER(s.grade_section) LIKE LOWER('%$sq%')
+        OR LOWER(COALESCE(c.reported_student_name, '')) LIKE LOWER('%$sq%')
+        OR LOWER(COALESCE(c.reported_student_grade, '')) LIKE LOWER('%$sq%')
+        OR (c.is_anonymous=1 AND LOWER('anonymous') LIKE LOWER('%$sq%'))
+    )";
+}
 
 $cases = $db->query("SELECT c.*,
     CASE WHEN c.is_anonymous=1 THEN 'Anonymous' ELSE CONCAT(s.first_name,' ',s.last_name) END AS student_name,
@@ -70,11 +82,33 @@ foreach ($cases as $c) {
     if (!empty($c['witnesses'])) {
         $mediaBadges .= "<span class='badge-witness' title='Witnesses mentioned in case report'><i class='fas fa-user-group'></i> Witness</span>";
     }
+    if (!empty($c['is_peer_report'])) {
+        $mediaBadges .= "<span class='badge-witness' style='background:#fdf2f8;color:#be185d;border-color:#fbcfe8' title='Peer Report: submitted on behalf of another student'><i class='fas fa-hand-holding-heart'></i> Peer</span>";
+    }
     $date = date('M d, Y', strtotime($c['submitted_at']));
+
+    if (!empty($c['is_peer_report'])) {
+        $targetName = htmlspecialchars($c['reported_student_name'] ?: 'Other Student');
+        $targetGrade = !empty($c['reported_student_grade']) ? " <span style='font-size:11px;color:var(--text-3)'>(".htmlspecialchars($c['reported_student_grade']).")</span>" : "";
+        $studentDisplay = "<div>
+            <strong style='color:var(--text)'>$targetName</strong>$targetGrade
+            <div style='font-size:11px;color:var(--text-3);margin-top:2px'>
+              <i class='fas fa-user-tag' style='color:var(--maroon)'></i> Rep by: ".htmlspecialchars($c['student_name'])."
+            </div>
+          </div>";
+    } else {
+        $studentDisplay = htmlspecialchars($c['student_name']);
+    }
+
+    $gradeDisplay = htmlspecialchars($c['grade_section'] ?? '—');
+    if (!empty($c['is_peer_report']) && !empty($c['reported_student_grade'])) {
+        $gradeDisplay = htmlspecialchars($c['reported_student_grade']);
+    }
+
     $rows .= "<tr>
         <td class='cell-case-num'><span class='case-num-text'>{$c['case_number']}</span></td>
-        <td class='cell-student'>".htmlspecialchars($c['student_name'])."</td>
-        <td class='cell-grade'>".htmlspecialchars($c['grade_section']??'—')."</td>
+        <td class='cell-student'>$studentDisplay</td>
+        <td class='cell-grade'>$gradeDisplay</td>
         <td>
           <div class='case-type-wrap'>
             <span class='case-type-label'>$type</span>

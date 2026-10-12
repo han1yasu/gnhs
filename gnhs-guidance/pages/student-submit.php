@@ -11,6 +11,56 @@ $content = <<<HTML
       <div class="card-header"><h3><i class="fas fa-file-medical"></i> Submit a Concern</h3></div>
       <div id="submitMsg" style="display:none"></div>
 
+      <!-- Report Scope / Target: Personal vs For Other Student -->
+      <div class="form-group" style="background:var(--bg2);padding:14px 16px;border-radius:10px;border:1px solid var(--border);margin-bottom:18px">
+        <label style="font-weight:700;font-size:13px;color:var(--text);margin-bottom:8px;display:block">
+          <i class="fas fa-user-check" style="color:var(--maroon);margin-right:6px"></i> Who are you submitting this concern for? <span class="req">*</span>
+        </label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <label class="report-scope-card" id="scopeCardSelf" style="cursor:pointer;display:flex;align-items:flex-start;gap:10px;padding:12px;border-radius:8px;border:1.5px solid var(--maroon);background:#fff;transition:.2s">
+            <input type="radio" name="reportScope" value="self" checked onchange="toggleReportScope('self')" style="margin-top:3px;accent-color:var(--maroon)"/>
+            <div>
+              <strong style="display:block;font-size:13px;color:var(--maroon)"><i class="fas fa-user"></i> Personal Concern</strong>
+              <span style="font-size:11.5px;color:var(--text-2);line-height:1.3;display:block">I am directly affected by this issue.</span>
+            </div>
+          </label>
+          <label class="report-scope-card" id="scopeCardOther" style="cursor:pointer;display:flex;align-items:flex-start;gap:10px;padding:12px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);transition:.2s">
+            <input type="radio" name="reportScope" value="other" onchange="toggleReportScope('other')" style="margin-top:3px;accent-color:var(--maroon)"/>
+            <div>
+              <strong style="display:block;font-size:13px;color:var(--text)"><i class="fas fa-hand-holding-heart"></i> Another Student</strong>
+              <span style="font-size:11.5px;color:var(--text-2);line-height:1.3;display:block">I am reporting for someone who needs help.</span>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Other Student Information Fields (Revealed if 'other' is selected) -->
+      <div id="otherStudentSection" style="display:none;background:#fdf2f8;border:1.5px solid #fbcfe8;border-radius:10px;padding:16px;margin-bottom:18px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <i class="fas fa-user-shield" style="color:#db2777;font-size:16px"></i>
+          <div>
+            <strong style="color:#9d174d;font-size:13.5px;display:block">Student Needing Support (Affected Student)</strong>
+            <span style="font-size:12px;color:#be185d">Provide details of the student you are reporting for so counselors can reach out properly.</span>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:12px">
+          <label style="color:#9d174d">Affected Student's Full Name <span class="req">*</span></label>
+          <div class="input-wrap">
+            <i class="fas fa-user" style="color:#db2777"></i>
+            <input type="text" id="reportedStudentName" placeholder="Full name of the student who is affected" style="background:#fff"/>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:0">
+          <label style="color:#9d174d">Affected Student's Grade &amp; Section <span class="opt-tag">(If known)</span></label>
+          <div class="input-wrap">
+            <i class="fas fa-graduation-cap" style="color:#db2777"></i>
+            <input type="text" id="reportedStudentGrade" placeholder="e.g. Grade 10 - Rizal (Optional)" style="background:#fff"/>
+          </div>
+        </div>
+      </div>
+
       <div class="form-group">
         <label>Type of Concern <span class="req">*</span></label>
         <div class="select-wrap"><i class="fas fa-tag"></i>
@@ -386,7 +436,46 @@ function renderEvidencePreviews() {
   }).join('');
 }
 
+function toggleReportScope(val) {
+  const isOther = (val === 'other');
+  const otherSection = document.getElementById('otherStudentSection');
+  if (otherSection) otherSection.style.display = isOther ? 'block' : 'none';
+  const cardSelf = document.getElementById('scopeCardSelf');
+  const cardOther = document.getElementById('scopeCardOther');
+  if (cardSelf && cardOther) {
+    if (isOther) {
+      cardOther.style.borderColor = 'var(--maroon)';
+      cardOther.style.background = '#fff';
+      cardOther.querySelector('strong').style.color = 'var(--maroon)';
+      cardSelf.style.borderColor = 'var(--border)';
+      cardSelf.style.background = 'var(--bg)';
+      cardSelf.querySelector('strong').style.color = 'var(--text)';
+    } else {
+      cardSelf.style.borderColor = 'var(--maroon)';
+      cardSelf.style.background = '#fff';
+      cardSelf.querySelector('strong').style.color = 'var(--maroon)';
+      cardOther.style.borderColor = 'var(--border)';
+      cardOther.style.background = 'var(--bg)';
+      cardOther.querySelector('strong').style.color = 'var(--text)';
+    }
+  }
+}
+
 async function submitConcern() {
+  const reportScope = document.querySelector('input[name="reportScope"]:checked')?.value || 'self';
+  const isPeerReport = (reportScope === 'other');
+  let reportedStudentName = '';
+  let reportedStudentGrade = '';
+  if (isPeerReport) {
+    reportedStudentName = document.getElementById('reportedStudentName').value.trim();
+    reportedStudentGrade = document.getElementById('reportedStudentGrade')?.value.trim() || '';
+    if (!reportedStudentName) {
+      showMsg('submitMsg', 'Please provide the full name of the student you are reporting for.');
+      document.getElementById('reportedStudentName').focus();
+      return;
+    }
+  }
+
   let concernType = document.getElementById('concernType').value;
   if (concernType === 'other') {
     const otherVal = document.getElementById('otherConcern').value.trim();
@@ -424,6 +513,11 @@ async function submitConcern() {
     formData.append('is_anonymous', isAnonymous ? '1' : '0');
     formData.append('incident_date', incidentDate);
     formData.append('preferred_contact', preferredContact);
+    formData.append('is_peer_report', isPeerReport ? '1' : '0');
+    if (isPeerReport) {
+      formData.append('reported_student_name', reportedStudentName);
+      formData.append('reported_student_grade', reportedStudentGrade);
+    }
     if (witnesses) {
       formData.append('witnesses', witnesses);
     }

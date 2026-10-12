@@ -49,9 +49,26 @@ foreach ($recentCases as $c) {
     if (!empty($c['witnesses'])) {
         $mediaBadges .= "<span class='badge-witness' title='Witnesses mentioned in case report'><i class='fas fa-user-group'></i> Witness</span>";
     }
+    if (!empty($c['is_peer_report'])) {
+        $mediaBadges .= "<span class='badge-witness' style='background:#fdf2f8;color:#be185d;border-color:#fbcfe8' title='Peer Report: submitted on behalf of another student'><i class='fas fa-hand-holding-heart'></i> Peer</span>";
+    }
     $date = date('M d, Y', strtotime($c['submitted_at']));
-    $student = htmlspecialchars($c['student_name']);
+    if (!empty($c['is_peer_report'])) {
+        $targetName = htmlspecialchars($c['reported_student_name'] ?: 'Other Student');
+        $targetGrade = !empty($c['reported_student_grade']) ? " <span style='font-size:11px;color:var(--text-3)'>(".htmlspecialchars($c['reported_student_grade']).")</span>" : "";
+        $student = "<div>
+            <strong style='color:var(--text)'>$targetName</strong>$targetGrade
+            <div style='font-size:11px;color:var(--text-3);margin-top:2px'>
+              <i class='fas fa-user-tag' style='color:var(--maroon)'></i> Rep by: ".htmlspecialchars($c['student_name'])."
+            </div>
+          </div>";
+    } else {
+        $student = htmlspecialchars($c['student_name']);
+    }
     $gs = htmlspecialchars($c['grade_section'] ?? '—');
+    if (!empty($c['is_peer_report']) && !empty($c['reported_student_grade'])) {
+        $gs = htmlspecialchars($c['reported_student_grade']);
+    }
     $caseRows .= "<tr>
         <td class='cell-case-num'><span class='case-num-text'>{$c['case_number']}</span></td>
         <td class='cell-student'>$student</td>

@@ -34,20 +34,7 @@ try {
     $caseSubj   = $session['case_subject'] ?: 'Concern';
     $counselorName = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')) ?: 'Guidance Counselor';
 
-    // 1. Mark the current session as completed
     $endNotes = $sessionNotes ?: ($session['notes'] ?? '');
-    $updateSessionStmt = $db->prepare("UPDATE counseling_sessions 
-        SET status = 'completed', 
-            ended_at = NOW(), 
-            notes = ? 
-        WHERE id = ?");
-    $updateSessionStmt->execute([$endNotes, $sessionId]);
-
-    // Save final session notes into case_notes if provided
-    if ($sessionNotes) {
-        $db->prepare("INSERT INTO case_notes (case_id, author_id, note_type, content, is_visible_to_student, created_at) VALUES (?, ?, 'session_notes', ?, 0, NOW())")
-           ->execute([$caseId, $user['id'], "Session Notes: " . $sessionNotes]);
-    }
 
     if ($isResolved) {
         // ── BRANCH: CASE RESOLVED ──────────────────────────────────
@@ -56,6 +43,23 @@ try {
 
         if (!$resolution) {
             jsonOut(['success' => false, 'message' => 'Please provide the case resolution summary.'], 400);
+        }
+
+        // Mark current session and all previous ongoing sessions for this case as completed
+        $updateSessionStmt = $db->prepare("UPDATE counseling_sessions 
+            SET status = 'completed', 
+                ended_at = NOW(), 
+                notes = ? 
+            WHERE id = ?");
+        $updateSessionStmt->execute([$endNotes, $sessionId]);
+
+        $db->prepare("UPDATE counseling_sessions SET status = 'completed' WHERE case_id = ? AND status = 'ongoing'")
+           ->execute([$caseId]);
+
+        // Save final session notes into case_notes if provided
+        if ($sessionNotes) {
+            $db->prepare("INSERT INTO case_notes (case_id, author_id, note_type, content, is_visible_to_student, created_at) VALUES (?, ?, 'session_notes', ?, 0, NOW())")
+               ->execute([$caseId, $user['id'], "Session Notes: " . $sessionNotes]);
         }
 
         // Update cases table
@@ -104,6 +108,20 @@ try {
 
         if (!$nextDate) {
             jsonOut(['success' => false, 'message' => 'Please set the next session schedule date and time.'], 400);
+        }
+
+        // Mark current session as ongoing progress (continuous tracking)
+        $updateSessionStmt = $db->prepare("UPDATE counseling_sessions 
+            SET status = 'ongoing', 
+                ended_at = NOW(), 
+                notes = ? 
+            WHERE id = ?");
+        $updateSessionStmt->execute([$endNotes, $sessionId]);
+
+        // Save session notes into case_notes if provided
+        if ($sessionNotes) {
+            $db->prepare("INSERT INTO case_notes (case_id, author_id, note_type, content, is_visible_to_student, created_at) VALUES (?, ?, 'session_notes', ?, 0, NOW())")
+               ->execute([$caseId, $user['id'], "Session Notes: " . $sessionNotes]);
         }
 
         // Keep case status as ongoing

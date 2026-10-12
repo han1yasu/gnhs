@@ -25,6 +25,9 @@ if ($filterGrade && $filterSection) {
     $g = addslashes($filterGrade);
     // Match "Grade 9 - X", "Grade 9 – X", or just starts with "Grade 9"
     $where .= " AND (s.grade_section LIKE 'Grade $g -%' OR s.grade_section LIKE 'Grade $g –%' OR s.grade_section LIKE 'Grade $g%')";
+} elseif ($filterSection) {
+    $s = addslashes($filterSection);
+    $where .= " AND s.grade_section LIKE '%$s%'";
 }
 if ($search) $where .= " AND (
     c.case_number LIKE '%".addslashes($search)."%'
@@ -42,29 +45,48 @@ $cases = $db->query("SELECT c.*,
     FIELD(c.priority,'high','medium','low'),
     c.submitted_at DESC")->fetchAll();
 
-function badge(string $s): string {
-    $map=['pending'=>'status-pending','under_review'=>'status-under_review','ongoing'=>'status-ongoing','resolved'=>'status-resolved','closed'=>'status-resolved'];
-    return "<span class='status-badge ".($map[$s]??'status-pending')."'>".str_replace('_',' ',ucfirst($s))."</span>";
+if (!function_exists('badge')) {
+    function badge(string $s): string {
+        $map=['pending'=>'status-pending','under_review'=>'status-under_review','ongoing'=>'status-ongoing','resolved'=>'status-resolved','closed'=>'status-resolved'];
+        return "<span class='status-badge ".($map[$s]??'status-pending')."'>".str_replace('_',' ',ucfirst($s))."</span>";
+    }
 }
-function prioBadge(string $p): string {
-    $map=['high'=>'priority-high','medium'=>'priority-medium','low'=>'priority-low'];
-    return "<span class='priority-badge ".($map[$p]??'priority-low')."'><i class='fas fa-circle'></i>".ucfirst($p)."</span>";
+if (!function_exists('prioBadge')) {
+    function prioBadge(string $p): string {
+        $map=['high'=>'priority-high','medium'=>'priority-medium','low'=>'priority-low'];
+        return "<span class='priority-badge ".($map[$p]??'priority-low')."'><i class='fas fa-circle'></i>".ucfirst($p)."</span>";
+    }
 }
 
 $rows = '';
 foreach ($cases as $c) {
     $type = ucfirst(str_replace('_',' ',$c['concern_type']));
+    $mediaBadges = '';
+    if (!empty($c['evidence_files']) && $c['evidence_files'] !== '[]') {
+        $evArray = is_string($c['evidence_files']) ? json_decode($c['evidence_files'], true) : $c['evidence_files'];
+        $cnt = is_array($evArray) ? count($evArray) : 1;
+        $mediaBadges .= " <span class='badge-evidence' title='{$cnt} attached photo/video evidence file(s)'><i class='fas fa-photo-film'></i> {$cnt} Media</span>";
+    }
+    if (!empty($c['witnesses'])) {
+        $mediaBadges .= " <span class='badge-witness' title='Witnesses mentioned'><i class='fas fa-users'></i> Witness</span>";
+    }
     $date = date('M d, Y', strtotime($c['submitted_at']));
     $rows .= "<tr>
         <td><strong style='color:var(--maroon)'>{$c['case_number']}</strong></td>
         <td>".htmlspecialchars($c['student_name'])."</td>
         <td>".htmlspecialchars($c['grade_section']??'—')."</td>
-        <td>$type</td>
+        <td>$type$mediaBadges</td>
         <td>".badge($c['status'])."</td>
         <td>".prioBadge($c['priority'])."</td>
         <td style='color:var(--text-3);font-size:12px'>$date</td>
-        <td><button class='btn-sm-outline' onclick='openCaseReview({$c['id']},\"{$c['case_number']}\",\"{$c['status']}\",\"{$c['priority']}\",".json_encode($c['subject']).",".json_encode($c['description']).")'>
-          <i class='fas fa-edit'></i> Review</button></td>
+        <td>
+          <div style='display:inline-flex;gap:6px;align-items:center'>
+            <button type='button' class='btn-sm-outline' onclick='openCaseReview({$c['id']},\"{$c['case_number']}\",\"{$c['status']}\",\"{$c['priority']}\",".json_encode($c['subject']).",".json_encode($c['description']).")'>
+              <i class='fas fa-edit'></i> Review</button>
+            <button type='button' class='btn-sm-outline' onclick=\"window.location.href='admin-chats.php?case_id={$c['id']}'\">
+              <i class='fas fa-comment-dots'></i> Chat</button>
+          </div>
+        </td>
     </tr>";
 }
 if (!$rows) $rows = "<tr><td colspan='8' style='text-align:center;color:var(--text-3);padding:40px'>".
@@ -84,6 +106,13 @@ $st4 = $filterType==='family'           ? 'selected' : '';
 $st5 = $filterType==='peer_conflict'    ? 'selected' : '';
 $st6 = $filterType==='behavioral'       ? 'selected' : '';
 $st7 = $filterType==='other'            ? 'selected' : '';
+$sg7  = $filterGrade==='7'              ? 'selected' : '';
+$sg8  = $filterGrade==='8'              ? 'selected' : '';
+$sg9  = $filterGrade==='9'              ? 'selected' : '';
+$sg10 = $filterGrade==='10'             ? 'selected' : '';
+
+$currentGradeJs   = json_encode($filterGrade);
+$currentSectionJs = json_encode($filterSection);
 
 $totalActive = count($cases);
 
@@ -126,16 +155,16 @@ $content = <<<HTML
       <option value="other"           $st7>Other</option>
     </select>
     <select class="status-select" id="gradeFilterSel" onchange="gradeFilterChange()">
-        <option value="">All Grades</option>
-        <option value="7">Grade 7</option>
-        <option value="8">Grade 8</option>
-        <option value="9">Grade 9</option>
-        <option value="10">Grade 10</option>
-      </select>
-      <select class="status-select" id="sectionFilterSel" onchange="applyFilter('section',this.value)">
-        <option value="">All Sections</option>
-      </select>
-      <button class="btn-sm-outline" onclick="clearFilters()"><i class="fas fa-times"></i> Clear</button>
+      <option value="">All Grades</option>
+      <option value="7"  $sg7>Grade 7</option>
+      <option value="8"  $sg8>Grade 8</option>
+      <option value="9"  $sg9>Grade 9</option>
+      <option value="10" $sg10>Grade 10</option>
+    </select>
+    <select class="status-select" id="sectionFilterSel" onchange="applyFilter('section',this.value)">
+      <option value="">All Sections</option>
+    </select>
+    <button class="btn-sm-outline" onclick="clearFilters()"><i class="fas fa-times"></i> Clear</button>
   </div>
   <div class="table-wrap">
     <table class="data-table">
@@ -146,7 +175,7 @@ $content = <<<HTML
 </div>
 
 <div class="modal-overlay hidden" id="caseReviewModal" onclick="closeCaseReview(event)">
-  <div class="modal-box" style="max-width:700px">
+  <div class="modal-box" style="max-width:950px;width:95%;padding:30px">
     <button class="modal-close" onclick="document.getElementById('caseReviewModal').classList.add('hidden')"><i class="fas fa-times"></i></button>
     <h2 class="modal-title">Review Case</h2>
     <div id="caseReviewBody"></div>
@@ -154,46 +183,69 @@ $content = <<<HTML
 </div>
 
 <script>
+const CURRENT_GRADE   = $currentGradeJs;
+const CURRENT_SECTION = $currentSectionJs;
+
 const CASE_SECTIONS = {
-  '7':  ['Bonifacio','Luna','Rizal','Mabini','Aguinaldo','Jacinto'],
-  '8':  ['Confucius','Goswami','Mandela','Socrates','Aristotle','Plato'],
-  '9':  ['Dalton','Bohr','Lavoisier','Newton','Curie','Einstein'],
-  '10': ['Osmena','Quezon','Magsaysay','Aguinaldo','Macapagal','Marcos']
+  '7':  ['Bonifacio', 'Burgos', 'Del Pilar', 'Diego Silang', 'Luna', 'Mabini', 'Malvar', 'Rizal'],
+  '8':  ['Abrahams', 'Basho', 'Confucius', 'Ghandi', 'Goswami', 'Kalidasa', 'Mandela', 'Mencius', 'Tagore', 'Valmiki', 'Voltaire'],
+  '9':  ['Bohr', 'Curie', 'Dalton', 'Darwin', 'Einstein', 'Faraday', 'Galileo', 'Newton'],
+  '10': ['Aguinaldo', 'Aquino', 'Garcia', 'Laurel', 'Macapagal', 'Magsaysay', 'Marcos', 'Osmena', 'Quezon']
 };
+
+function populateSections(grade, selectedSec) {
+  const sel = document.getElementById('sectionFilterSel');
+  if (!sel) return;
+  const secs = CASE_SECTIONS[grade] || [];
+  let html = '<option value="">All Sections</option>';
+  secs.forEach(function(s) {
+    const selAttr = (s === selectedSec) ? ' selected' : '';
+    html += '<option value="' + s + '"' + selAttr + '>' + s + '</option>';
+  });
+  sel.innerHTML = html;
+}
+
 function gradeFilterChange() {
   const grade = document.getElementById('gradeFilterSel').value;
-  const sel   = document.getElementById('sectionFilterSel');
-  const secs  = CASE_SECTIONS[grade]||[];
-  sel.innerHTML = '<option value="">All Sections</option>'
-    + secs.map(s=>'<option value="'+s+'">'+s+'</option>').join('');
-  applyFilter('grade', grade);
+  const url = new URL(window.location);
+  if (grade) {
+    url.searchParams.set('grade', grade);
+  } else {
+    url.searchParams.delete('grade');
+  }
+  // When grade changes (or is cleared to All Grades), clear section from URL
+  url.searchParams.delete('section');
+  window.location = url;
 }
+
 function doSearch() {
   applyFilter('q', document.getElementById('searchQ').value.trim());
 }
+
 function applyFilter(key, val) {
   const url = new URL(window.location);
   if (val) url.searchParams.set(key, val);
   else url.searchParams.delete(key);
   window.location = url;
 }
+
 function clearFilters() {
   window.location = 'admin-cases.php';
 }
-// Pre-populate section dropdown if grade filter is active
+
+// Pre-populate section dropdown and preserve active section if grade filter is active
 document.addEventListener('DOMContentLoaded', function() {
-  const grade = document.getElementById('gradeFilterSel')?.value;
-  if (grade) {
-    const secs = CASE_SECTIONS[grade]||[];
-    const sel  = document.getElementById('sectionFilterSel');
-    sel.innerHTML = '<option value="">All Sections</option>'
-      + secs.map(s=>'<option value="'+s+'">'+s+'</option>').join('');
+  if (CURRENT_GRADE) {
+    populateSections(CURRENT_GRADE, CURRENT_SECTION);
+  } else {
+    populateSections('', '');
   }
 });
 </script>
 HTML;
 
 renderLayout($user, 'All Cases', 'cases', $content);
+
 
 
 

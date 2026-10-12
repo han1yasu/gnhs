@@ -86,7 +86,9 @@ async function pageLoadInbox() {
   try {
     const params = new URLSearchParams(window.location.search);
     const archiveId = params.get('archive_id') || '';
-    const res = await fetch('/gnhs-guidance/api/get_chat_inbox.php' + (archiveId ? '?archive_id=' + archiveId : ''));
+    const caseId = params.get('case_id') || '';
+    const query = caseId ? '?case_id=' + caseId : (archiveId ? '?archive_id=' + archiveId : '');
+    const res = await fetch('/gnhs-guidance/api/get_chat_inbox.php' + query);
     const data = await res.json();
     if (data.success) {
       const list = document.getElementById('pageChatInbox');
@@ -136,8 +138,9 @@ async function pageLoadInbox() {
           `;
         }).join('');
       }
-      if (data.inbox.length > 0 && archiveId && !pageCurrentCaseId) {
-        const c = data.inbox[0];
+      const autoId = caseId || archiveId;
+      if (data.inbox.length > 0 && autoId && !pageCurrentCaseId) {
+        const c = data.inbox.find(item => item.id == autoId) || data.inbox[0];
         const typeLabel = c.concern_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
         const prioLabel = c.priority ? c.priority.charAt(0).toUpperCase() + c.priority.slice(1) + ' Priority' : '';
         pageOpenChat(c.id, c.student_name, `#${c.case_number} (${typeLabel} - ${prioLabel})`, c.status);

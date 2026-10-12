@@ -30,10 +30,19 @@ function prioBadge(string $p): string {
 $caseRows = '';
 foreach ($recentCases as $c) {
     $type = ucfirst(str_replace('_',' ',$c['concern_type']));
+    $mediaBadges = '';
+    if (!empty($c['evidence_files']) && $c['evidence_files'] !== '[]') {
+        $evArray = is_string($c['evidence_files']) ? json_decode($c['evidence_files'], true) : $c['evidence_files'];
+        $cnt = is_array($evArray) ? count($evArray) : 1;
+        $mediaBadges .= " <span class='badge-evidence' title='{$cnt} attached photo/video evidence file(s)'><i class='fas fa-photo-film'></i> {$cnt} Media</span>";
+    }
+    if (!empty($c['witnesses'])) {
+        $mediaBadges .= " <span class='badge-witness' title='Witnesses mentioned'><i class='fas fa-users'></i></span>";
+    }
     $caseRows .= "<tr>
         <td><strong style='color:var(--maroon)'>{$c['case_number']}</strong></td>
         <td>".htmlspecialchars($c['subject'])."</td>
-        <td>$type</td>
+        <td>$type$mediaBadges</td>
         <td>".badge($c['status'])."</td>
         <td>".prioBadge($c['priority'])."</td>
         <td><button class='btn-sm-outline' onclick='openCaseModal({$c['id']})'><i class='fas fa-eye'></i> View</button></td>

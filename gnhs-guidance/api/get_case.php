@@ -24,6 +24,8 @@ try {
         $u = $_SESSION['user'];
         if ($u['role']==='student' && $case['student_id'] != $u['id']) {
             jsonOut(['success'=>false,'message'=>'Access denied.']);
+        } else if ($u['role']==='teacher') {
+            jsonOut(['success'=>false,'message'=>'Access denied. Detailed case records are confidential between the student and guidance staff.'], 403);
         }
     }
 

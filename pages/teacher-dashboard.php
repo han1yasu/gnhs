@@ -17,18 +17,101 @@ $urgent    = (int)$db->query("SELECT COUNT(*) FROM referrals WHERE teacher_id=$u
 // Advisory class students with cases (if advisory class is set)
 $advisoryStudents = [];
 $advisoryCases    = [];
-if ($advisoryClass) {
-    $advisoryStudents = $db->query("SELECT * FROM users WHERE role='student' AND grade_section='".addslashes($advisoryClass)."' AND is_active=1 ORDER BY last_name ASC")->fetchAll();
+$studentActiveCasesMap = [];
 
-    // Cases from students in advisory class
-    $advisoryCases = $db->query("SELECT c.*,
-        CONCAT(s.first_name,' ',s.last_name) AS student_name,
-        s.grade_section
-        FROM cases c JOIN users s ON c.student_id=s.id
-        WHERE s.grade_section='".addslashes($advisoryClass)."'
-        AND c.status NOT IN ('resolved','closed')
+if (!function_exists('getConcernMeta')) {
+function getConcernMeta(string $type): array {
+    $typeLower = strtolower(trim($type));
+    $map = [
+        'bullying' => [
+            'label' => 'Bullying Concern',
+            'short' => 'Bullying',
+            'icon'  => 'fa-shield-alt',
+            'color' => '#dc2626',
+            'guidance_note' => 'Student reported bullying or harassment concerns. The Guidance Office is actively handling this matter. Advisory teachers are requested to maintain observant, vigilant supervision in classrooms and common areas without singling out the student.'
+        ],
+        'peer_conflict' => [
+            'label' => 'Peer Conflict / Peer Problem',
+            'short' => 'Peer Problem',
+            'icon'  => 'fa-user-friends',
+            'color' => '#0284c7',
+            'guidance_note' => 'Student reported interpersonal or peer friction. Guidance recommends fostering inclusive group activities and monitoring social dynamics without directly interrogating students.'
+        ],
+        'academic_stress' => [
+            'label' => 'Academic Stress & Workload',
+            'short' => 'Academic Stress',
+            'icon'  => 'fa-book-open',
+            'color' => '#d97706',
+            'guidance_note' => 'Student indicated academic distress or study pressure. Advisory teachers may check in gently regarding deadline pacing, understanding of lessons, or study habits.'
+        ],
+        'emotional' => [
+            'label' => 'Emotional / Mental Well-being',
+            'short' => 'Emotional Well-being',
+            'icon'  => 'fa-heart',
+            'color' => '#9333ea',
+            'guidance_note' => 'Student reported emotional or well-being difficulties. Please offer a supportive, non-judgmental classroom environment and be attentive to sudden behavioral or emotional shifts.'
+        ],
+        'family' => [
+            'label' => 'Family / Domestic Concern',
+            'short' => 'Family Concern',
+            'icon'  => 'fa-home',
+            'color' => '#059669',
+            'guidance_note' => 'Student reported personal or family-related concerns impacting their school experience. Exercise empathy and supportive flexibility when feasible.'
+        ],
+        'behavioral' => [
+            'label' => 'Behavioral Adjustment',
+            'short' => 'Behavioral',
+            'icon'  => 'fa-user-clock',
+            'color' => '#ea580c',
+            'guidance_note' => 'Guidance is supporting the student with behavioral adjustment. Consistent classroom routines, positive reinforcement, and clear expectations are recommended.'
+        ],
+        'other' => [
+            'label' => 'General Guidance Concern',
+            'short' => 'General Concern',
+            'icon'  => 'fa-tag',
+            'color' => '#475569',
+            'guidance_note' => 'Student has raised an advisory guidance matter. Guidance staff are reviewing the situation.'
+        ]
+    ];
+    return $map[$typeLower] ?? [
+        'label' => ucfirst(str_replace('_', ' ', $type)),
+        'short' => ucfirst(str_replace('_', ' ', $type)),
+        'icon'  => 'fa-clipboard-list',
+        'color' => '#550000',
+        'guidance_note' => 'Guidance staff are handling this student concern. Please maintain an encouraging and supportive classroom posture.'
+    ];
+}
+}
+
+if ($advisoryClass) {
+    $stmtStudents = $db->prepare("SELECT * FROM users 
+        WHERE role='student' 
+          AND REPLACE(grade_section, ' – ', ' - ') = REPLACE(?, ' – ', ' - ') 
+          AND (is_active=1 OR is_active IS NULL) 
+        ORDER BY last_name ASC");
+    $stmtStudents->execute([$advisoryClass]);
+    $advisoryStudents = $stmtStudents->fetchAll();
+
+    // Active cases from students in advisory class - high-level summary fields only (no description or notes)
+    $stmtCases = $db->prepare("SELECT c.id, c.case_number, c.student_id, c.is_anonymous, c.concern_type, c.priority, c.status, c.submitted_at,
+        CASE WHEN c.is_anonymous=1 THEN 'Anonymous Student' ELSE CONCAT(s.first_name,' ',s.last_name) END AS student_name,
+        s.grade_section, s.id_number, s.avatar_photo, s.avatar_initials,
+        CONCAT(COALESCE(a.first_name,'Guidance'), ' ', COALESCE(a.last_name,'Counselor')) AS counselor_name
+        FROM cases c 
+        JOIN users s ON c.student_id=s.id
+        LEFT JOIN users a ON c.assigned_to=a.id
+        WHERE REPLACE(s.grade_section, ' – ', ' - ') = REPLACE(?, ' – ', ' - ')
+          AND c.status NOT IN ('resolved','closed')
         ORDER BY FIELD(c.priority,'high','medium','low'), c.submitted_at DESC
-        LIMIT 10")->fetchAll();
+        LIMIT 10");
+    $stmtCases->execute([$advisoryClass]);
+    $advisoryCases = $stmtCases->fetchAll();
+
+    foreach ($advisoryCases as $ac) {
+        if (empty($ac['is_anonymous'])) {
+            $studentActiveCasesMap[(int)$ac['student_id']][] = $ac;
+        }
+    }
 }
 
 // Recent referrals by this teacher
@@ -80,31 +163,73 @@ if ($advisoryClass) {
             ? "<img src='".htmlspecialchars($photo)."' style='width:40px;height:40px;border-radius:10px;object-fit:cover;'/>"
             : "<div style='width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,var(--maroon),var(--maroon-mid));color:#fff;font-size:13px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0'>$init</div>";
         $name = htmlspecialchars($s['first_name'].' '.$s['last_name']);
+        
+        $hasConcern = !empty($studentActiveCasesMap[(int)$s['id']]);
+        $concernTag = $hasConcern 
+            ? "<span class='concern-pill-active' style='font-size:10px;padding:2px 7px;margin-top:3px;display:inline-flex'><i class='fas fa-exclamation-circle'></i> Concern Raised</span>" 
+            : "";
+
         $studentCards .= "<div style='display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)'>
             $avatarEl
-            <div>
+            <div style='flex:1'>
                 <div style='font-size:13px;font-weight:700'>$name</div>
                 <div style='font-size:11px;color:var(--text-3)'>".htmlspecialchars($s['grade_section'])."</div>
+                $concernTag
             </div>
         </div>";
     }
-    if (!$studentCards) $studentCards = "<div style='text-align:center;color:var(--text-3);padding:20px;font-size:13px'>No registered students in your advisory class yet.</div>";
+    if (!$studentCards) {
+        $studentCards = "<div style='text-align:center;color:var(--text-3);padding:20px;font-size:13px'>No registered students in your advisory class yet.</div>";
+    } else {
+        $studentCards .= "<div style='padding-top:12px;text-align:center'>
+            <a href='teacher-advisory.php' style='color:var(--maroon);font-weight:700;font-size:12px;text-decoration:none'>
+              <i class='fas fa-users'></i> View Full Advisory Roster & Concerns →
+            </a>
+          </div>";
+    }
 
     // Advisory cases table
     $casesRows = '';
     foreach ($advisoryCases as $c) {
-        $type = ucfirst(str_replace('_',' ',$c['concern_type']));
-        $date = date('M d', strtotime($c['submitted_at']));
+        $meta = getConcernMeta($c['concern_type']);
+        $date = date('M d, Y', strtotime($c['submitted_at']));
+        $cSummary = [
+            'id' => (int)$c['id'],
+            'case_number' => $c['case_number'],
+            'is_anonymous' => !empty($c['is_anonymous']),
+            'student_name' => $c['student_name'],
+            'id_number' => !empty($c['is_anonymous']) ? 'Confidential' : ($c['id_number'] ?? ''),
+            'grade_section' => $c['grade_section'],
+            'concern_type' => $c['concern_type'],
+            'concern_label' => $meta['label'],
+            'concern_icon' => $meta['icon'],
+            'concern_color' => $meta['color'],
+            'guidance_note' => $meta['guidance_note'],
+            'status' => $c['status'],
+            'status_label' => str_replace('_', ' ', ucfirst($c['status'])),
+            'submitted_at' => $date,
+            'counselor_name' => $c['counselor_name']
+        ];
+        $cJson = htmlspecialchars(json_encode($cSummary), ENT_QUOTES, 'UTF-8');
+
         $casesRows .= "<tr>
             <td><strong style='color:var(--maroon)'>{$c['case_number']}</strong></td>
             <td>".htmlspecialchars($c['student_name'])."</td>
-            <td>$type</td>
-            <td>".prioBadge($c['priority'])."</td>
+            <td>
+              <span style='color:{$meta['color']};font-weight:700;display:inline-flex;align-items:center;gap:6px;font-size:13px'>
+                <i class='fas {$meta['icon']}'></i> {$meta['label']}
+              </span>
+            </td>
             <td>".statusBadge($c['status'])."</td>
             <td style='color:var(--text-3);font-size:12px'>$date</td>
+            <td style='text-align:right'>
+              <button type='button' class='btn-sm-outline' onclick='openAdvisoryConcernModal(this)' data-concern='$cJson'>
+                <i class='fas fa-eye'></i> View Summary
+              </button>
+            </td>
         </tr>";
     }
-    if (!$casesRows) $casesRows = "<tr><td colspan='6' style='text-align:center;color:var(--text-3);padding:24px'>No active cases from your advisory class. 🎉</td></tr>";
+    if (!$casesRows) $casesRows = "<tr><td colspan='6' style='text-align:center;color:var(--text-3);padding:24px'>No active guidance concerns from your advisory class.</td></tr>";
 
     $advisoryHtml = "
     <div style='display:grid;grid-template-columns:300px 1fr;gap:22px;margin-bottom:22px'>
@@ -116,16 +241,21 @@ if ($advisoryClass) {
         <div style='font-size:12px;color:var(--text-3);margin-bottom:12px;padding:8px 12px;background:var(--maroon-pale);border-radius:8px;border:1px solid var(--maroon-tint)'>
           <i class='fas fa-chalkboard-teacher' style='color:var(--maroon)'></i> ".htmlspecialchars($advisoryClass)."
         </div>
-        <div style='max-height:320px;overflow-y:auto'>$studentCards</div>
+        <div style='max-height:340px;overflow-y:auto'>$studentCards</div>
       </div>
       <div class='content-card'>
         <div class='card-header'>
           <h3><i class='fas fa-folder-open'></i> Active Cases — Advisory Class</h3>
-          <span style='background:#fef2f2;color:#dc2626;padding:3px 10px;border-radius:50px;font-size:12px;font-weight:700'>$caseCount active</span>
+          <div style='display:flex;align-items:center;gap:8px'>
+            <span style='background:#fef2f2;color:#dc2626;padding:3px 10px;border-radius:50px;font-size:12px;font-weight:700'>$caseCount active</span>
+            <a href='teacher-advisory.php' class='btn-sm-primary' style='text-decoration:none;font-size:12px'>
+              <i class='fas fa-external-link-alt'></i> View All Concerns
+            </a>
+          </div>
         </div>
         <div class='table-wrap'>
           <table class='data-table'>
-            <thead><tr><th>Case #</th><th>Student</th><th>Type</th><th>Priority</th><th>Status</th><th>Date</th></tr></thead>
+            <thead><tr><th>Case #</th><th>Student</th><th>Concern Summary</th><th>Status</th><th>Date</th><th style='text-align:right'>Action</th></tr></thead>
             <tbody>$casesRows</tbody>
           </table>
         </div>
@@ -186,6 +316,23 @@ $content .= <<<HTML
     <div id="refModalBody"></div>
   </div>
 </div>
+
+<!-- Advisory Concern Summary Modal (Teacher View) -->
+<div class="modal-overlay hidden" id="advisoryConcernModal" onclick="if(event.target.id==='advisoryConcernModal')this.classList.add('hidden')">
+  <div class="modal-box wide-modal" style="max-width:640px">
+    <button class="modal-close" onclick="document.getElementById('advisoryConcernModal').classList.add('hidden')"><i class="fas fa-times"></i></button>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:14px">
+      <div style="width:40px;height:40px;border-radius:10px;background:var(--maroon-pale);color:var(--maroon);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">
+        <i class="fas fa-info-circle"></i>
+      </div>
+      <div>
+        <h2 class="modal-title" style="text-align:left;margin:0;font-size:18px">Advisory Student Guidance Summary</h2>
+        <div style="font-size:12px;color:var(--text-3);margin-top:2px">High-level advisory awareness • Full details confidential</div>
+      </div>
+    </div>
+    <div id="advisoryConcernModalBody"></div>
+  </div>
+</div>
 HTML;
 
 $content .= '
@@ -219,10 +366,42 @@ function openRefModal(btn) {
 
   document.getElementById("refModal").classList.remove("hidden");
 }
+
+function openAdvisoryConcernModal(btn) {
+  const c = JSON.parse(btn.getAttribute("data-concern"));
+  const referralBtn = c.is_anonymous ? "" :
+    "<div style=\"margin-top:12px;display:flex;justify-content:flex-end\">"
+    +"<a href=\"teacher-referral.php?student_name="+encodeURIComponent(c.student_name)+"&concern_type="+encodeURIComponent(c.concern_type)+"\" class=\"btn-sm-primary\" style=\"text-decoration:none\">"
+    +"<i class=\"fas fa-clipboard-check\"></i> Submit Teacher Observation Referral</a></div>";
+
+  document.getElementById("advisoryConcernModalBody").innerHTML =
+    "<div style=\"display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg2);border-radius:10px;margin-bottom:14px\">"
+    +"<div style=\"flex:1\">"
+    +"<div style=\"font-size:15px;font-weight:800;color:var(--text)\">"+c.student_name+"</div>"
+    +"<div style=\"font-size:12px;color:var(--text-3);margin-top:2px\">ID: <strong>"+c.id_number+"</strong> • Section: <strong>"+c.grade_section+"</strong></div>"
+    +"</div>"
+    +"<div><strong style=\"color:var(--maroon);font-size:14px\">"+c.case_number+"</strong></div>"
+    +"</div>"
+    +"<div class=\"concern-summary-card\">"
+    +"<div class=\"csc-header\">"
+    +"<div class=\"csc-title\"><span style=\"color:"+c.concern_color+";font-size:18px\"><i class=\"fas "+c.concern_icon+"\"></i></span><span style=\"color:var(--text);font-weight:800\">"+c.concern_label+"</span></div>"
+    +"<div><span class=\"status-badge status-"+c.status+"\">"+c.status_label+"</span></div>"
+    +"</div>"
+    +"<div style=\"display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px;color:var(--text-2);margin-bottom:10px;background:var(--bg2);padding:10px;border-radius:8px\">"
+    +"<div><i class=\"fas fa-calendar-alt\" style=\"color:var(--maroon);margin-right:6px\"></i> <strong>Raised:</strong> "+c.submitted_at+"</div>"
+    +"<div><i class=\"fas fa-user-tie\" style=\"color:var(--maroon);margin-right:6px\"></i> <strong>Counselor:</strong> "+c.counselor_name+"</div>"
+    +"</div>"
+    +"<div class=\"csc-guidance-box\"><strong><i class=\"fas fa-lightbulb\" style=\"color:var(--maroon)\"></i> Teacher Classroom Recommendation:</strong> "+c.guidance_note+"</div>"
+    +"<div class=\"csc-confidential-tag\"><i class=\"fas fa-lock\" style=\"color:var(--maroon)\"></i> <span><strong>Student Privacy Notice:</strong> Full incident descriptions and counselor interview notes are confidential between the student and Guidance Counselor. Advisory teachers are notified so you can foster a supportive classroom environment.</span></div>"
+    +referralBtn
+    +"</div>"
+    +"<div style=\"display:flex;justify-content:flex-end;margin-top:16px;padding-top:12px;border-top:1px solid var(--border)\">"
+    +"<button class=\"btn-secondary\" onclick=\"document.getElementById(\'advisoryConcernModal\').classList.add(\'hidden\')\">Close</button>"
+    +"</div>";
+
+  document.getElementById("advisoryConcernModal").classList.remove("hidden");
+}
 </script>
 ';
 
 renderLayout($user, 'Teacher Dashboard', 'dashboard', $content);
-
-
-

@@ -577,7 +577,7 @@ async function submitResetPassword() {
     });
 
     if (res.success) {
-      showToast('Password reset successfully! ✅', 'success');
+      showToast('Password reset successfully.', 'success');
       _resetLastPassword = p1;
 
       document.getElementById('resetPwForm').style.display = 'none';

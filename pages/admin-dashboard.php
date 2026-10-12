@@ -40,6 +40,15 @@ function urgencyBadge(string $u): string {
 $caseRows = '';
 foreach ($recentCases as $c) {
     $type = ucfirst(str_replace('_',' ',$c['concern_type']));
+    $mediaBadges = '';
+    if (!empty($c['evidence_files']) && $c['evidence_files'] !== '[]') {
+        $evArray = is_string($c['evidence_files']) ? json_decode($c['evidence_files'], true) : $c['evidence_files'];
+        $cnt = is_array($evArray) ? count($evArray) : 1;
+        $mediaBadges .= " <span class='badge-evidence' title='{$cnt} attached photo/video evidence file(s)'><i class='fas fa-photo-film'></i> {$cnt} Media</span>";
+    }
+    if (!empty($c['witnesses'])) {
+        $mediaBadges .= " <span class='badge-witness' title='Witnesses mentioned'><i class='fas fa-users'></i> Witness</span>";
+    }
     $date = date('M d, Y', strtotime($c['submitted_at']));
     $student = htmlspecialchars($c['student_name']);
     $gs = htmlspecialchars($c['grade_section'] ?? '—');
@@ -47,12 +56,18 @@ foreach ($recentCases as $c) {
         <td><strong style='color:var(--maroon)'>{$c['case_number']}</strong></td>
         <td>$student</td>
         <td>$gs</td>
-        <td>$type</td>
+        <td>$type$mediaBadges</td>
         <td>".badge($c['status'])."</td>
         <td>".prioBadge($c['priority'])."</td>
         <td style='color:var(--text-3);font-size:12px'>$date</td>
-        <td><button class='btn-sm-outline' onclick='openCaseReview({$c['id']},\"{$c['case_number']}\",\"{$c['status']}\",\"{$c['priority']}\",".json_encode($c['subject']).",".json_encode($c['description']).")'>
-          <i class='fas fa-edit'></i> Review</button></td>
+        <td>
+          <div style='display:inline-flex;gap:6px;align-items:center'>
+            <button type='button' class='btn-sm-outline' onclick='openCaseReview({$c['id']},\"{$c['case_number']}\",\"{$c['status']}\",\"{$c['priority']}\",".json_encode($c['subject']).",".json_encode($c['description']).")'>
+              <i class='fas fa-edit'></i> Review</button>
+            <button type='button' class='btn-sm-outline' onclick=\"window.location.href='admin-chats.php?case_id={$c['id']}'\">
+              <i class='fas fa-comment-dots'></i> Chat</button>
+          </div>
+        </td>
     </tr>";
 }
 if (!$caseRows) $caseRows = "<tr><td colspan='8' style='text-align:center;color:var(--text-3);padding:32px'>No cases submitted yet.</td></tr>";

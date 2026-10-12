@@ -6,18 +6,24 @@ $db = getDB();
 
 $isCounselor = ($user['role'] === 'admin');
 $archiveId = (int)($_GET['archive_id'] ?? 0);
+$caseId = (int)($_GET['case_id'] ?? 0);
 
-// Query active cases for this user (or specific archived case)
+// Query active cases for this user (or specific archived/selected case)
 if ($isCounselor) {
     if ($archiveId) {
         $whereClause = "c.id = ?";
         $params = [$user['id'], $archiveId];
+    } elseif ($caseId) {
+        $whereClause = "(c.id = ? OR c.status != 'resolved')";
+        $params = [$user['id'], $caseId];
     } else {
         $whereClause = "c.status != 'resolved'";
         $params = [$user['id']];
     }
     
-    $sql = "SELECT c.id, c.case_number, c.concern_type, c.priority, c.status, c.is_anonymous,
+    $orderClause = $caseId ? "(c.id = $caseId) DESC, latest_message_time DESC, c.updated_at DESC" : "latest_message_time DESC, c.updated_at DESC";
+
+    $sql = "SELECT c.id, c.case_number, c.concern_type, c.priority, c.status, c.is_anonymous, c.evidence_files, c.witnesses,
             CASE WHEN c.is_anonymous = 1 THEN 'Anonymous Student' ELSE CONCAT(u.first_name, ' ', u.last_name) END as student_name,
             (SELECT message FROM case_messages WHERE case_id = c.id ORDER BY created_at DESC LIMIT 1) as latest_message,
             (SELECT created_at FROM case_messages WHERE case_id = c.id ORDER BY created_at DESC LIMIT 1) as latest_message_time,
@@ -25,7 +31,7 @@ if ($isCounselor) {
             FROM cases c
             LEFT JOIN users u ON c.student_id = u.id
             WHERE $whereClause
-            ORDER BY latest_message_time DESC, c.updated_at DESC";
+            ORDER BY $orderClause";
     $stmt = $db->prepare($sql);
     $stmt->execute($params);
 } else {
@@ -33,18 +39,23 @@ if ($isCounselor) {
     if ($archiveId) {
         $whereClause = "c.id = ? AND c.student_id = ?";
         $params = [$user['id'], $archiveId, $user['id']];
+    } elseif ($caseId) {
+        $whereClause = "(c.id = ? OR c.status != 'resolved') AND c.student_id = ?";
+        $params = [$user['id'], $caseId, $user['id']];
     } else {
         $whereClause = "c.status != 'resolved' AND c.student_id = ?";
         $params = [$user['id'], $user['id']];
     }
     
-    $sql = "SELECT c.id, c.case_number, c.concern_type, c.priority, c.status, c.is_anonymous, 'Counselor' as student_name,
+    $orderClause = $caseId ? "(c.id = $caseId) DESC, latest_message_time DESC, c.updated_at DESC" : "latest_message_time DESC, c.updated_at DESC";
+
+    $sql = "SELECT c.id, c.case_number, c.concern_type, c.priority, c.status, c.is_anonymous, c.evidence_files, c.witnesses, 'Counselor' as student_name,
             (SELECT message FROM case_messages WHERE case_id = c.id ORDER BY created_at DESC LIMIT 1) as latest_message,
             (SELECT created_at FROM case_messages WHERE case_id = c.id ORDER BY created_at DESC LIMIT 1) as latest_message_time,
             (SELECT COUNT(*) FROM case_messages WHERE case_id = c.id AND sender_id != ? AND is_read = 0) as unread_count
             FROM cases c
             WHERE $whereClause
-            ORDER BY latest_message_time DESC, c.updated_at DESC";
+            ORDER BY $orderClause";
     $stmt = $db->prepare($sql);
     $stmt->execute($params);
 }

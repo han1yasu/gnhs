@@ -186,6 +186,41 @@ function resetForm() {
   document.getElementById('observations').value = '';
   document.getElementById('charCount').textContent = '0';
 }
+
+// Auto-fill from URL params (e.g. from Advisory Concern summary modal)
+window.addEventListener('DOMContentLoaded', () => {
+  const p = new URLSearchParams(window.location.search);
+  const name = p.get('student_name');
+  const grade = p.get('grade');
+  const section = p.get('section');
+  const concern = p.get('concern_type');
+  if (name) {
+    const nameEl = document.getElementById('studentName');
+    if (nameEl) nameEl.value = name;
+  }
+  if (grade) {
+    const gEl = document.getElementById('gradeLevel');
+    if (gEl) {
+      gEl.value = grade;
+      updateSections('sectionName');
+      if (section) {
+        const sEl = document.getElementById('sectionName');
+        if (sEl) sEl.value = section;
+      }
+    }
+  }
+  if (concern) {
+    const cEl = document.getElementById('concernType');
+    if (cEl) {
+      const opt = cEl.querySelector('option[value="' + concern + '"]');
+      if (opt) {
+        cEl.value = concern;
+      } else if (concern.includes('peer')) {
+        cEl.value = 'behavioral';
+      }
+    }
+  }
+});
 </script>
 HTML;
 

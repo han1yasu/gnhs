@@ -23,11 +23,21 @@ function prioBadge(string $p): string {
 $rows = '';
 foreach ($cases as $c) {
     $type = ucfirst(str_replace('_',' ',$c['concern_type']));
+    $mediaBadges = '';
+    if (!empty($c['evidence_files']) && $c['evidence_files'] !== '[]') {
+        $evArray = is_string($c['evidence_files']) ? json_decode($c['evidence_files'], true) : $c['evidence_files'];
+        $cnt = is_array($evArray) ? count($evArray) : 1;
+        $mediaBadges .= " <span class='badge-evidence' title='{$cnt} attached photo/video evidence file(s)'><i class='fas fa-photo-film'></i> {$cnt} Media</span>";
+    }
+    if (!empty($c['witnesses'])) {
+        $mediaBadges .= " <span class='badge-witness' title='Witnesses mentioned'><i class='fas fa-users'></i></span>";
+    }
     $date = date('M d, Y', strtotime($c['submitted_at']));
+    $anonBadge = !empty($c['is_anonymous']) ? " <span style='font-size:11px;background:#f1f5f9;color:#475569;border:1px solid #cbd5e1;padding:2px 7px;border-radius:6px;font-weight:700;display:inline-flex;align-items:center;gap:4px;' title='Your identity is anonymous to the guidance counselor'><i class='fas fa-user-secret'></i> Anonymous</span>" : "";
     $rows .= "<tr>
-        <td><strong style='color:var(--maroon)'>{$c['case_number']}</strong></td>
+        <td><strong style='color:var(--maroon)'>{$c['case_number']}</strong>$anonBadge</td>
         <td>".htmlspecialchars($c['subject'])."</td>
-        <td>$type</td>
+        <td>$type$mediaBadges</td>
         <td>".badge($c['status'])."</td>
         <td>".prioBadge($c['priority'])."</td>
         <td style='color:var(--text-3);font-size:13px'>$date</td>
@@ -70,7 +80,17 @@ $content = <<<HTML
     <h2 class="modal-title">Case Detail</h2>
     <div id="caseModalBody"></div>
   </div>
-</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const p = new URLSearchParams(window.location.search);
+  const openId = p.get('open_case') || p.get('case_id');
+  if (openId && typeof openCaseModal === 'function') {
+    setTimeout(function() {
+      openCaseModal(parseInt(openId));
+    }, 200);
+  }
+});
+</script>
 HTML;
 
 renderLayout($user, 'My Cases', 'cases', $content);

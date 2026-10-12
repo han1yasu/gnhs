@@ -77,6 +77,12 @@ function requireLogin(string $role = ''): array {
         try { $db->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS suffix VARCHAR(10) DEFAULT NULL"); } catch(Exception $e){}
         try { $db->exec("ALTER TABLE counseling_sessions ADD COLUMN IF NOT EXISTS session_type VARCHAR(50) DEFAULT 'in-person'"); } catch(Exception $e){}
         try { $db->exec("ALTER TABLE counseling_sessions ADD COLUMN IF NOT EXISTS location VARCHAR(100) DEFAULT 'Guidance Office'"); } catch(Exception $e){}
+        try { $db->exec("ALTER TABLE cases ADD COLUMN IF NOT EXISTS resolution TEXT DEFAULT NULL"); } catch(Exception $e){}
+        try { $db->exec("ALTER TABLE cases ADD COLUMN IF NOT EXISTS sanctions TEXT DEFAULT NULL"); } catch(Exception $e){}
+        try { $db->exec("ALTER TABLE cases ADD COLUMN IF NOT EXISTS resolved_at DATETIME DEFAULT NULL"); } catch(Exception $e){}
+        try { $db->exec("ALTER TABLE counseling_sessions ADD COLUMN IF NOT EXISTS notes TEXT DEFAULT NULL"); } catch(Exception $e){}
+        try { $db->exec("ALTER TABLE counseling_sessions ADD COLUMN IF NOT EXISTS started_at DATETIME DEFAULT NULL"); } catch(Exception $e){}
+        try { $db->exec("ALTER TABLE counseling_sessions ADD COLUMN IF NOT EXISTS ended_at DATETIME DEFAULT NULL"); } catch(Exception $e){}
 
         // Ensure referral_messages table exists
         try {

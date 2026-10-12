@@ -7,7 +7,7 @@ $db   = getDB();
 $search = trim($_GET['q'] ?? '');
 $filterType = $_GET['type'] ?? '';
 
-$where = "WHERE c.status IN ('resolved','closed')";
+$where = "WHERE c.status IN ('resolved','closed') AND COALESCE(c.is_follow_up, 0) = 0";
 if ($filterType) $where .= " AND c.concern_type='".addslashes($filterType)."'";
 if ($search)     $where .= " AND (
     c.case_number LIKE '%".addslashes($search)."%'
@@ -130,6 +130,14 @@ async function viewArchivedCase(id) {
     const d = await r.json();
     if (d.success) {
       const c = d.case, notes = d.notes||[];
+      let evidenceList = [];
+      if (c.evidence_files) {
+        try {
+          evidenceList = typeof c.evidence_files === 'string' ? JSON.parse(c.evidence_files) : c.evidence_files;
+        } catch(e) { evidenceList = []; }
+      }
+      if (!Array.isArray(evidenceList)) evidenceList = [];
+
       body.innerHTML = '<div class="review-meta">'
         +'<div class="rm-row"><label>Case #</label><strong style="color:var(--maroon)">'+c.case_number+'</strong></div>'
         +'<div class="rm-row"><label>Student</label><span>'+c.student_name+'</span></div>'
@@ -139,7 +147,10 @@ async function viewArchivedCase(id) {
         +'</div>'
         +'<div class="form-group" style="margin-top:14px"><label style="font-size:13px;font-weight:800;color:var(--text-2);display:block;margin-bottom:8px">Description</label>'
         +'<div class="concern-text">'+c.description+'</div></div>'
+        +(c.witnesses ? '<div style="margin-top:14px;background:var(--bg2);padding:14px;border-radius:8px;border:1px solid var(--border)"><label style="font-size:12px;font-weight:800;color:var(--text-2);display:block;margin-bottom:6px"><i class="fas fa-users" style="color:var(--maroon)"></i> Witnesses</label><div style="font-size:14px;white-space:pre-wrap">'+escapeHtml(c.witnesses)+'</div></div>' : '')
+        +(evidenceList.length ? '<div style="margin-top:14px;background:var(--bg2);padding:14px;border-radius:8px;border:1px solid var(--border)"><label style="font-size:12px;font-weight:800;color:var(--text-2);display:block;margin-bottom:10px"><i class="fas fa-photo-film" style="color:var(--maroon)"></i> Attached Evidence ('+evidenceList.length+')</label><div class="evidence-gallery-grid">'+renderEvidenceGallery(evidenceList)+'</div></div>' : '')
         +(c.ai_summary ? '<div class="ai-box" style="margin-top:12px"><div class="ai-box-label"><i class="fas fa-robot"></i> AI Summary</div><div class="ai-box-text">'+c.ai_summary+'</div></div>' : '')
+        +(c.resolution ? '<div style="margin-top:14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px"><strong style="color:#15803d;font-size:13px;display:block;margin-bottom:4px"><i class="fas fa-check-circle"></i> Official Case Resolution</strong><div style="font-size:13px;color:#166534;white-space:pre-wrap">'+escapeHtml(c.resolution)+'</div>'+(c.sanctions ? '<div style="margin-top:8px;padding-top:8px;border-top:1px dashed #86efac"><strong style="color:#991b1b;font-size:12px;display:block;margin-bottom:2px"><i class="fas fa-gavel"></i> Regulated School Rule Sanction / Action:</strong><div style="font-size:12.5px;color:#7f1d1d;white-space:pre-wrap">'+escapeHtml(c.sanctions)+'</div></div>' : '')+'</div>' : '')
         +(notes.length ? '<div style="margin-top:14px"><label style="font-size:13px;font-weight:800;color:var(--text-2);display:block;margin-bottom:8px">Counselor Notes</label>'
           +notes.map(n=>'<div class="case-note-item '+(n.is_visible_to_student=='1'?'note-response':'note-counselor')+'">'+n.content+'</div>').join('')+'</div>' : '');
     }

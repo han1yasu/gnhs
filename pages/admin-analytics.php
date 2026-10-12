@@ -232,7 +232,7 @@ $content = <<<HTML
         <!-- Range Dropdown -->
         <div style="display:inline-flex;align-items:center;gap:5px">
           <label for="timelineRangeSelect" style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:0.5px">Timeframe</label>
-          <select id="timelineRangeSelect" onchange="onTimelineRangeChange()" style="padding:5px 10px;font-size:12px;font-weight:600;border:1px solid var(--border);border-radius:6px;background:var(--card-bg,#fff);color:var(--text);cursor:pointer;outline:none">
+          <select id="timelineRangeSelect" onchange="onTimelineRangeChange()" style="padding:5px 10px;font-size:12px;font-weight:600;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text);cursor:pointer;outline:none">
             <option value="last_6_months" selected>Last 6 Months</option>
             <option value="specific_month">Specific Month</option>
             <option value="last_8_weeks">Last 8 Weeks (Weekly)</option>
@@ -244,7 +244,7 @@ $content = <<<HTML
         <!-- Specific Month Dropdown (shown when specific_month is selected) -->
         <div id="timelineMonthWrapper" style="display:none;align-items:center;gap:5px">
           <label for="timelineMonthSelect" style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:0.5px">Month</label>
-          <select id="timelineMonthSelect" onchange="onTimelineMonthChange()" style="padding:5px 10px;font-size:12px;font-weight:600;border:1px solid var(--border);border-radius:6px;background:var(--card-bg,#fff);color:var(--text);cursor:pointer;outline:none">
+          <select id="timelineMonthSelect" onchange="onTimelineMonthChange()" style="padding:5px 10px;font-size:12px;font-weight:600;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text);cursor:pointer;outline:none">
             $monthSelectOptions
           </select>
         </div>
@@ -276,7 +276,7 @@ $content = <<<HTML
 
     <!-- Chart container with loading overlay -->
     <div style="position:relative;min-height:180px">
-      <div id="timelineLoadingOverlay" style="display:none;position:absolute;inset:0;background:rgba(255,255,255,0.75);backdrop-filter:blur(1px);z-index:4;align-items:center;justify-content:center;border-radius:8px">
+      <div id="timelineLoadingOverlay" style="display:none;position:absolute;inset:0;background:var(--bg);opacity:0.85;backdrop-filter:blur(1px);z-index:4;align-items:center;justify-content:center;border-radius:8px">
         <div style="font-size:12px;font-weight:700;color:var(--maroon);display:flex;align-items:center;gap:6px">
           <i class="fas fa-spinner fa-spin"></i> Updating chart...
         </div>
@@ -383,12 +383,23 @@ $content = <<<HTML
 
 <style>
 .drilldown-case-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
   transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
 .drilldown-case-card:hover {
   border-color: var(--maroon) !important;
-  box-shadow: 0 4px 14px rgba(85,0,0,0.08) !important;
+  box-shadow: 0 4px 14px rgba(85,0,0,0.1) !important;
   transform: translateY(-1px);
+}
+[data-theme="dark"] .drilldown-case-card {
+  background: var(--bg) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
 }
 
 /* Position drilldown & review modals near the top of the viewport without needing to scroll down */
@@ -421,31 +432,42 @@ $content = <<<HTML
 #caseReviewModal .modal-box {
   margin: 0 auto !important;
   max-height: calc(100vh - 75px) !important;
+  background: var(--white) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+}
+
+[data-theme="dark"] #casesDrilldownModal .modal-box,
+[data-theme="dark"] #caseReviewModal .modal-box {
+  background: var(--bg2) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6) !important;
 }
 </style>
 
 <!-- Drilldown Modal for Timeline Points & Status Slices -->
 <div class="modal-overlay hidden" id="casesDrilldownModal" onclick="if(event.target===this)closeDrilldownModal()" style="z-index:10000">
-  <div class="modal-box wide-modal" style="background:#ffffff !important;border-radius:20px;box-shadow:0 25px 60px rgba(0,0,0,0.4);max-width:780px;width:95%;padding:26px;display:flex;flex-direction:column;position:relative;z-index:10001;color:#1f2937">
+  <div class="modal-box wide-modal" style="border-radius:20px;box-shadow:0 25px 60px rgba(0,0,0,0.4);max-width:780px;width:95%;padding:26px;display:flex;flex-direction:column;position:relative;z-index:10001">
     <!-- Modal Header -->
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;padding-bottom:14px;border-bottom:1px solid #e5e7eb;margin-bottom:16px">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;padding-bottom:14px;border-bottom:1px solid var(--border);margin-bottom:16px">
       <div>
-        <h3 id="drilldownModalTitle" style="margin:0;font-size:18px;font-weight:800;color:#111827;display:flex;align-items:center;gap:8px">
+        <h3 id="drilldownModalTitle" style="margin:0;font-size:18px;font-weight:800;color:var(--text);display:flex;align-items:center;gap:8px">
           <i class="fas fa-folder-open" style="color:var(--maroon)"></i> Cases
         </h3>
-        <p id="drilldownModalSubtitle" style="margin:4px 0 0 0;font-size:13px;color:#6b7280">Showing cases submitted for this selection</p>
+        <p id="drilldownModalSubtitle" style="margin:4px 0 0 0;font-size:13px;color:var(--text-3)">Showing cases submitted for this selection</p>
       </div>
-      <button type="button" class="modal-close" onclick="closeDrilldownModal()" style="position:static;width:34px;height:34px;cursor:pointer;background:#f3f4f6;border-radius:50%;border:none;display:flex;align-items:center;justify-content:center;color:#4b5563"><i class="fas fa-times"></i></button>
+      <button type="button" class="modal-close" onclick="closeDrilldownModal()" style="position:static;width:34px;height:34px;cursor:pointer;background:var(--bg);border-radius:50%;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--text-2);transition:all .15s"><i class="fas fa-times"></i></button>
     </div>
 
     <!-- Modal Scrollable Content -->
-    <div id="drilldownModalBody" style="overflow-y:auto;padding-right:6px;flex:1;max-height:calc(100vh - 240px);min-height:120px;color:#1f2937">
+    <div id="drilldownModalBody" style="overflow-y:auto;padding-right:6px;flex:1;max-height:calc(100vh - 240px);min-height:120px;color:var(--text)">
       <!-- Dynamic list loaded via AJAX -->
     </div>
 
     <!-- Modal Footer -->
-    <div style="display:flex;align-items:center;justify-content:space-between;padding-top:14px;border-top:1px solid #e5e7eb;margin-top:14px;font-size:13px">
-      <span id="drilldownModalCount" style="color:#6b7280;font-weight:600">0 cases found</span>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding-top:14px;border-top:1px solid var(--border);margin-top:14px;font-size:13px">
+      <span id="drilldownModalCount" style="color:var(--text-3);font-weight:600">0 cases found</span>
       <button type="button" class="btn-sm-outline" onclick="closeDrilldownModal()" style="cursor:pointer">Close</button>
     </div>
   </div>
@@ -453,9 +475,9 @@ $content = <<<HTML
 
 <!-- Case Review Modal (Used when counselor clicks 'Quick Review') -->
 <div class="modal-overlay hidden" id="caseReviewModal" onclick="if(event.target===this)document.getElementById('caseReviewModal').classList.add('hidden')" style="z-index:10005">
-  <div class="modal-box" style="max-width:920px;width:95%;padding:28px;position:relative;background:#ffffff !important;border-radius:20px;box-shadow:0 25px 60px rgba(0,0,0,0.4);max-height:calc(100vh - 75px);overflow-y:auto;color:#1f2937">
-    <button type="button" class="modal-close" onclick="document.getElementById('caseReviewModal').classList.add('hidden')" style="cursor:pointer;position:absolute;top:18px;right:18px"><i class="fas fa-times"></i></button>
-    <h2 class="modal-title" style="text-align:left;font-size:20px;margin-bottom:16px;color:#111827"><i class="fas fa-clipboard-check" style="color:var(--maroon)"></i> Review Case</h2>
+  <div class="modal-box" style="max-width:920px;width:95%;padding:28px;position:relative;border-radius:20px;box-shadow:0 25px 60px rgba(0,0,0,0.4);max-height:calc(100vh - 75px);overflow-y:auto">
+    <button type="button" class="modal-close" onclick="document.getElementById('caseReviewModal').classList.add('hidden')" style="cursor:pointer;position:absolute;top:18px;right:18px;width:34px;height:34px;background:var(--bg);border-radius:50%;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--text-2);transition:all .15s"><i class="fas fa-times"></i></button>
+    <h2 class="modal-title" style="text-align:left;font-size:20px;margin-bottom:16px;color:var(--text)"><i class="fas fa-clipboard-check" style="color:var(--maroon)"></i> Review Case</h2>
     <div id="caseReviewBody"></div>
   </div>
 </div>
@@ -766,10 +788,10 @@ function renderCasesDrilldown(res) {
 
   if (!res.cases || res.cases.length === 0) {
     if (countSpan) countSpan.textContent = '0 cases found';
-    body.innerHTML = '<div style="text-align:center;padding:55px 20px;background:#fbfbfb;border-radius:14px;border:1px dashed #d1d5db;margin:8px 0">' +
-      '<div style="width:68px;height:68px;border-radius:50%;background:#fee2e2;color:var(--maroon);display:inline-flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:14px"><i class="fas fa-folder-open"></i></div>' +
-      '<h4 style="margin:0 0 6px 0;font-size:17px;font-weight:800;color:#111827">No Cases Recorded</h4>' +
-      '<p style="margin:0;font-size:13px;color:#6b7280;line-height:1.6">There were <strong>no counseling cases recorded</strong> for this specific date or selection.</p>' +
+    body.innerHTML = '<div style="text-align:center;padding:55px 20px;background:var(--bg);border-radius:14px;border:1px dashed var(--border);margin:8px 0">' +
+      '<div style="width:68px;height:68px;border-radius:50%;background:var(--maroon-pale);color:var(--maroon);display:inline-flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:14px"><i class="fas fa-folder-open"></i></div>' +
+      '<h4 style="margin:0 0 6px 0;font-size:17px;font-weight:800;color:var(--text)">No Cases Recorded</h4>' +
+      '<p style="margin:0;font-size:13px;color:var(--text-3);line-height:1.6">There were <strong>no counseling cases recorded</strong> for this specific date or selection.</p>' +
       '</div>';
     return;
   }
@@ -794,7 +816,7 @@ function renderCasesDrilldown(res) {
     const pBadge = prioBadges[c.priority] || ('<span class="priority-badge priority-low">' + escapeHtml(c.priority) + '</span>');
     const descOrSummary = c.ai_summary ? ('<div style="margin-bottom:4px"><span style="font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase"><i class="fas fa-magic"></i> AI Summary:</span> ' + escapeHtml(c.ai_summary) + '</div>') : ('<div>' + escapeHtml(c.description || '') + '</div>');
 
-    html += '<div class="drilldown-case-card" style="background:var(--card-bg,#fff);border:1px solid var(--border,#e5e7eb);border-radius:10px;padding:15px 18px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.03)">' +
+    html += '<div class="drilldown-case-card">' +
       '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px">' +
         '<div style="display:flex;align-items:center;gap:10px">' +
           '<strong style="color:var(--maroon);font-size:15px">#' + escapeHtml(c.case_number) + '</strong>' +
@@ -810,7 +832,7 @@ function renderCasesDrilldown(res) {
         '<div><i class="fas fa-tag" style="color:var(--maroon);width:14px"></i> <strong>Concern:</strong> ' + escapeHtml(c.formatted_type) + '</div>' +
       '</div>' +
 
-      '<div style="background:var(--bg2,#f9fafb);border-radius:8px;padding:10px 14px;margin-bottom:12px;border:1px solid var(--border,#f0f0f0);font-size:13px;line-height:1.5;color:var(--text-2)">' +
+      '<div style="background:var(--bg);border-radius:8px;padding:10px 14px;margin-bottom:12px;border:1px solid var(--border);font-size:13px;line-height:1.5;color:var(--text-2)">' +
         '<div style="font-weight:700;color:var(--text);margin-bottom:4px">' + escapeHtml(c.subject || 'Concern Details') + '</div>' +
         '<div style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">' + descOrSummary + '</div>' +
       '</div>' +

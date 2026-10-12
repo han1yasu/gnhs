@@ -58,8 +58,8 @@ foreach ($pendingUsers as $u) {
         <td><span class='user-card-role $roleClass' style='font-size:11px;padding:3px 10px;'>$roleLabel</span></td>
         <td>$detail <div style='font-size:12px;color:var(--text-3)'>ID: $idNum</div></td>
         <td>
-            <span style='background:#fef3c7;border:1px solid #fde68a;color:#92400e;font-size:11px;font-weight:700;padding:4px 9px;border-radius:20px;display:inline-flex;align-items:center;gap:5px;'>
-                <i class='fas fa-clock' style='color:#d97706'></i> Reset Requested
+            <span style='background:rgba(217,119,6,0.12);border:1px solid rgba(217,119,6,0.25);color:#d97706;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;display:inline-flex;align-items:center;gap:5px;'>
+                <i class='fas fa-clock'></i> Reset Requested
             </span>
         </td>
         <td style='text-align:right;padding-right:16px;'>
@@ -67,7 +67,7 @@ foreach ($pendingUsers as $u) {
                 <button type='button' class='btn-sm-primary' style='background:#16a34a;border-color:#15803d;padding:6px 14px;font-size:12px;display:inline-flex;align-items:center;gap:6px;' onclick=\"openTotpActionModal({$u['id']}, '$rawName', '$rawEmail', '$rawRole', 'reset')\">
                     <i class='fas fa-check'></i> Reset 2FA
                 </button>
-                <button type='button' class='btn-sm-outline' style='color:#64748b;border-color:#cbd5e1;padding:6px 12px;font-size:12px;' onclick=\"openTotpActionModal({$u['id']}, '$rawName', '$rawEmail', '$rawRole', 'dismiss')\" title='Dismiss request without resetting'>
+                <button type='button' class='btn-sm-outline' style='color:var(--text-2);border-color:var(--border);padding:6px 12px;font-size:12px;' onclick=\"openTotpActionModal({$u['id']}, '$rawName', '$rawEmail', '$rawRole', 'dismiss')\" title='Dismiss request without resetting'>
                     <i class='fas fa-times'></i> Dismiss
                 </button>
             </div>
@@ -102,12 +102,12 @@ foreach ($activeTotpUsers as $u) {
         <td><span class='user-card-role $roleClass' style='font-size:11px;padding:3px 10px;'>$roleLabel</span></td>
         <td><div style='font-size:12px;color:var(--text-3)'>ID: $idNum</div></td>
         <td>
-            <span style='background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;font-size:11px;font-weight:700;padding:4px 9px;border-radius:20px;display:inline-flex;align-items:center;gap:5px;'>
-                <i class='fas fa-shield-check' style='color:#16a34a'></i> 2FA Active
+            <span style='background:rgba(22,163,74,0.12);border:1px solid rgba(22,163,74,0.25);color:#16a34a;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;display:inline-flex;align-items:center;gap:5px;'>
+                <i class='fas fa-shield-alt'></i> 2FA Active
             </span>
         </td>
         <td style='text-align:right;padding-right:16px;'>
-            <button type='button' class='btn-sm-outline' style='color:#d97706;border-color:#fde68a;background:#fffbeb;padding:6px 12px;font-size:12px;display:inline-flex;align-items:center;gap:6px;' onclick=\"openTotpActionModal({$u['id']}, '$rawName', '$rawEmail', '$rawRole', 'reset')\">
+            <button type='button' class='btn-sm-outline' style='color:#d97706;border-color:rgba(217,119,6,0.3);background:rgba(217,119,6,0.08);padding:6px 12px;font-size:12px;display:inline-flex;align-items:center;gap:6px;' onclick=\"openTotpActionModal({$u['id']}, '$rawName', '$rawEmail', '$rawRole', 'reset')\">
                 <i class='fas fa-redo'></i> Reset 2FA
             </button>
         </td>
@@ -115,27 +115,30 @@ foreach ($activeTotpUsers as $u) {
 }
 
 $emptyPendingHtml = "
-<div id='pendingEmptyState' style='display:" . ($pendingCount ? 'none' : 'block') . ";text-align:center;padding:50px 20px;'>
-    <div style='width:68px;height:68px;border-radius:20px;background:#f0fdf4;color:#16a34a;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:30px;box-shadow:0 8px 20px rgba(22,163,74,0.15)'>
-        <i class='fas fa-shield-alt'></i>
-    </div>
-    <h3 style='font-size:18px;font-weight:800;color:var(--text);margin-bottom:6px'>All Clear! No Pending Requests</h3>
-    <p style='color:var(--text-3);font-size:14px;max-width:440px;margin:0 auto;line-height:1.5'>
-        Whenever a student or teacher loses their authenticator app and clicks <strong>\"Lost your authenticator? Request 2FA Reset\"</strong> on the login screen, their request will appear here for one-click approval.
+<div id='pendingEmptyState' style='display:" . ($pendingCount ? 'none' : 'block') . ";text-align:center;padding:44px 20px;background:var(--bg);border:1px dashed var(--border);border-radius:12px;margin:16px 0;'>
+    <h3 style='font-size:16px;font-weight:800;color:var(--text);margin-bottom:6px'>No Pending 2FA Reset Requests</h3>
+    <p style='color:var(--text-3);font-size:13.5px;max-width:460px;margin:0 auto;line-height:1.5'>
+        Whenever a student or teacher requests a 2FA reset from the login screen, their verification request will appear here for administrator approval.
     </p>
 </div>";
 
 $emptyActiveHtml = "
-<div id='activeEmptyState' style='display:" . ($activeCount ? 'none' : 'block') . ";text-align:center;padding:50px 20px;'>
-    <div style='width:68px;height:68px;border-radius:20px;background:var(--bg2);color:var(--text-3);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:30px;'>
-        <i class='fas fa-user-shield'></i>
-    </div>
-    <h3 style='font-size:18px;font-weight:800;color:var(--text);margin-bottom:6px'>No Active 2FA Users</h3>
-    <p style='color:var(--text-3);font-size:14px;max-width:400px;margin:0 auto'>Users will appear here once they complete two-factor authentication setup.</p>
+<div id='activeEmptyState' style='display:" . ($activeCount ? 'none' : 'block') . ";text-align:center;padding:44px 20px;background:var(--bg);border:1px dashed var(--border);border-radius:12px;margin:16px 0;'>
+    <h3 style='font-size:16px;font-weight:800;color:var(--text);margin-bottom:6px'>No Active 2FA Accounts</h3>
+    <p style='color:var(--text-3);font-size:13.5px;max-width:400px;margin:0 auto'>Users will appear here once they complete two-factor authentication setup.</p>
 </div>";
 
 $content = <<<HTML
 <style>
+.totp-tab-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--bg2);
+    padding: 4px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+}
 .tab-pill {
     padding: 8px 16px;
     border-radius: 10px;
@@ -157,7 +160,24 @@ $content = <<<HTML
 .tab-pill.active {
     color: var(--maroon);
     background: #fff;
-    box-shadow: var(--shadow-sm);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+[data-theme="dark"] .totp-tab-bar {
+    background: var(--bg);
+    border-color: var(--border);
+}
+[data-theme="dark"] .tab-pill {
+    color: var(--text-2);
+}
+[data-theme="dark"] .tab-pill:hover {
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.06);
+}
+[data-theme="dark"] .tab-pill.active {
+    color: #fff;
+    background: #27272a;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
 }
 .totp-table th {
     padding: 12px 16px;
@@ -176,12 +196,38 @@ $content = <<<HTML
 .totp-table tr:hover td {
     background: rgba(0,0,0,0.015);
 }
+[data-theme="dark"] .totp-table tr:hover td {
+    background: rgba(255,255,255,0.02);
+}
+.totp-notice-box {
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 18px;
+    text-align: left;
+    font-size: 13px;
+    line-height: 1.5;
+}
+.totp-notice-warning {
+    background: rgba(217, 119, 6, 0.12);
+    border: 1px solid rgba(217, 119, 6, 0.25);
+    color: #d97706;
+}
+.totp-notice-neutral {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    color: var(--text-2);
+}
+[data-theme="dark"] .totp-notice-warning {
+    background: rgba(217, 119, 6, 0.15);
+    border-color: rgba(217, 119, 6, 0.35);
+    color: #fbbf24;
+}
 </style>
 
 <!-- Summary Cards -->
 <div class="summary-cards" style="grid-template-columns:repeat(3, 1fr);margin-bottom:24px;">
     <div class="sum-card" style="border-left:4px solid #f59e0b;">
-        <div class="sum-icon" style="background:#fffbeb;color:#d97706">
+        <div class="sum-icon" style="background:rgba(217,119,6,0.12);color:#d97706">
             <i class="fas fa-clock"></i>
         </div>
         <div>
@@ -191,7 +237,7 @@ $content = <<<HTML
     </div>
 
     <div class="sum-card" style="border-left:4px solid #16a34a;">
-        <div class="sum-icon" style="background:#f0fdf4;color:#16a34a">
+        <div class="sum-icon" style="background:rgba(22,163,74,0.12);color:#16a34a">
             <i class="fas fa-shield-alt"></i>
         </div>
         <div>
@@ -201,7 +247,7 @@ $content = <<<HTML
     </div>
 
     <div class="sum-card" style="border-left:4px solid var(--maroon);">
-        <div class="sum-icon" style="background:var(--maroon-pale);color:var(--maroon)">
+        <div class="sum-icon" style="background:rgba(85,0,0,0.1);color:var(--maroon)">
             <i class="fas fa-users"></i>
         </div>
         <div>
@@ -214,7 +260,7 @@ $content = <<<HTML
 <!-- Main Table Card -->
 <div class="content-card">
     <div class="card-header" style="flex-wrap:wrap;gap:14px;margin-bottom:20px;border-bottom:1px solid var(--border);padding-bottom:16px;">
-        <div style="display:flex;align-items:center;gap:10px;background:var(--bg2);padding:4px;border-radius:12px;">
+        <div class="totp-tab-bar">
             <button type="button" class="tab-pill active" id="tabBtnPending" onclick="switchView('pending')">
                 <i class="fas fa-clock"></i> Pending Requests 
                 <span style="background:" . ($pendingCount ? '#e11d48' : 'var(--text-3)') . ";color:#fff;font-size:11px;font-weight:800;padding:2px 7px;border-radius:10px;margin-left:2px;">$pendingCount</span>
@@ -265,7 +311,7 @@ $content = <<<HTML
                     <tr>
                         <th style="text-align:left;">User</th>
                         <th style="text-align:left;">Role</th>
-                        <th style="text-align:left;">ID Number</th>
+                        <th style="text-align:left;">Grade / Class / ID</th>
                         <th style="text-align:left;">Status</th>
                         <th style="text-align:right;padding-right:16px;">Action</th>
                     </tr>
@@ -282,13 +328,14 @@ $content = <<<HTML
 <div class="modal-overlay hidden" id="totpActionModal" onclick="closeTotpActionModal(event)">
     <div class="modal-box" style="max-width:480px">
         <button class="modal-close" onclick="closeTotpActionModal()"><i class="fas fa-times"></i></button>
-        <div class="modal-logo" id="actionModalLogo" style="background:#f0fdf4;color:#16a34a"><i class="fas fa-shield-alt"></i></div>
-        <h2 class="modal-title" id="actionModalTitle">Reset Two-Factor Authentication</h2>
-        <p class="modal-sub" id="actionModalSub">Unlink authenticator for this user</p>
+        <div style="margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid var(--border)">
+            <h2 class="modal-title" id="actionModalTitle" style="text-align:left;font-size:18px;margin-bottom:4px">Reset Two-Factor Authentication</h2>
+            <p class="modal-sub" id="actionModalSub" style="text-align:left;font-size:13px;margin:0">Unlink authenticator for this user</p>
+        </div>
 
         <!-- User mini card -->
         <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:16px;display:flex;align-items:center;gap:12px;text-align:left;">
-            <div style="width:40px;height:40px;border-radius:10px;background:var(--maroon-pale);color:var(--maroon);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">
+            <div style="width:40px;height:40px;border-radius:10px;background:rgba(85,0,0,0.1);color:var(--maroon);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">
                 <i class="fas fa-user-shield"></i>
             </div>
             <div style="overflow:hidden;flex:1">
@@ -298,8 +345,8 @@ $content = <<<HTML
             <span id="actionTargetRoleBadge" class="user-card-role role-student" style="font-size:11px;padding:3px 10px;flex-shrink:0">Student</span>
         </div>
 
-        <div id="actionExplanationBox" style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 14px;margin-bottom:18px;text-align:left;font-size:13px;line-height:1.5;color:#92400e;">
-            <i class="fas fa-info-circle" style="color:#d97706;margin-right:4px;"></i>
+        <div id="actionExplanationBox" class="totp-notice-box totp-notice-warning">
+            <i class="fas fa-info-circle" style="margin-right:4px;"></i>
             <span id="actionExplanationText">Resetting 2FA clears this user's current authenticator key. When they log in again with their password, they will be given a brand-new QR code to scan.</span>
         </div>
 
@@ -364,7 +411,6 @@ function openTotpActionModal(userId, name, email, role, action) {
 
     const titleEl = document.getElementById('actionModalTitle');
     const subEl   = document.getElementById('actionModalSub');
-    const logoEl  = document.getElementById('actionModalLogo');
     const expBox  = document.getElementById('actionExplanationBox');
     const expText = document.getElementById('actionExplanationText');
     const btn     = document.getElementById('confirmActionBtn');
@@ -379,28 +425,19 @@ function openTotpActionModal(userId, name, email, role, action) {
     if (action === 'dismiss') {
         titleEl.textContent = 'Dismiss 2FA Reset Request';
         subEl.textContent = 'Clear pending request for ' + name;
-        logoEl.style.background = '#f1f5f9';
-        logoEl.style.color = '#64748b';
-        logoEl.innerHTML = '<i class="fas fa-times"></i>';
-        expBox.style.background = '#f8fafc';
-        expBox.style.borderColor = '#e2e8f0';
-        expBox.style.color = '#475569';
+        expBox.className = 'totp-notice-box totp-notice-neutral';
         expText.innerHTML = 'This will dismiss the reset request. The user\'s current two-factor authenticator setup will <strong>not</strong> be removed or reset.';
         btn.className = 'btn-secondary';
-        btn.innerHTML = '<i class="fas fa-check"></i> Dismiss Request';
+        btn.style.background = '';
+        btn.innerHTML = '<i class="fas fa-times"></i> Dismiss Request';
     } else {
         titleEl.textContent = 'Reset Two-Factor Authentication';
         subEl.textContent = 'Unlink authenticator app for ' + name;
-        logoEl.style.background = '#f0fdf4';
-        logoEl.style.color = '#16a34a';
-        logoEl.innerHTML = '<i class="fas fa-shield-alt"></i>';
-        expBox.style.background = '#fffbeb';
-        expBox.style.borderColor = '#fde68a';
-        expBox.style.color = '#92400e';
+        expBox.className = 'totp-notice-box totp-notice-warning';
         expText.innerHTML = 'Resetting 2FA clears this user\'s current authenticator key. When they log in again with their password, they will see a <strong>brand-new QR code</strong> to scan with Google Authenticator or Authy.';
         btn.className = 'btn-primary';
         btn.style.background = 'linear-gradient(135deg, #16a34a, #15803d)';
-        btn.innerHTML = '<i class="fas fa-redo"></i> Reset 2FA Now';
+        btn.innerHTML = '<i class="fas fa-check"></i> Reset 2FA Now';
     }
 
     hideEl('actionModalMsg');
@@ -417,24 +454,25 @@ async function submitTotpAction() {
     if (!_currentActionUserId) return;
     const btn = document.getElementById('confirmActionBtn');
     setLoading(btn, true);
-    hideEl('actionModalMsg');
+
+    const apiEndpoint = _currentActionMode === 'dismiss'
+        ? '/gnhs-guidance/api/admin_reset_totp.php?action=dismiss'
+        : '/gnhs-guidance/api/admin_reset_totp.php?action=reset';
 
     try {
-        const res = await apiPost('/gnhs-guidance/api/admin_reset_totp.php', {
-            user_id: _currentActionUserId,
-            action: _currentActionMode
-        });
-
+        const res = await apiPost(apiEndpoint, { user_id: _currentActionUserId });
         if (res.success) {
-            showToast(res.message || 'Action completed successfully!', 'success');
-            document.getElementById('totpActionModal')?.classList.add('hidden');
+            showToast(res.message || 'Action completed successfully.', 'success');
+            closeTotpActionModal();
             setTimeout(() => location.reload(), 1000);
         } else {
-            showMsg('actionModalMsg', res.message || 'Operation failed.');
+            showEl('actionModalMsg');
+            document.getElementById('actionModalMsg').innerHTML = `<div class="error-msg">\${res.message || 'Operation failed.'}</div>`;
+            setLoading(btn, false);
         }
-    } catch (err) {
-        showMsg('actionModalMsg', 'Network error. Please try again.');
-    } finally {
+    } catch(e) {
+        showEl('actionModalMsg');
+        document.getElementById('actionModalMsg').innerHTML = '<div class="error-msg">Connection error. Please try again.</div>';
         setLoading(btn, false);
     }
 }

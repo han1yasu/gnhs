@@ -34,18 +34,23 @@ foreach ($recentCases as $c) {
     if (!empty($c['evidence_files']) && $c['evidence_files'] !== '[]') {
         $evArray = is_string($c['evidence_files']) ? json_decode($c['evidence_files'], true) : $c['evidence_files'];
         $cnt = is_array($evArray) ? count($evArray) : 1;
-        $mediaBadges .= " <span class='badge-evidence' title='{$cnt} attached photo/video evidence file(s)'><i class='fas fa-photo-film'></i> {$cnt} Media</span>";
+        $mediaBadges .= "<span class='badge-evidence' title='{$cnt} attached photo/video evidence file(s)'><i class='fas fa-paperclip'></i> {$cnt} Media</span>";
     }
     if (!empty($c['witnesses'])) {
-        $mediaBadges .= " <span class='badge-witness' title='Witnesses mentioned'><i class='fas fa-users'></i></span>";
+        $mediaBadges .= "<span class='badge-witness' title='Witnesses mentioned in case report'><i class='fas fa-user-group'></i> Witness</span>";
     }
     $caseRows .= "<tr>
-        <td><strong style='color:var(--maroon)'>{$c['case_number']}</strong></td>
-        <td>".htmlspecialchars($c['subject'])."</td>
-        <td>$type$mediaBadges</td>
+        <td class='cell-case-num'><span class='case-num-text'>{$c['case_number']}</span></td>
+        <td style='font-weight:600'>".htmlspecialchars($c['subject'])."</td>
+        <td>
+          <div class='case-type-wrap'>
+            <span class='case-type-label'>$type</span>
+            $mediaBadges
+          </div>
+        </td>
         <td>".badge($c['status'])."</td>
         <td>".prioBadge($c['priority'])."</td>
-        <td><button class='btn-sm-outline' onclick='openCaseModal({$c['id']})'><i class='fas fa-eye'></i> View</button></td>
+        <td class='cell-actions'><button type='button' class='btn-row-action' onclick='openCaseModal({$c['id']})'><i class='fas fa-eye'></i> View</button></td>
     </tr>";
 }
 if (!$caseRows) $caseRows = "<tr><td colspan='6' style='text-align:center;color:var(--text-3);padding:32px'>No cases submitted yet. <a href='student-submit.php' style='color:var(--maroon);font-weight:700'>Submit your first concern</a></td></tr>";

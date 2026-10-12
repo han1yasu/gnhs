@@ -38,15 +38,19 @@ foreach ($cases as $c) {
     $submitted = date('M d, Y', strtotime($c['submitted_at']));
     $updated   = date('M d, Y', strtotime($c['updated_at']));
     $rows .= "<tr>
-        <td><strong style='color:var(--maroon)'>{$c['case_number']}</strong></td>
-        <td>".htmlspecialchars($c['student_name'])."</td>
-        <td>".htmlspecialchars($c['grade_section']??'—')."</td>
-        <td>$type</td>
+        <td class='cell-case-num'><span class='case-num-text'>{$c['case_number']}</span></td>
+        <td class='cell-student'>".htmlspecialchars($c['student_name'])."</td>
+        <td class='cell-grade'>".htmlspecialchars($c['grade_section']??'—')."</td>
+        <td>
+          <div class='case-type-wrap'>
+            <span class='case-type-label'>$type</span>
+          </div>
+        </td>
         <td>".badge($c['status'])."</td>
         <td>".prioBadge($c['priority'])."</td>
-        <td style='color:var(--text-3);font-size:12px'>$submitted</td>
-        <td style='color:var(--text-3);font-size:12px'>$updated</td>
-        <td><button class='btn-sm-outline' onclick='viewArchivedCase({$c['id']})'>
+        <td class='cell-date'>$submitted</td>
+        <td class='cell-date'>$updated</td>
+        <td class='cell-actions'><button type='button' class='btn-row-action' onclick='viewArchivedCase({$c['id']})'>
           <i class='fas fa-eye'></i> View</button></td>
     </tr>";
 }

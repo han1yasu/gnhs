@@ -65,25 +65,30 @@ foreach ($cases as $c) {
     if (!empty($c['evidence_files']) && $c['evidence_files'] !== '[]') {
         $evArray = is_string($c['evidence_files']) ? json_decode($c['evidence_files'], true) : $c['evidence_files'];
         $cnt = is_array($evArray) ? count($evArray) : 1;
-        $mediaBadges .= " <span class='badge-evidence' title='{$cnt} attached photo/video evidence file(s)'><i class='fas fa-photo-film'></i> {$cnt} Media</span>";
+        $mediaBadges .= "<span class='badge-evidence' title='{$cnt} attached photo/video evidence file(s)'><i class='fas fa-paperclip'></i> {$cnt} Media</span>";
     }
     if (!empty($c['witnesses'])) {
-        $mediaBadges .= " <span class='badge-witness' title='Witnesses mentioned'><i class='fas fa-users'></i> Witness</span>";
+        $mediaBadges .= "<span class='badge-witness' title='Witnesses mentioned in case report'><i class='fas fa-user-group'></i> Witness</span>";
     }
     $date = date('M d, Y', strtotime($c['submitted_at']));
     $rows .= "<tr>
-        <td><strong style='color:var(--maroon)'>{$c['case_number']}</strong></td>
-        <td>".htmlspecialchars($c['student_name'])."</td>
-        <td>".htmlspecialchars($c['grade_section']??'—')."</td>
-        <td>$type$mediaBadges</td>
+        <td class='cell-case-num'><span class='case-num-text'>{$c['case_number']}</span></td>
+        <td class='cell-student'>".htmlspecialchars($c['student_name'])."</td>
+        <td class='cell-grade'>".htmlspecialchars($c['grade_section']??'—')."</td>
+        <td>
+          <div class='case-type-wrap'>
+            <span class='case-type-label'>$type</span>
+            $mediaBadges
+          </div>
+        </td>
         <td>".badge($c['status'])."</td>
         <td>".prioBadge($c['priority'])."</td>
-        <td style='color:var(--text-3);font-size:12px'>$date</td>
-        <td>
-          <div style='display:inline-flex;gap:6px;align-items:center'>
-            <button type='button' class='btn-sm-outline' onclick='openCaseReview({$c['id']},\"{$c['case_number']}\",\"{$c['status']}\",\"{$c['priority']}\",".json_encode($c['subject']).",".json_encode($c['description']).")'>
-              <i class='fas fa-edit'></i> Review</button>
-            <button type='button' class='btn-sm-outline' onclick=\"window.location.href='admin-chats.php?case_id={$c['id']}'\">
+        <td class='cell-date'>$date</td>
+        <td class='cell-actions'>
+          <div class='row-actions'>
+            <button type='button' class='btn-row-action' onclick='openCaseReview({$c['id']},\"{$c['case_number']}\",\"{$c['status']}\",\"{$c['priority']}\",".json_encode($c['subject']).",".json_encode($c['description']).")'>
+              <i class='fas fa-file-lines'></i> Review</button>
+            <button type='button' class='btn-row-action btn-action-chat' onclick=\"window.location.href='admin-chats.php?case_id={$c['id']}'\">
               <i class='fas fa-comment-dots'></i> Chat</button>
           </div>
         </td>
@@ -122,29 +127,27 @@ $content = <<<HTML
     <h3><i class="fas fa-folder-open"></i> Active Cases <span style="font-size:13px;font-weight:600;color:var(--text-3);margin-left:6px">($totalActive)</span></h3>
     <a href="admin-archive.php" class="btn-sm-outline"><i class="fas fa-archive"></i> View Archive</a>
   </div>
-  <!-- Search & Filters -->
-  <div class="filter-bar" style="margin-bottom:16px;flex-wrap:wrap">
-    <div style="display:flex;gap:8px;flex:1;min-width:220px">
-      <div class="input-wrap" style="flex:1">
-        <i class="fas fa-search"></i>
-        <input type="text" id="searchQ" value="$sqVal" placeholder="Search by name, case #, subject…"
-          onkeydown="if(event.key==='Enter')doSearch()"/>
-      </div>
-      <button class="btn-sm-primary" onclick="doSearch()"><i class="fas fa-search"></i> Search</button>
+  <!-- Search & Filters Toolbar -->
+  <div class="filter-toolbar">
+    <div class="filter-search-box">
+      <i class="fas fa-search"></i>
+      <input type="text" class="filter-search-input" id="searchQ" value="$sqVal" placeholder="Search by name, case #, subject…"
+        onkeydown="if(event.key==='Enter')doSearch()"/>
     </div>
-    <select class="status-select" onchange="applyFilter('status',this.value)">
+    <button type="button" class="filter-btn-search" onclick="doSearch()"><i class="fas fa-search"></i> Search</button>
+    <select class="filter-select" onchange="applyFilter('status',this.value)">
       <option value="">All Status</option>
       <option value="pending"      $ss1>Pending</option>
       <option value="under_review" $ss2>Under Review</option>
       <option value="ongoing"      $ss3>Ongoing</option>
     </select>
-    <select class="status-select" onchange="applyFilter('priority',this.value)">
+    <select class="filter-select" onchange="applyFilter('priority',this.value)">
       <option value="">All Priority</option>
       <option value="high"   $sp1>High</option>
       <option value="medium" $sp2>Medium</option>
       <option value="low"    $sp3>Low</option>
     </select>
-    <select class="status-select" onchange="applyFilter('type',this.value)">
+    <select class="filter-select" onchange="applyFilter('type',this.value)">
       <option value="">All Types</option>
       <option value="bullying"        $st1>Bullying</option>
       <option value="academic_stress" $st2>Academic Stress</option>
@@ -154,21 +157,32 @@ $content = <<<HTML
       <option value="behavioral"      $st6>Behavioral</option>
       <option value="other"           $st7>Other</option>
     </select>
-    <select class="status-select" id="gradeFilterSel" onchange="gradeFilterChange()">
+    <select class="filter-select" id="gradeFilterSel" onchange="gradeFilterChange()">
       <option value="">All Grades</option>
       <option value="7"  $sg7>Grade 7</option>
       <option value="8"  $sg8>Grade 8</option>
       <option value="9"  $sg9>Grade 9</option>
       <option value="10" $sg10>Grade 10</option>
     </select>
-    <select class="status-select" id="sectionFilterSel" onchange="applyFilter('section',this.value)">
+    <select class="filter-select" id="sectionFilterSel" onchange="applyFilter('section',this.value)">
       <option value="">All Sections</option>
     </select>
-    <button class="btn-sm-outline" onclick="clearFilters()"><i class="fas fa-times"></i> Clear</button>
+    <button type="button" class="filter-btn-clear" onclick="clearFilters()"><i class="fas fa-rotate-left"></i> Reset</button>
   </div>
   <div class="table-wrap">
     <table class="data-table">
-      <thead><tr><th>Case #</th><th>Student</th><th>Grade</th><th>Type</th><th>Status</th><th>Priority</th><th>Date</th><th>Action</th></tr></thead>
+      <thead>
+        <tr>
+          <th style="width:90px">Case #</th>
+          <th>Student</th>
+          <th style="width:125px">Grade</th>
+          <th>Type</th>
+          <th style="width:115px">Status</th>
+          <th style="width:95px">Priority</th>
+          <th style="width:100px">Date</th>
+          <th style="width:145px">Action</th>
+        </tr>
+      </thead>
       <tbody>$rows</tbody>
     </table>
   </div>

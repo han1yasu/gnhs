@@ -44,27 +44,32 @@ foreach ($recentCases as $c) {
     if (!empty($c['evidence_files']) && $c['evidence_files'] !== '[]') {
         $evArray = is_string($c['evidence_files']) ? json_decode($c['evidence_files'], true) : $c['evidence_files'];
         $cnt = is_array($evArray) ? count($evArray) : 1;
-        $mediaBadges .= " <span class='badge-evidence' title='{$cnt} attached photo/video evidence file(s)'><i class='fas fa-photo-film'></i> {$cnt} Media</span>";
+        $mediaBadges .= "<span class='badge-evidence' title='{$cnt} attached photo/video evidence file(s)'><i class='fas fa-paperclip'></i> {$cnt} Media</span>";
     }
     if (!empty($c['witnesses'])) {
-        $mediaBadges .= " <span class='badge-witness' title='Witnesses mentioned'><i class='fas fa-users'></i> Witness</span>";
+        $mediaBadges .= "<span class='badge-witness' title='Witnesses mentioned in case report'><i class='fas fa-user-group'></i> Witness</span>";
     }
     $date = date('M d, Y', strtotime($c['submitted_at']));
     $student = htmlspecialchars($c['student_name']);
     $gs = htmlspecialchars($c['grade_section'] ?? '—');
     $caseRows .= "<tr>
-        <td><strong style='color:var(--maroon)'>{$c['case_number']}</strong></td>
-        <td>$student</td>
-        <td>$gs</td>
-        <td>$type$mediaBadges</td>
+        <td class='cell-case-num'><span class='case-num-text'>{$c['case_number']}</span></td>
+        <td class='cell-student'>$student</td>
+        <td class='cell-grade'>$gs</td>
+        <td>
+          <div class='case-type-wrap'>
+            <span class='case-type-label'>$type</span>
+            $mediaBadges
+          </div>
+        </td>
         <td>".badge($c['status'])."</td>
         <td>".prioBadge($c['priority'])."</td>
-        <td style='color:var(--text-3);font-size:12px'>$date</td>
-        <td>
-          <div style='display:inline-flex;gap:6px;align-items:center'>
-            <button type='button' class='btn-sm-outline' onclick='openCaseReview({$c['id']},\"{$c['case_number']}\",\"{$c['status']}\",\"{$c['priority']}\",".json_encode($c['subject']).",".json_encode($c['description']).")'>
-              <i class='fas fa-edit'></i> Review</button>
-            <button type='button' class='btn-sm-outline' onclick=\"window.location.href='admin-chats.php?case_id={$c['id']}'\">
+        <td class='cell-date'>$date</td>
+        <td class='cell-actions'>
+          <div class='row-actions'>
+            <button type='button' class='btn-row-action' onclick='openCaseReview({$c['id']},\"{$c['case_number']}\",\"{$c['status']}\",\"{$c['priority']}\",".json_encode($c['subject']).",".json_encode($c['description']).")'>
+              <i class='fas fa-file-lines'></i> Review</button>
+            <button type='button' class='btn-row-action btn-action-chat' onclick=\"window.location.href='admin-chats.php?case_id={$c['id']}'\">
               <i class='fas fa-comment-dots'></i> Chat</button>
           </div>
         </td>

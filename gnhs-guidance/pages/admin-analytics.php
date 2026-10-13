@@ -145,6 +145,51 @@ $highGradeData   = json_encode(array_column($highByGrade,'cnt'));
 $ageLabels    = json_encode(array_column($byAge,'age'));
 $ageData      = json_encode(array_column($byAge,'cnt'));
 
+// ── Case Severity & Priority Classification Stats ────────────────
+$sevHigh   = (int)$db->query("SELECT COUNT(*) FROM cases WHERE priority='high'")->fetchColumn();
+$sevMedium = (int)$db->query("SELECT COUNT(*) FROM cases WHERE priority='medium'")->fetchColumn();
+$sevLow    = (int)$db->query("SELECT COUNT(*) FROM cases WHERE priority='low'")->fetchColumn();
+$sevTotal  = $sevHigh + $sevMedium + $sevLow;
+$sevHighPct   = $sevTotal > 0 ? round(($sevHigh / $sevTotal) * 100, 1) : 0;
+$sevMediumPct = $sevTotal > 0 ? round(($sevMedium / $sevTotal) * 100, 1) : 0;
+$sevLowPct    = $sevTotal > 0 ? round(($sevLow / $sevTotal) * 100, 1) : 0;
+
+$sevLabels = json_encode(['High Priority', 'Medium Priority', 'Low Priority']);
+$sevData   = json_encode([$sevHigh, $sevMedium, $sevLow]);
+
+// Severity across Grade 7 to 10
+$gradeSevMap = [
+    'high'   => [0, 0, 0, 0],
+    'medium' => [0, 0, 0, 0],
+    'low'    => [0, 0, 0, 0]
+];
+$gSevRows = $db->query("SELECT
+    CASE
+        WHEN s.grade_section LIKE 'Grade 7%' THEN 'Grade 7'
+        WHEN s.grade_section LIKE 'Grade 8%' THEN 'Grade 8'
+        WHEN s.grade_section LIKE 'Grade 9%' THEN 'Grade 9'
+        WHEN s.grade_section LIKE 'Grade 10%' THEN 'Grade 10'
+        ELSE NULL
+    END AS grade_level,
+    c.priority, COUNT(*) as cnt
+    FROM cases c JOIN users s ON c.student_id=s.id
+    WHERE s.grade_section IS NOT NULL
+    GROUP BY grade_level, c.priority")->fetchAll();
+
+$gradeIndex = ['Grade 7' => 0, 'Grade 8' => 1, 'Grade 9' => 2, 'Grade 10' => 3];
+foreach ($gSevRows as $row) {
+    if ($row['grade_level'] && isset($gradeIndex[$row['grade_level']])) {
+        $idx = $gradeIndex[$row['grade_level']];
+        $p = $row['priority'];
+        if (isset($gradeSevMap[$p])) {
+            $gradeSevMap[$p][$idx] = (int)$row['cnt'];
+        }
+    }
+}
+$sevGradeHighJson   = json_encode($gradeSevMap['high']);
+$sevGradeMediumJson = json_encode($gradeSevMap['medium']);
+$sevGradeLowJson    = json_encode($gradeSevMap['low']);
+
 // --- Teacher Referrals Stats ---
 $totalReferrals    = (int)$db->query("SELECT COUNT(*) FROM referrals")->fetchColumn();
 $pendingReferrals  = (int)$db->query("SELECT COUNT(*) FROM referrals WHERE status='pending'")->fetchColumn();
@@ -292,6 +337,57 @@ $content = <<<HTML
       </span>
     </div>
     <canvas id="statusChart" height="180"></canvas>
+  </div>
+</div>
+
+<!-- Row 1.5: Case Severity Levels & Priority Classification Section -->
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin:28px 0 16px;border-bottom:1px solid var(--border);padding-bottom:12px;">
+  <h3 style="margin:0;font-size:17px;font-weight:800;color:var(--text);display:flex;align-items:center;gap:10px;">
+    <i class="fas fa-shield-alt" style="color:var(--maroon)"></i> Case Severity Levels &amp; Priority Classification
+    <span style="font-size:13px;font-weight:600;color:var(--text-3);">(Total Evaluated: $sevTotal)</span>
+  </h3>
+  <span style="font-size:12px;color:var(--text-3);background:var(--bg2);padding:4px 10px;border-radius:20px;border:1px solid var(--border)">
+    <i class="fas fa-info-circle" style="color:var(--maroon);margin-right:4px"></i> Click any card or chart slice to view cases
+  </span>
+</div>
+
+<div class="summary-cards" style="grid-template-columns:repeat(3, 1fr);margin-bottom:22px">
+  <div class="sum-card" onclick="openCasesModalBySeverity('high')" style="cursor:pointer;transition:.15s" title="Click to view High Severity cases">
+    <div class="sum-icon" style="background:#fef2f2;color:#dc2626"><i class="fas fa-exclamation-triangle"></i></div>
+    <div>
+      <div class="sum-num" style="color:#dc2626">$sevHigh <span style="font-size:13px;font-weight:600;color:#991b1b">({$sevHighPct}%)</span></div>
+      <div class="sum-label">High Severity (Urgent Action)</div>
+    </div>
+  </div>
+  <div class="sum-card" onclick="openCasesModalBySeverity('medium')" style="cursor:pointer;transition:.15s" title="Click to view Medium Severity cases">
+    <div class="sum-icon" style="background:#fffbeb;color:#d97706"><i class="fas fa-bell"></i></div>
+    <div>
+      <div class="sum-num" style="color:#d97706">$sevMedium <span style="font-size:13px;font-weight:600;color:#92400e">({$sevMediumPct}%)</span></div>
+      <div class="sum-label">Medium Severity (Moderate Concern)</div>
+    </div>
+  </div>
+  <div class="sum-card" onclick="openCasesModalBySeverity('low')" style="cursor:pointer;transition:.15s" title="Click to view Low Severity cases">
+    <div class="sum-icon" style="background:#f0fdf4;color:#16a34a"><i class="fas fa-check-circle"></i></div>
+    <div>
+      <div class="sum-num" style="color:#16a34a">$sevLow <span style="font-size:13px;font-weight:600;color:#166534">({$sevLowPct}%)</span></div>
+      <div class="sum-label">Low Severity (Standard Guidance)</div>
+    </div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1.6fr;gap:22px;margin-bottom:22px">
+  <div class="content-card">
+    <div class="card-header" style="display:flex;align-items:center;justify-content:space-between">
+      <h3><i class="fas fa-chart-pie"></i> Severity Distribution</h3>
+      <span style="font-size:11px;font-weight:700;color:var(--maroon);background:rgba(85,0,0,0.07);padding:2px 8px;border-radius:12px">Click slice to view</span>
+    </div>
+    <canvas id="sevDistributionChart" height="180"></canvas>
+  </div>
+  <div class="content-card">
+    <div class="card-header">
+      <h3><i class="fas fa-layer-group"></i> Severity Levels per Grade Level</h3>
+    </div>
+    <canvas id="sevGradeChart" height="180"></canvas>
   </div>
 </div>
 
@@ -761,6 +857,42 @@ function openCasesModalByStatus(statusKey) {
     });
 }
 
+function openCasesModalBySeverity(prioKey) {
+  ensureModalsInBody();
+  const modal = document.getElementById('casesDrilldownModal');
+  const title = document.getElementById('drilldownModalTitle');
+  const subtitle = document.getElementById('drilldownModalSubtitle');
+  const body = document.getElementById('drilldownModalBody');
+  const countSpan = document.getElementById('drilldownModalCount');
+
+  const prettyPrio = (prioKey || '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+  modal.classList.remove('hidden');
+  title.innerHTML = '<i class="fas fa-shield-alt" style="color:var(--maroon)"></i> Cases: ' + prettyPrio + ' Severity';
+  subtitle.textContent = 'Loading cases classified under ' + prettyPrio + ' priority level...';
+  body.innerHTML = '<div style="text-align:center;padding:50px 20px"><i class="fas fa-spinner fa-spin" style="font-size:32px;color:var(--maroon)"></i><p style="margin-top:12px;color:var(--text-3);font-size:13px">Loading cases...</p></div>';
+  countSpan.textContent = 'Loading...';
+
+  const params = new URLSearchParams({
+    type: 'priority',
+    priority: prioKey
+  });
+
+  fetch('/gnhs-guidance/api/get_analytics_cases.php?' + params.toString())
+    .then(r => r.json())
+    .then(res => {
+      if (!res.success) {
+        body.innerHTML = '<div style="text-align:center;padding:30px;color:#dc2626"><i class="fas fa-exclamation-circle"></i> ' + (res.message || 'Error loading cases') + '</div>';
+        return;
+      }
+      renderCasesDrilldown(res);
+    })
+    .catch(err => {
+      body.innerHTML = '<div style="text-align:center;padding:30px;color:#dc2626"><i class="fas fa-exclamation-triangle"></i> Network error loading cases</div>';
+      console.error(err);
+    });
+}
+
 function closeDrilldownModal() {
   const modal = document.getElementById('casesDrilldownModal');
   if (modal) modal.classList.add('hidden');
@@ -894,6 +1026,100 @@ new Chart(document.getElementById('statusChart'), {
       var statusKey = statusLabels[idx];
       if (statusKey) {
         openCasesModalByStatus(statusKey);
+      }
+    }
+  }
+});
+
+// Case Severity Levels Distribution Doughnut Chart
+const sevKeys = ['high', 'medium', 'low'];
+new Chart(document.getElementById('sevDistributionChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['High Severity', 'Medium Severity', 'Low Severity'],
+    datasets: [{
+      data: $sevData,
+      backgroundColor: ['#dc2626', '#f59e0b', '#10b981'],
+      borderWidth: 2,
+      borderColor: '#ffffff',
+      hoverOffset: 8
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { position: 'bottom' },
+      tooltip: {
+        callbacks: {
+          label: function(ctx) {
+            var val = ctx.parsed;
+            var total = $sevTotal;
+            var pct = total > 0 ? Math.round(val / total * 100) : 0;
+            return ' ' + ctx.label + ': ' + val + ' cases (' + pct + '%) - Click to view';
+          }
+        }
+      }
+    },
+    onHover: function(e, els) {
+      if (e && e.native && e.native.target) {
+        e.native.target.style.cursor = (els && els.length > 0) ? 'pointer' : 'default';
+      }
+    },
+    onClick: function(e, els) {
+      if (!els || els.length === 0) return;
+      var idx = els[0].index;
+      var prio = sevKeys[idx];
+      if (prio) openCasesModalBySeverity(prio);
+    }
+  }
+});
+
+// Case Severity Levels per Grade Level Grouped Bar Chart
+new Chart(document.getElementById('sevGradeChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10'],
+    datasets: [
+      {
+        label: 'High Severity',
+        data: $sevGradeHighJson,
+        backgroundColor: '#dc2626',
+        borderRadius: 4
+      },
+      {
+        label: 'Medium Severity',
+        data: $sevGradeMediumJson,
+        backgroundColor: '#f59e0b',
+        borderRadius: 4
+      },
+      {
+        label: 'Low Severity',
+        data: $sevGradeLowJson,
+        backgroundColor: '#10b981',
+        borderRadius: 4
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { position: 'top' },
+      tooltip: {
+        callbacks: {
+          label: function(ctx) {
+            var val = ctx.parsed.y;
+            return ' ' + ctx.dataset.label + ': ' + val + (val === 1 ? ' case' : ' cases');
+          }
+        }
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: { stepSize: 1, precision: 0 }
+      },
+      x: {
+        grid: { display: false }
       }
     }
   }

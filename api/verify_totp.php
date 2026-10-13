@@ -47,6 +47,7 @@ try {
         }
 
         $_SESSION['user'] = $_SESSION['pending_user'];
+        $_SESSION['last_activity'] = time();
         unset($_SESSION['pending_user']);
         
         $role = $_SESSION['user']['role'];

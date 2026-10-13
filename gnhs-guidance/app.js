@@ -719,15 +719,12 @@ function buildReviewModal(c, notes, session) {
 
       <div style="margin-bottom:14px;background:var(--bg2);padding:18px 20px;border-radius:8px;border:1px solid var(--border)">
         <div style="font-size:13px;font-weight:800;color:var(--text-2);margin-bottom:12px;text-transform:uppercase;letter-spacing:1px;display:flex;align-items:center;justify-content:space-between">
-          <span><i class="fas fa-photo-film" style="color:var(--maroon)"></i> Attached Evidence (${evidenceList.length})</span>
-          <div style="display:inline-flex;gap:8px;align-items:center">
-            <button type="button" class="btn-sm-outline" onclick="triggerCaseEvidenceUpload(${c.id},'${escapeHtml(c.case_number)}')" style="font-size:11px;padding:3px 10px"><i class="fas fa-plus"></i> Add Evidence</button>
-            <span style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:none"><i class="fas fa-lock"></i> Confidential</span>
-          </div>
+          <span><i class="fas fa-photo-film" style="color:var(--maroon)"></i> Attached Student Evidence (${evidenceList.length})</span>
+          <span style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:none"><i class="fas fa-lock"></i> Student Submitted Media</span>
         </div>
         ${evidenceList.length > 0 
           ? `<div class="evidence-gallery-grid">${renderEvidenceGallery(evidenceList)}</div>`
-          : `<div style="font-size:13px;color:var(--text-3);padding:10px 0"><i class="fas fa-info-circle"></i> No evidence files attached yet. <button type="button" onclick="triggerCaseEvidenceUpload(${c.id},'${escapeHtml(c.case_number)}')" style="color:var(--maroon);background:none;border:none;cursor:pointer;font-weight:700;text-decoration:underline">Attach photo/video</button></div>`
+          : `<div style="font-size:13px;color:var(--text-3);padding:10px 0"><i class="fas fa-info-circle"></i> No photo or video evidence was attached by the student.</div>`
         }
       </div>
 
@@ -781,8 +778,8 @@ function buildReviewModal(c, notes, session) {
       </div>` : ''}
 
       <div class="form-group">
-        <label>Schedule Counseling Session</label>
-        <div class="input-wrap"><i class="fas fa-calendar"></i><input type="datetime-local" id="session-dt"></div>
+        <label>Schedule Counseling Session <span style="font-size:11px;font-weight:normal;color:var(--text-3)">(Present or future date/time only)</span></label>
+        <div class="input-wrap"><i class="fas fa-calendar"></i><input type="datetime-local" id="session-dt" min="${new Date(Date.now() - new Date().getTimezoneOffset()*60000).toISOString().slice(0, 16)}"></div>
       </div>
       <div class="form-group" style="margin-top:10px">
         <label>Session Type</label>
@@ -822,6 +819,16 @@ async function saveCase() {
   const session  = $('session-dt')?.value;
   const sessionType = $('session-type-sel')?.value || 'in-person';
   const location    = $('session-location')?.value || 'Guidance Office';
+
+  if (session) {
+    const selectedDate = new Date(session);
+    const now = new Date();
+    if (selectedDate < now) {
+      showToast('Counseling session cannot be scheduled in the past. Please select a present or future date and time.', 'error');
+      $('session-dt')?.focus();
+      return;
+    }
+  }
 
   const btn = $('saveCaseBtn');
   setLoading(btn,true);

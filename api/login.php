@@ -22,7 +22,51 @@ try {
     $stmt->execute([$email]);
     $user = $stmt->fetch();
 
-    if (!$user || !password_verify($password, $user['password'])) {
+    if ($user) {
+        // Check if user is currently locked out
+        if (!empty($user['lockout_until'])) {
+            $lockoutSecs = strtotime($user['lockout_until']) - time();
+            if ($lockoutSecs > 0) {
+                $mins = ceil($lockoutSecs / 60);
+                jsonOut([
+                    'success' => false,
+                    'message' => "Too many incorrect password attempts. Your account is temporarily locked. Please try again in {$mins} minute" . ($mins > 1 ? 's' : '') . ".",
+                    'locked'  => true
+                ]);
+            } else {
+                // Lockout window expired, reset attempts
+                $db->prepare("UPDATE users SET failed_attempts = 0, lockout_until = NULL WHERE id = ?")->execute([$user['id']]);
+                $user['failed_attempts'] = 0;
+                $user['lockout_until'] = null;
+            }
+        }
+
+        // Verify password
+        if (!password_verify($password, $user['password'])) {
+            $attempts = (int)($user['failed_attempts'] ?? 0) + 1;
+            $maxAttempts = 5;
+            if ($attempts >= $maxAttempts) {
+                $lockoutMinutes = 15;
+                $db->prepare("UPDATE users SET failed_attempts = ?, lockout_until = DATE_ADD(NOW(), INTERVAL ? MINUTE) WHERE id = ?")
+                   ->execute([$attempts, $lockoutMinutes, $user['id']]);
+                jsonOut([
+                    'success' => false,
+                    'message' => "Too many incorrect password attempts. Your account has been temporarily locked for {$lockoutMinutes} minutes.",
+                    'locked'  => true
+                ]);
+            } else {
+                $remaining = $maxAttempts - $attempts;
+                $db->prepare("UPDATE users SET failed_attempts = ? WHERE id = ?")->execute([$attempts, $user['id']]);
+                jsonOut([
+                    'success' => false,
+                    'message' => "Invalid credentials. {$remaining} attempt" . ($remaining > 1 ? 's' : '') . " remaining before temporary account lockout."
+                ]);
+            }
+        }
+
+        // Successful password verification: reset failed attempts
+        $db->prepare("UPDATE users SET failed_attempts = 0, lockout_until = NULL WHERE id = ?")->execute([$user['id']]);
+    } else {
         jsonOut(['success'=>false,'message'=>'Invalid credentials. Please try again.']);
     }
 

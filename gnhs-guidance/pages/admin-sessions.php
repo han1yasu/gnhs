@@ -807,11 +807,17 @@ function openEndSessionModal() {
   confirmBtn.innerHTML = '<i class="fas fa-check"></i> Select an Option Above';
   
   // Set default datetime for next session (e.g. tomorrow at 10 AM)
+  const now = new Date();
+  const currentIso = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   tomorrow.setHours(10, 0, 0, 0);
   const localIso = new Date(tomorrow.getTime() - (tomorrow.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
-  document.getElementById('nextSessionDate').value = localIso;
+  const nextDtInput = document.getElementById('nextSessionDate');
+  if (nextDtInput) {
+    nextDtInput.min = currentIso;
+    nextDtInput.value = localIso;
+  }
 
   document.getElementById('endSessionModal').classList.remove('hidden');
 }
@@ -883,6 +889,13 @@ async function submitEndSessionDecision() {
       showToast('Please specify the date and time for the next session.', 'error');
       confirmBtn.disabled = false;
       confirmBtn.innerHTML = '<i class="fas fa-calendar-check"></i> Save Schedule & Continue Case';
+      return;
+    }
+    if (new Date(nextDate) < new Date()) {
+      showToast('Next counseling session cannot be scheduled in the past. Please select a present or future date and time.', 'error');
+      confirmBtn.disabled = false;
+      confirmBtn.innerHTML = '<i class="fas fa-calendar-check"></i> Save Schedule & Continue Case';
+      document.getElementById('nextSessionDate').focus();
       return;
     }
     payload.next_session_date     = nextDate;

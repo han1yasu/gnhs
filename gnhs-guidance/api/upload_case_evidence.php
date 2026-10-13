@@ -30,19 +30,21 @@ if (!$case) {
     jsonOut(['success' => false, 'message' => 'Case not found.']);
 }
 
-// Access check: only the student who owns the case or counselors/admins
-if ($user['role'] === 'student' && $case['student_id'] != $user['id']) {
-    jsonOut(['success' => false, 'message' => 'Access denied.'], 403);
+// Access check: Counselors cannot add photos or files to student evidence. Only the reporting student can attach evidence.
+if ($user['role'] !== 'student' || (int)$case['student_id'] !== (int)$user['id']) {
+    jsonOut(['success' => false, 'message' => 'Counselors and staff cannot add or modify files on student evidence. Only the reporting student can upload case evidence.'], 403);
 }
 
 if (empty($_FILES['evidence'])) {
     jsonOut(['success' => false, 'message' => 'No files were received.']);
 }
 
-$rootUploadDir   = __DIR__ . '/../../uploads/evidence/';
-$nestedUploadDir = __DIR__ . '/../uploads/evidence/';
+$rootUploadDir   = __DIR__ . '/../uploads/evidence/';
+$nestedUploadDir = __DIR__ . '/../gnhs-guidance/uploads/evidence/';
 
-$primaryUploadDir = is_dir($nestedUploadDir) ? $nestedUploadDir : $rootUploadDir;
+$primaryUploadDir = is_dir(dirname($nestedUploadDir)) && is_dir($nestedUploadDir)
+    ? $nestedUploadDir
+    : $rootUploadDir;
 
 if (!is_dir($rootUploadDir))   @mkdir($rootUploadDir, 0755, true);
 if (!is_dir($nestedUploadDir)) @mkdir($nestedUploadDir, 0755, true);
@@ -108,14 +110,14 @@ for ($i = 0; $i < $fileCount; $i++) {
     $dest1 = $rootUploadDir . $newFileName;
     $dest2 = $nestedUploadDir . $newFileName;
 
-    $saved = move_uploaded_file($tmpName, $dest2);
+    $saved = move_uploaded_file($tmpName, $dest1);
     if (!$saved && php_sapi_name() === 'cli') {
-        $saved = copy($tmpName, $dest2);
+        $saved = copy($tmpName, $dest1);
     }
 
     if ($saved) {
-        if (is_dir($rootUploadDir)) {
-            @copy($dest2, $dest1);
+        if (is_dir($nestedUploadDir)) {
+            @copy($dest1, $dest2);
         }
 
         $fileEntry = [

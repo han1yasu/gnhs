@@ -829,6 +829,54 @@ async function removeAvatar() {
   }
 }
 </script>
+
+<!-- 15-Minute Inactivity Session Monitor -->
+<script>
+(function() {
+  const TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
+  const WARNING_MS = 14 * 60 * 1000; // 14 minutes (1-minute warning)
+  let lastActive = Date.now();
+  let warningEl = null;
+
+  function resetActivity() {
+    lastActive = Date.now();
+    if (warningEl) {
+      warningEl.remove();
+      warningEl = null;
+    }
+  }
+
+  let throttle = false;
+  function handleActivity() {
+    if (!throttle) {
+      resetActivity();
+      throttle = true;
+      setTimeout(() => { throttle = false; }, 1000);
+    }
+  }
+
+  ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click'].forEach(function(evt) {
+    window.addEventListener(evt, handleActivity, { passive: true });
+  });
+
+  setInterval(function() {
+    const elapsed = Date.now() - lastActive;
+    if (elapsed >= TIMEOUT_MS) {
+      const isNested = window.location.pathname.includes('/gnhs-guidance/gnhs-guidance/');
+      const logoutUrl = isNested
+        ? '/gnhs-guidance/gnhs-guidance/api/logout.php?reason=timeout'
+        : '/gnhs-guidance/api/logout.php?reason=timeout';
+      window.location.href = logoutUrl;
+    } else if (elapsed >= WARNING_MS && !warningEl) {
+      warningEl = document.createElement('div');
+      warningEl.id = 'inactivityWarningBanner';
+      warningEl.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:999999;background:#7f1d1d;color:#fff;padding:14px 20px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.3);font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:12px;border:1.5px solid #f87171;max-width:380px';
+      warningEl.innerHTML = '<i class="fas fa-hourglass-half" style="font-size:20px;color:#fca5a5;flex-shrink:0"></i><span>Session expiring in <strong>1 minute</strong> due to inactivity. Move your mouse or click anywhere to stay signed in.</span>';
+      document.body.appendChild(warningEl);
+    }
+  }, 5000);
+})();
+</script>
 </body>
 </html>
 <?php

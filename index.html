@@ -252,6 +252,9 @@
         <div class="modal-logo"><i class="fas fa-graduation-cap"></i></div>
         <h2 class="modal-title">Welcome to <span>GNHS</span></h2>
         <p class="modal-sub">Guidance Case Management System</p>
+        <div id="timeoutAlertBanner" style="display:none;margin-bottom:16px;background:#fef2f2;border:1px solid #f87171;color:#991b1b;padding:12px 14px;border-radius:10px;font-size:13px;font-weight:600;text-align:left">
+          <i class="fas fa-clock" style="color:#dc2626;margin-right:6px"></i> Your session expired due to 15 minutes of inactivity. Please log in again.
+        </div>
         <div class="action-cards">
           <div class="action-card" onclick="goToRoleSelect('login')"><i
               class="fas fa-sign-in-alt"></i><strong>Login</strong><small>I already have an account</small></div>
@@ -438,6 +441,22 @@
         : '<option value="">Select Grade First</option>';
     }
     // LRN/Employee label handled in app.js selectRole()
+
+    // Handle 15-minute inactivity session timeout notification
+    window.addEventListener('DOMContentLoaded', () => {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('reason') === 'timeout') {
+        if (typeof openLoginModal === 'function') openLoginModal();
+        const alertBanner = document.getElementById('timeoutAlertBanner');
+        if (alertBanner) alertBanner.style.display = 'block';
+        const loginMsg = document.getElementById('login-msg');
+        if (loginMsg) {
+          loginMsg.style.display = 'block';
+          loginMsg.className = 'msg-box msg-error';
+          loginMsg.innerHTML = '<i class="fas fa-clock" style="margin-right:6px"></i> Your session has expired due to 15 minutes of inactivity. Please log in again to continue.';
+        }
+      }
+    });
   </script>
 </body>
 

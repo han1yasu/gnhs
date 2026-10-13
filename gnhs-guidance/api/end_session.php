@@ -109,6 +109,10 @@ try {
         if (!$nextDate) {
             jsonOut(['success' => false, 'message' => 'Please set the next session schedule date and time.'], 400);
         }
+        $nextTimestamp = strtotime($nextDate);
+        if (!$nextTimestamp || $nextTimestamp < (time() - 60)) {
+            jsonOut(['success' => false, 'message' => 'Next counseling session cannot be scheduled in the past. Please select a present or future date and time.'], 400);
+        }
 
         // Mark current session as ongoing progress (continuous tracking)
         $updateSessionStmt = $db->prepare("UPDATE counseling_sessions 

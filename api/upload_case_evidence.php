@@ -30,9 +30,9 @@ if (!$case) {
     jsonOut(['success' => false, 'message' => 'Case not found.']);
 }
 
-// Access check: only the student who owns the case or counselors/admins
-if ($user['role'] === 'student' && $case['student_id'] != $user['id']) {
-    jsonOut(['success' => false, 'message' => 'Access denied.'], 403);
+// Access check: Counselors cannot add photos or files to student evidence. Only the reporting student can attach evidence.
+if ($user['role'] !== 'student' || (int)$case['student_id'] !== (int)$user['id']) {
+    jsonOut(['success' => false, 'message' => 'Counselors and staff cannot add or modify files on student evidence. Only the reporting student can upload case evidence.'], 403);
 }
 
 if (empty($_FILES['evidence'])) {

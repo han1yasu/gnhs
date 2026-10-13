@@ -14,12 +14,14 @@ if (!$studentName || !$gradeSection || !$concernType || !$observations) {
     jsonOut(['success'=>false,'message'=>'All required fields must be filled.']);
 }
 
-// Word limit: max 400 words
-if (strlen($observations) < 30) {
-    jsonOut(['success'=>false,'message'=>'Observations must be at least 30 characters long to provide sufficient detail.']);
+// Validate observations quality: min 30 chars, max 400 words, spam/gibberish rejection
+$quality = validateContentQuality($observations, 30, 400);
+if (!$quality['valid']) {
+    jsonOut(['success'=>false, 'message'=>$quality['message']]);
 }
-if (str_word_count($observations) > 400) {
-    jsonOut(['success'=>false,'message'=>'Observations must not exceed 400 words.']);
+
+if (strlen($studentName) < 3) {
+    jsonOut(['success'=>false, 'message'=>'Student name must be at least 3 characters long.']);
 }
 
 // Profanity filter

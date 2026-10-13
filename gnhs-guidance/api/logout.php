@@ -2,7 +2,8 @@
 require_once __DIR__ . '/../includes/config.php';
 startSession();
 session_destroy();
-header('Location: /gnhs-guidance/index.html');
+$reason = isset($_GET['reason']) && $_GET['reason'] === 'timeout' ? '?reason=timeout' : '';
+header('Location: /gnhs-guidance/index.html' . $reason);
 exit;
 
 

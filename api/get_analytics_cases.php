@@ -26,6 +26,16 @@ try {
         $formattedStatus = ucwords(str_replace('_', ' ', $status));
         $title = "Cases with Status: $formattedStatus";
         $subtitle = "Showing all cases currently marked as $formattedStatus";
+    } else if ($type === 'priority' || $type === 'severity') {
+        $prio = trim($_GET['priority'] ?? $_GET['severity'] ?? '');
+        if (!$prio) {
+            jsonOut(['success' => false, 'message' => 'Priority parameter required.'], 400);
+        }
+        $where[] = "c.priority = ?";
+        $params[] = $prio;
+        $formattedPrio = ucfirst($prio);
+        $title = "Cases by Severity: {$formattedPrio} Priority";
+        $subtitle = "Showing all cases classified under {$formattedPrio} severity level";
     } else {
         // Timeline filter
         if ($dateFrom && $dateTo) {

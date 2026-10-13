@@ -44,12 +44,18 @@ if (!$concernType || !$subject || !$description) {
 
 require_once __DIR__ . '/../includes/summarizer.php';
 
-// Word limit: max 400 words
-if (strlen($description) < 30) {
-    jsonOut(['success'=>false,'message'=>'Description must be at least 30 characters long to provide sufficient detail.']);
+// Validate description quality: min 30 chars, max 400 words, spam/gibberish detection
+$quality = validateContentQuality($description, 30, 400);
+if (!$quality['valid']) {
+    jsonOut(['success'=>false, 'message'=>$quality['message']]);
 }
-if (str_word_count($description) > 400) {
-    jsonOut(['success'=>false,'message'=>'Description must not exceed 400 words.']);
+
+// Check subject for spam / gibberish if longer than 15 chars
+if (strlen($subject) >= 15) {
+    $subjCheck = validateContentQuality($subject, 5, 50);
+    if (!$subjCheck['valid'] && !str_contains($subjCheck['message'], 'at least')) {
+        jsonOut(['success'=>false, 'message'=>'Subject contains random letters, gibberish, or spam. Please write a meaningful subject.']);
+    }
 }
 
 // Profanity filter

@@ -73,6 +73,11 @@ try {
 
     // 2. Schedule counseling session and send detailed notification
     if ($session) {
+        $sessionTimestamp = strtotime($session);
+        if (!$sessionTimestamp || $sessionTimestamp < (time() - 60)) {
+            jsonOut(['success'=>false, 'message'=>'Counseling session cannot be scheduled in the past. Please select a present or future date and time.']);
+        }
+
         $db->prepare("INSERT INTO counseling_sessions (case_id,student_id,counselor_id,session_date,status,session_type,location) VALUES (?,?,?,?,'scheduled',?,?)")
            ->execute([$caseId, $studentId, $user['id'], $session, $sessionType, $location]);
 

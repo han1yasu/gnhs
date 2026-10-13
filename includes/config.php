@@ -36,16 +36,42 @@ function getDB(): PDO {
         try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_secret VARCHAR(64) DEFAULT NULL"); } catch(Exception $e){}
         try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_enabled TINYINT(1) DEFAULT 0"); } catch(Exception $e){}
         try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_reset_requested TINYINT(1) DEFAULT 0"); } catch(Exception $e){}
+        try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS failed_attempts INT DEFAULT 0"); } catch(Exception $e){}
+        try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS lockout_until DATETIME DEFAULT NULL"); } catch(Exception $e){}
     }
     return $pdo;
 }
 
 function startSession(): void {
     if (session_status() === PHP_SESSION_NONE) session_start();
+    // Check 15-minute inactivity timeout if a user is logged in
+    checkSessionTimeout();
+}
+
+function checkSessionTimeout(): void {
+    if (session_status() === PHP_SESSION_NONE) return;
+    if (!empty($_SESSION['user'])) {
+        $timeout = 900; // 15 minutes = 900 seconds
+        if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > $timeout)) {
+            unset($_SESSION['user']);
+            session_unset();
+            session_destroy();
+            $isJson = (!empty($_SERVER['HTTP_ACCEPT']) && str_contains($_SERVER['HTTP_ACCEPT'], 'application/json'))
+                   || (!empty($_SERVER['PHP_SELF']) && str_contains($_SERVER['PHP_SELF'], '/api/'));
+            if ($isJson) {
+                jsonOut(['success' => false, 'message' => 'Your session has expired due to 15 minutes of inactivity. Please log in again.', 'session_expired' => true], 401);
+            } else {
+                header('Location: /gnhs-guidance/index.html?reason=timeout');
+                exit;
+            }
+        }
+        $_SESSION['last_activity'] = time();
+    }
 }
 
 function requireLogin(string $role = ''): array {
     startSession();
+    checkSessionTimeout();
     if (empty($_SESSION['user'])) {
         header('Location: /gnhs-guidance/index.html'); exit;
     }
@@ -167,4 +193,136 @@ function containsProfanity(string $text): bool {
         }
     }
     return false;
+}
+
+/**
+ * Validates text entries for concerns and referrals.
+ * Enforces:
+ * 1. Minimum character length (default 30 characters)
+ * 2. Maximum word limit ceiling (default 400 words)
+ * 3. Detection and rejection of spam, random letters, gibberish, repeated characters, and meaningless text
+ * 4. Allows valid short reports in English and Filipino
+ */
+function validateContentQuality(string $text, int $minChars = 30, int $maxWords = 400): array {
+    $clean = trim($text);
+    $charCount = mb_strlen($clean);
+
+    if ($charCount < $minChars) {
+        return [
+            'valid'   => false,
+            'message' => "Description must be at least {$minChars} characters long to provide sufficient detail (currently {$charCount} characters)."
+        ];
+    }
+
+    $words = preg_split('/\s+/u', $clean, -1, PREG_SPLIT_NO_EMPTY);
+    $wordCount = count($words);
+    if ($wordCount > $maxWords) {
+        return [
+            'valid'   => false,
+            'message' => "Description must not exceed {$maxWords} words (currently {$wordCount} words)."
+        ];
+    }
+
+    // 1. Single character repeated 5 or more times consecutively (e.g. 'aaaaa', 'zzzzz', '.....')
+    if (preg_match('/(.)\1{4,}/u', $clean)) {
+        return [
+            'valid'   => false,
+            'message' => 'Entry contains repeated characters or symbols. Please provide a clear and meaningful description.'
+        ];
+    }
+
+    // 2. Repeating pattern / keyboard spam (e.g. 'asdfasdfasdf', '123123123', 'hahahahahaha')
+    if (preg_match('/(.{2,8})\1{3,}/ui', $clean)) {
+        return [
+            'valid'   => false,
+            'message' => 'Entry contains repeated patterns or spam text. Please describe your concern in natural words.'
+        ];
+    }
+
+    // 3. Vowel-to-consonant ratio check for sufficiently long letter sequences
+    $lettersOnly = preg_replace('/[^a-zA-Z]/', '', $clean);
+    $letterLen = strlen($lettersOnly);
+    if ($letterLen >= 20) {
+        $vowelsCount = preg_match_all('/[aeiouAEIOU]/', $lettersOnly);
+        $vowelRatio = $vowelsCount / $letterLen;
+        if ($vowelRatio < 0.15) {
+            return [
+                'valid'   => false,
+                'message' => 'Entry contains mostly random consonants or meaningless characters. Please write meaningful sentences.'
+            ];
+        }
+        if ($vowelRatio > 0.85) {
+            return [
+                'valid'   => false,
+                'message' => 'Entry contains abnormal character patterns. Please describe your concern clearly.'
+            ];
+        }
+    }
+
+    // 4. Repeated word ratio (e.g. 'help help help help help help help help')
+    if ($wordCount >= 6) {
+        $lowerWords = array_map('mb_strtolower', $words);
+        $uniqueWords = array_unique($lowerWords);
+        if (count($uniqueWords) / $wordCount < 0.35) {
+            return [
+                'valid'   => false,
+                'message' => 'Entry contains excessively repeated words. Please provide a complete and meaningful report.'
+            ];
+        }
+    }
+
+    // 5. Individual word gibberish and keyboard mash inspection
+    $gibberishWords = 0;
+    $checkedWords = 0;
+    $keyboardPatterns = [
+        'asdfgh', 'sdfghj', 'dfghjk', 'fghjkl',
+        'qwerty', 'wertyu', 'ertyui', 'rtyuio', 'tyuiop',
+        'zxcvbn', 'xcvbnm', 'lkjhgf', 'kjhgfd', 'jhgfdsa'
+    ];
+
+    foreach ($words as $w) {
+        $wClean = preg_replace('/[^a-zA-Z]/', '', $w);
+        if (strlen($wClean) >= 4) {
+            $checkedWords++;
+            $wLower = strtolower($wClean);
+            $isWordGibberish = false;
+
+            // Check keyboard mash sequence
+            foreach ($keyboardPatterns as $kp) {
+                if (str_contains($wLower, $kp)) {
+                    $isWordGibberish = true;
+                    break;
+                }
+            }
+
+            // Consonant cluster of 5 or more consonants in a row (e.g. 'sdfgh', 'kjsdhf')
+            if (preg_match('/[bcdfghjklmnpqrstvwxyz]{5,}/i', $wLower)) {
+                $isWordGibberish = true;
+            }
+
+            // Word of 5 or more letters with NO vowels whatsoever
+            if (strlen($wLower) >= 5 && !preg_match('/[aeiouy]/i', $wLower)) {
+                $isWordGibberish = true;
+            }
+
+            if ($isWordGibberish) {
+                $gibberishWords++;
+            }
+        }
+    }
+
+    if ($checkedWords >= 2 && ($gibberishWords / $checkedWords) >= 0.40) {
+        return [
+            'valid'   => false,
+            'message' => 'Entry contains random letters, gibberish words, or meaningless keyboard mash. Please submit a valid description.'
+        ];
+    }
+    if ($checkedWords === 1 && $gibberishWords === 1) {
+        return [
+            'valid'   => false,
+            'message' => 'Entry contains random letters, gibberish words, or meaningless text. Please submit a valid description.'
+        ];
+    }
+
+    return ['valid' => true, 'message' => ''];
 }

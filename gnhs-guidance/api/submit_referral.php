@@ -14,11 +14,32 @@ if (!$studentName || !$gradeSection || !$concernType || !$observations) {
     jsonOut(['success'=>false,'message'=>'All required fields must be filled.']);
 }
 
+// Validate observations quality: min 30 chars, max 400 words, spam/gibberish rejection
+$quality = validateContentQuality($observations, 30, 400);
+if (!$quality['valid']) {
+    jsonOut(['success'=>false, 'message'=>$quality['message']]);
+}
+
+if (strlen($studentName) < 3) {
+    jsonOut(['success'=>false, 'message'=>'Student name must be at least 3 characters long.']);
+}
+
+// Profanity filter
+if (containsProfanity($studentName) || containsProfanity($observations)) {
+    jsonOut(['success'=>false,'message'=>'Please remove inappropriate language or profanity from your submission.']);
+}
+
+require_once __DIR__ . '/../includes/summarizer.php';
+
 try {
     $db      = getDB();
     $refNum  = generateRefNumber();
-    $stmt    = $db->prepare("INSERT INTO referrals (ref_number,teacher_id,student_name,grade_section,concern_type,urgency,observations) VALUES (?,?,?,?,?,?,?)");
-    $stmt->execute([$refNum,$user['id'],$studentName,$gradeSection,$concernType,$urgency,$observations]);
+    
+    // Generate AI summary via Gemini API or intelligent guidance fallback
+    $aiSummary = generateReferralSummary($concernType, $studentName, $observations, $urgency);
+    
+    $stmt    = $db->prepare("INSERT INTO referrals (ref_number,teacher_id,student_name,grade_section,concern_type,urgency,observations,ai_summary) VALUES (?,?,?,?,?,?,?,?)");
+    $stmt->execute([$refNum,$user['id'],$studentName,$gradeSection,$concernType,$urgency,$observations,$aiSummary ?: null]);
 
     // Notify admins
     $admins = $db->query("SELECT id FROM users WHERE role='admin'")->fetchAll();
@@ -31,6 +52,8 @@ try {
 } catch (Exception $e) {
     jsonOut(['success'=>false,'message'=>$e->getMessage()],500);
 }
+
+
 
 
 

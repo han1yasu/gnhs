@@ -74,8 +74,11 @@ $content = <<<HTML
 
       <div class="form-group">
         <label>Observations / Reason for Referral <span class="req">*</span></label>
-        <textarea id="observations" rows="6" maxlength="4000" placeholder="Describe your observations (max 400 words). Be as specific as possible."></textarea>
-        <div class="char-count"><span id="charCount">0</span> / 400 words</div>
+        <textarea id="observations" rows="6" maxlength="4000" placeholder="Describe your observations in detail (at least 30 characters, max 400 words). Be as specific as possible."></textarea>
+        <div class="char-count" style="display:flex;justify-content:space-between;align-items:center;font-size:12px;margin-top:4px">
+          <span id="charCountNotice" style="color:var(--text-3)"><i class="fas fa-info-circle"></i> Minimum 30 characters required (<span id="charCount">0</span> chars)</span>
+          <span id="wordCountBadge" style="font-weight:700;color:var(--text-2)"><span id="wordCount">0</span> / 400 words</span>
+        </div>
       </div>
 
       <div class="form-actions">
@@ -140,9 +143,99 @@ function updateSections(sectionId) {
 }
 
 document.getElementById('observations')?.addEventListener('input', function(){
-  let words = this.value.trim().split(/\s+/).filter(w => w.length > 0);
-  document.getElementById('charCount').textContent = words.length;
+  const val = this.value;
+  const chars = val.length;
+  const words = val.trim().split(/\s+/).filter(w => w.length > 0);
+  const wordCount = words.length;
+
+  const charEl = document.getElementById('charCount');
+  const wordEl = document.getElementById('wordCount');
+  const noticeEl = document.getElementById('charCountNotice');
+  const badgeEl = document.getElementById('wordCountBadge');
+
+  if (charEl) charEl.textContent = chars;
+  if (wordEl) wordEl.textContent = wordCount;
+
+  if (noticeEl) {
+    if (chars < 30) {
+      noticeEl.style.color = '#dc2626';
+      noticeEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> Minimum 30 characters required (' + chars + '/30)';
+    } else {
+      noticeEl.style.color = '#16a34a';
+      noticeEl.innerHTML = '<i class="fas fa-check-circle"></i> Length requirement met (' + chars + ' characters)';
+    }
+  }
+
+  if (badgeEl) {
+    if (wordCount > 400) {
+      badgeEl.style.color = '#dc2626';
+    } else {
+      badgeEl.style.color = 'var(--text-2)';
+    }
+  }
 });
+
+function validateReferralSpam(text) {
+  const clean = (text || '').trim();
+  if (clean.length < 30) {
+    return { valid: false, message: 'Observations must be at least 30 characters long to provide sufficient detail (currently ' + clean.length + ' characters).' };
+  }
+  const words = clean.split(/\s+/).filter(w => w.length > 0);
+  if (words.length > 400) {
+    return { valid: false, message: 'Observations exceed the 400-word ceiling (currently ' + words.length + ' words). Please shorten your observations.' };
+  }
+  // Repeated characters 5+ consecutively
+  if (/(.)\1{4,}/u.test(clean)) {
+    return { valid: false, message: 'Referral rejected: Observations contain repeated characters or symbols. Please provide meaningful observations.' };
+  }
+  // Repeating patterns (e.g. asdfasdfasdf)
+  if (/(.{2,8})\1{3,}/i.test(clean)) {
+    return { valid: false, message: 'Referral rejected: Observations contain repeated patterns or spam text. Please describe your observations in natural words.' };
+  }
+  // Vowel ratio
+  const letters = clean.replace(/[^a-zA-Z]/g, '');
+  if (letters.length >= 20) {
+    const vowels = (letters.match(/[aeiouAEIOU]/g) || []).length;
+    const ratio = vowels / letters.length;
+    if (ratio < 0.15) {
+      return { valid: false, message: 'Referral rejected: Observations contain random consonants or keyboard mash. Please write meaningful sentences.' };
+    }
+    if (ratio > 0.85) {
+      return { valid: false, message: 'Referral rejected: Observations contain abnormal character patterns. Please describe your observations clearly.' };
+    }
+  }
+  // Repeated words
+  if (words.length >= 6) {
+    const unique = new Set(words.map(w => w.toLowerCase()));
+    if (unique.size / words.length < 0.35) {
+      return { valid: false, message: 'Referral rejected: Observations contain excessively repeated words. Please provide detailed observations.' };
+    }
+  }
+  // Gibberish words & keyboard mash
+  const keyboardPatterns = ['asdfgh','sdfghj','dfghjk','fghjkl','qwerty','wertyu','ertyui','rtyuio','tyuiop','zxcvbn','xcvbnm','lkjhgf','kjhgfd','jhgfdsa'];
+  let gibberishWords = 0;
+  let checkedWords = 0;
+  for (const w of words) {
+    const cleanW = w.replace(/[^a-zA-Z]/g, '').toLowerCase();
+    if (cleanW.length >= 4) {
+      checkedWords++;
+      let isGibberish = false;
+      for (const kp of keyboardPatterns) {
+        if (cleanW.includes(kp)) { isGibberish = true; break; }
+      }
+      if (/[bcdfghjklmnpqrstvwxyz]{5,}/i.test(cleanW)) isGibberish = true;
+      if (cleanW.length >= 5 && !/[aeiouy]/i.test(cleanW)) isGibberish = true;
+      if (isGibberish) gibberishWords++;
+    }
+  }
+  if (checkedWords >= 2 && (gibberishWords / checkedWords) >= 0.40) {
+    return { valid: false, message: 'Referral rejected: Observations contain random letters, gibberish words, or meaningless keyboard mash. Please write valid observations.' };
+  }
+  if (checkedWords === 1 && gibberishWords === 1) {
+    return { valid: false, message: 'Referral rejected: Observations contain gibberish or meaningless text. Please write valid observations.' };
+  }
+  return { valid: true, message: '' };
+}
 
 async function submitReferral() {
   const studentName  = document.getElementById('studentName').value.trim();
@@ -158,10 +251,19 @@ async function submitReferral() {
   const observations = document.getElementById('observations').value.trim();
 
   if (!studentName)  { showMsg('refMsg','Please enter the student name.'); return; }
+  if (studentName.length < 3) { showMsg('refMsg','Student name must be at least 3 characters.'); document.getElementById('studentName').focus(); return; }
   if (!grade)        { showMsg('refMsg','Please select a grade.'); return; }
   if (!section)      { showMsg('refMsg','Please select a section.'); return; }
   if (!concernType)  { showMsg('refMsg','Please select a concern type.'); return; }
   if (!observations) { showMsg('refMsg','Please describe your observations.'); return; }
+
+  // Quality check: 30 chars min, 400 words max, spam / nonexistent wordings check
+  const quality = validateReferralSpam(observations);
+  if (!quality.valid) {
+    showMsg('refMsg', quality.message);
+    document.getElementById('observations').focus();
+    return;
+  }
 
   const gradeSection = 'Grade ' + grade + ' - ' + section;
 

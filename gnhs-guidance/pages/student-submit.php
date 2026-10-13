@@ -103,8 +103,11 @@ $content = <<<HTML
 
       <div class="form-group">
         <label>Describe Your Concern <span class="req">*</span></label>
-        <textarea id="description" rows="6" maxlength="4000" placeholder="Please describe your concern in detail (max 400 words). Everything you share is confidential."></textarea>
-        <div class="char-count"><span id="charCount">0</span> / 400 words</div>
+        <textarea id="description" rows="6" maxlength="4000" placeholder="Please describe your concern in detail (at least 30 characters, max 400 words). Everything you share is confidential."></textarea>
+        <div class="char-count" style="display:flex;justify-content:space-between;align-items:center;font-size:12px;margin-top:4px">
+          <span id="charCountNotice" style="color:var(--text-3)"><i class="fas fa-info-circle"></i> Minimum 30 characters required (<span id="charCount">0</span> chars)</span>
+          <span id="wordCountBadge" style="font-weight:700;color:var(--text-2)"><span id="wordCount">0</span> / 400 words</span>
+        </div>
       </div>
 
       <!-- Optional Witnesses Field -->
@@ -233,9 +236,99 @@ function onConcernTypeChange(val) {
 }
 
 document.getElementById('description')?.addEventListener('input', function(){
-  let words = this.value.trim().split(/\s+/).filter(w => w.length > 0);
-  document.getElementById('charCount').textContent = words.length;
+  const val = this.value;
+  const chars = val.length;
+  const words = val.trim().split(/\s+/).filter(w => w.length > 0);
+  const wordCount = words.length;
+  
+  const charEl = document.getElementById('charCount');
+  const wordEl = document.getElementById('wordCount');
+  const noticeEl = document.getElementById('charCountNotice');
+  const badgeEl = document.getElementById('wordCountBadge');
+  
+  if (charEl) charEl.textContent = chars;
+  if (wordEl) wordEl.textContent = wordCount;
+  
+  if (noticeEl) {
+    if (chars < 30) {
+      noticeEl.style.color = '#dc2626';
+      noticeEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> Minimum 30 characters required (' + chars + '/30)';
+    } else {
+      noticeEl.style.color = '#16a34a';
+      noticeEl.innerHTML = '<i class="fas fa-check-circle"></i> Length requirement met (' + chars + ' characters)';
+    }
+  }
+  
+  if (badgeEl) {
+    if (wordCount > 400) {
+      badgeEl.style.color = '#dc2626';
+    } else {
+      badgeEl.style.color = 'var(--text-2)';
+    }
+  }
 });
+
+function validateConcernSpam(text) {
+  const clean = (text || '').trim();
+  if (clean.length < 30) {
+    return { valid: false, message: 'Description must be at least 30 characters long to provide sufficient detail (currently ' + clean.length + ' characters).' };
+  }
+  const words = clean.split(/\s+/).filter(w => w.length > 0);
+  if (words.length > 400) {
+    return { valid: false, message: 'Description exceeds the 400-word ceiling (currently ' + words.length + ' words). Please shorten your description.' };
+  }
+  // Repeated characters 5+ consecutively
+  if (/(.)\1{4,}/u.test(clean)) {
+    return { valid: false, message: 'Submission rejected: Description contains repeated characters or symbols. Please write a meaningful description of your concern.' };
+  }
+  // Repeating patterns (e.g. asdfasdfasdf)
+  if (/(.{2,8})\1{3,}/i.test(clean)) {
+    return { valid: false, message: 'Submission rejected: Description contains repeated patterns or spam. Please write a clear description in normal words.' };
+  }
+  // Vowel ratio
+  const letters = clean.replace(/[^a-zA-Z]/g, '');
+  if (letters.length >= 20) {
+    const vowels = (letters.match(/[aeiouAEIOU]/g) || []).length;
+    const ratio = vowels / letters.length;
+    if (ratio < 0.15) {
+      return { valid: false, message: 'Submission rejected: Description contains random letters or keyboard mash. Please write meaningful sentences.' };
+    }
+    if (ratio > 0.85) {
+      return { valid: false, message: 'Submission rejected: Description contains abnormal character patterns. Please describe your concern clearly.' };
+    }
+  }
+  // Repeated words
+  if (words.length >= 6) {
+    const unique = new Set(words.map(w => w.toLowerCase()));
+    if (unique.size / words.length < 0.35) {
+      return { valid: false, message: 'Submission rejected: Description contains excessively repeated words. Please write a detailed concern description.' };
+    }
+  }
+  // Gibberish words & keyboard mash
+  const keyboardPatterns = ['asdfgh','sdfghj','dfghjk','fghjkl','qwerty','wertyu','ertyui','rtyuio','tyuiop','zxcvbn','xcvbnm','lkjhgf','kjhgfd','jhgfdsa'];
+  let gibberishWords = 0;
+  let checkedWords = 0;
+  for (const w of words) {
+    const cleanW = w.replace(/[^a-zA-Z]/g, '').toLowerCase();
+    if (cleanW.length >= 4) {
+      checkedWords++;
+      let isGibberish = false;
+      for (const kp of keyboardPatterns) {
+        if (cleanW.includes(kp)) { isGibberish = true; break; }
+      }
+      if (/[bcdfghjklmnpqrstvwxyz]{5,}/i.test(cleanW)) isGibberish = true;
+      if (cleanW.length >= 5 && !/[aeiouy]/i.test(cleanW)) isGibberish = true;
+      if (isGibberish) gibberishWords++;
+    }
+  }
+  if (checkedWords >= 2 && (gibberishWords / checkedWords) >= 0.40) {
+    return { valid: false, message: 'Submission rejected: Description contains random letters, gibberish, or meaningless keyboard mash. Please write a valid concern.' };
+  }
+  if (checkedWords === 1 && gibberishWords === 1) {
+    return { valid: false, message: 'Submission rejected: Description contains gibberish or meaningless text. Please write a valid concern.' };
+  }
+  return { valid: true, message: '' };
+}
 
 // Max date setup and prevent future dates
 const incidentDateEl = document.getElementById('incidentDate');
@@ -336,10 +429,24 @@ function updateFileCountBadge() {
 function handleFileSelect(files) {
   if (!files || !files.length) return;
   const maxPerFile = 100 * 1024 * 1024; // 100MB
+  const allowedExts = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic', 'heif', 'jfif', 'mp4', 'webm', 'mov', 'mkv', 'avi', '3gp', 'm4v'];
+
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+    const isImage = file.type.startsWith('image/') || ['jpg','jpeg','png','webp','gif','heic','heif','jfif'].includes(ext);
+    const isVideo = file.type.startsWith('video/') || ['mp4','webm','mov','mkv','avi','3gp','m4v'].includes(ext);
+
+    if (!isImage && !isVideo && !allowedExts.includes(ext)) {
+      alert('Unsupported file format for "' + file.name + '". Supported files: Images (JPG, PNG, WEBP, GIF, HEIC) and Videos (MP4, WEBM, MOV, MKV).');
+      continue;
+    }
     if (file.size > maxPerFile) {
-      alert('File "' + file.name + '" exceeds the 100MB limit.');
+      alert('File "' + file.name + '" (' + formatBytes(file.size) + ') exceeds the maximum 100MB size limit.');
+      continue;
+    }
+    if (file.size <= 0) {
+      alert('File "' + file.name + '" is empty (0 bytes) and cannot be attached.');
       continue;
     }
     // Check if already added
@@ -493,6 +600,20 @@ async function submitConcern() {
 
   if (!concernType || !subject || !description) {
     showMsg('submitMsg', 'Please fill in all required fields.'); return;
+  }
+
+  if (subject.length < 4) {
+    showMsg('submitMsg', 'Subject title must be at least 4 characters long.');
+    document.getElementById('subject').focus();
+    return;
+  }
+
+  // Pre-submission validation: 30 chars minimum, 400-word ceiling, spam / gibberish rejection
+  const quality = validateConcernSpam(description);
+  if (!quality.valid) {
+    showMsg('submitMsg', quality.message);
+    document.getElementById('description').focus();
+    return;
   }
 
   const todayStr = '$todayDate';

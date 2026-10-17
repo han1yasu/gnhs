@@ -32,10 +32,19 @@ if ($filterGrade && $filterSection) {
 if ($search) {
     $sq = addslashes($search);
     $sqUnderscore = addslashes(str_replace(' ', '_', $search));
+
+    // Detect if search term matches any known concern type or badge keyword
+    $isTypeSearch = false;
+    $concernTypes = ['bullying', 'bully', 'academic', 'stress', 'academic_stress', 'emotional', 'family', 'peer', 'peer_conflict', 'behavioral', 'behavior', 'other'];
+    foreach ($concernTypes as $ct) {
+        if (stripos($sq, $ct) !== false || stripos($ct, $sq) !== false) {
+            $isTypeSearch = true;
+            break;
+        }
+    }
+
     $where .= " AND (
         LOWER(c.case_number) LIKE LOWER('%$sq%')
-        OR LOWER(c.subject) LIKE LOWER('%$sq%')
-        OR LOWER(c.description) LIKE LOWER('%$sq%')
         OR LOWER(c.concern_type) LIKE LOWER('%$sq%')
         OR LOWER(c.concern_type) LIKE LOWER('%$sqUnderscore%')
         OR LOWER(REPLACE(c.concern_type, '_', ' ')) LIKE LOWER('%$sq%')
@@ -45,7 +54,13 @@ if ($search) {
         OR LOWER(s.grade_section) LIKE LOWER('%$sq%')
         OR LOWER(COALESCE(c.reported_student_name, '')) LIKE LOWER('%$sq%')
         OR LOWER(COALESCE(c.reported_student_grade, '')) LIKE LOWER('%$sq%')
+        OR LOWER(c.status) LIKE LOWER('%$sq%')
+        OR LOWER(c.priority) LIKE LOWER('%$sq%')
         OR (c.is_anonymous=1 AND LOWER('anonymous') LIKE LOWER('%$sq%'))
+        OR (c.is_peer_report=1 AND LOWER('peer') LIKE LOWER('%$sq%'))
+        OR (c.witnesses IS NOT NULL AND c.witnesses != '' AND LOWER('witness') LIKE LOWER('%$sq%'))
+        OR (c.evidence_files IS NOT NULL AND c.evidence_files != '' AND c.evidence_files != '[]' AND LOWER('media') LIKE LOWER('%$sq%'))
+        " . (!$isTypeSearch ? "OR LOWER(c.subject) LIKE LOWER('%$sq%')" : "") . "
     )";
 }
 
@@ -72,22 +87,27 @@ if (!function_exists('prioBadge')) {
 
 $rows = '';
 foreach ($cases as $c) {
+    $rawType = strtolower($c['concern_type']);
     $type = ucfirst(str_replace('_',' ',$c['concern_type']));
     $mediaBadges = '';
-    if (!empty($c['evidence_files']) && $c['evidence_files'] !== '[]') {
+    $hasMedia = (!empty($c['evidence_files']) && $c['evidence_files'] !== '[]');
+    $hasWitness = !empty($c['witnesses']);
+    $isPeer = !empty($c['is_peer_report']);
+
+    if ($hasMedia) {
         $evArray = is_string($c['evidence_files']) ? json_decode($c['evidence_files'], true) : $c['evidence_files'];
         $cnt = is_array($evArray) ? count($evArray) : 1;
         $mediaBadges .= "<span class='badge-evidence' title='{$cnt} attached photo/video evidence file(s)'><i class='fas fa-paperclip'></i> {$cnt} Media</span>";
     }
-    if (!empty($c['witnesses'])) {
+    if ($hasWitness) {
         $mediaBadges .= "<span class='badge-witness' title='Witnesses mentioned in case report'><i class='fas fa-user-group'></i> Witness</span>";
     }
-    if (!empty($c['is_peer_report'])) {
+    if ($isPeer) {
         $mediaBadges .= "<span class='badge-witness' style='background:#fdf2f8;color:#be185d;border-color:#fbcfe8' title='Peer Report: submitted on behalf of another student'><i class='fas fa-hand-holding-heart'></i> Peer</span>";
     }
     $date = date('M d, Y', strtotime($c['submitted_at']));
 
-    if (!empty($c['is_peer_report'])) {
+    if ($isPeer) {
         $targetName = htmlspecialchars($c['reported_student_name'] ?: 'Other Student');
         $targetGrade = !empty($c['reported_student_grade']) ? " <span style='font-size:11px;color:var(--text-3)'>(".htmlspecialchars($c['reported_student_grade']).")</span>" : "";
         $studentDisplay = "<div>
@@ -101,11 +121,32 @@ foreach ($cases as $c) {
     }
 
     $gradeDisplay = htmlspecialchars($c['grade_section'] ?? '—');
-    if (!empty($c['is_peer_report']) && !empty($c['reported_student_grade'])) {
+    if ($isPeer && !empty($c['reported_student_grade'])) {
         $gradeDisplay = htmlspecialchars($c['reported_student_grade']);
     }
 
-    $rows .= "<tr>
+    // Build rich searchable text for client-side live filter
+    $searchTokens = [
+        $c['case_number'],
+        $c['student_name'],
+        $c['reported_student_name'] ?? '',
+        $c['grade_section'] ?? '',
+        $c['reported_student_grade'] ?? '',
+        $rawType,
+        str_replace('_', ' ', $rawType),
+        $type,
+        $c['status'],
+        str_replace('_', ' ', $c['status']),
+        $c['priority'],
+        $isPeer ? 'peer peer-report' : '',
+        $hasWitness ? 'witness' : '',
+        $hasMedia ? 'media evidence' : '',
+        $c['is_anonymous'] ? 'anonymous anon' : '',
+        $date
+    ];
+    $searchData = htmlspecialchars(strtolower(implode(' ', array_filter($searchTokens))), ENT_QUOTES);
+
+    $rows .= "<tr class='case-row' data-search=\"$searchData\">
         <td class='cell-case-num'><span class='case-num-text'>{$c['case_number']}</span></td>
         <td class='cell-student'>$studentDisplay</td>
         <td class='cell-grade'>$gradeDisplay</td>
@@ -128,7 +169,7 @@ foreach ($cases as $c) {
         </td>
     </tr>";
 }
-if (!$rows) $rows = "<tr><td colspan='8' style='text-align:center;color:var(--text-3);padding:40px'>".
+if (!$rows) $rows = "<tr class='no-active-cases-row'><td colspan='8' style='text-align:center;color:var(--text-3);padding:40px'>".
     ($search ? "No cases found matching \"".htmlspecialchars($search)."\"." : "No active cases found.")."</td></tr>";
 
 $sqVal = htmlspecialchars($search);
@@ -158,15 +199,16 @@ $totalActive = count($cases);
 $content = <<<HTML
 <div class="content-card">
   <div class="card-header">
-    <h3><i class="fas fa-folder-open"></i> Active Cases <span style="font-size:13px;font-weight:600;color:var(--text-3);margin-left:6px">($totalActive)</span></h3>
+    <h3><i class="fas fa-folder-open"></i> Active Cases <span id="activeCasesCount" style="font-size:13px;font-weight:600;color:var(--text-3);margin-left:6px">($totalActive)</span></h3>
     <a href="admin-archive.php" class="btn-sm-outline"><i class="fas fa-archive"></i> View Archive</a>
   </div>
   <!-- Search & Filters Toolbar -->
   <div class="filter-toolbar">
     <div class="filter-search-box">
       <i class="fas fa-search"></i>
-      <input type="text" class="filter-search-input" id="searchQ" value="$sqVal" placeholder="Search by name, case #, subject…"
-        onkeydown="if(event.key==='Enter')doSearch()"/>
+      <input type="text" class="filter-search-input" id="searchQ" value="$sqVal" placeholder="Search by name, case #, type, grade, status…"
+        autocomplete="off"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();doSearch();}"/>
     </div>
     <button type="button" class="filter-btn-search" onclick="doSearch()"><i class="fas fa-search"></i> Search</button>
     <select class="filter-select" onchange="applyFilter('status',this.value)">
@@ -263,17 +305,88 @@ function gradeFilterChange() {
   }
   // When grade changes (or is cleared to All Grades), clear section from URL
   url.searchParams.delete('section');
+  const q = document.getElementById('searchQ')?.value.trim();
+  if (q) url.searchParams.set('q', q);
   window.location = url;
 }
 
+let searchDebounceTimer = null;
+
+function filterCasesLive(query) {
+  const q = (query || '').trim().toLowerCase();
+  const rows = document.querySelectorAll('.data-table tbody tr.case-row');
+  const countBadge = document.getElementById('activeCasesCount');
+  const tbody = document.querySelector('.data-table tbody');
+  
+  if (!tbody) return;
+
+  // Remove existing dynamic no-match row if any
+  const existingNoMatch = tbody.querySelector('.live-no-match-row');
+  if (existingNoMatch) existingNoMatch.remove();
+
+  if (!rows || rows.length === 0) return;
+
+  if (!q) {
+    rows.forEach(r => r.style.display = '');
+    if (countBadge) countBadge.textContent = '(' + rows.length + ')';
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(() => syncSearchUrl(''), 300);
+    return;
+  }
+
+  const tokens = q.split(/\s+/).filter(Boolean);
+  let visibleCount = 0;
+
+  rows.forEach(r => {
+    const searchData = r.getAttribute('data-search') || '';
+    const matchesAll = tokens.every(tok => searchData.includes(tok));
+    if (matchesAll) {
+      r.style.display = '';
+      visibleCount++;
+    } else {
+      r.style.display = 'none';
+    }
+  });
+
+  if (visibleCount === 0) {
+    const noMatchTr = document.createElement('tr');
+    noMatchTr.className = 'live-no-match-row';
+    noMatchTr.innerHTML = '<td colspan="8" style="text-align:center;color:var(--text-3);padding:40px">' +
+      '<i class="fas fa-search" style="margin-right:8px;opacity:0.5;font-size:16px"></i>' +
+      'No cases found matching "<strong>' + escapeHtml(query) + '</strong>".</td>';
+    tbody.appendChild(noMatchTr);
+  }
+
+  if (countBadge) {
+    countBadge.textContent = '(' + visibleCount + (visibleCount !== rows.length ? ' of ' + rows.length : '') + ')';
+  }
+
+  clearTimeout(searchDebounceTimer);
+  searchDebounceTimer = setTimeout(() => syncSearchUrl(q), 400);
+}
+
+function syncSearchUrl(q) {
+  try {
+    const url = new URL(window.location);
+    if (q) url.searchParams.set('q', q);
+    else url.searchParams.delete('q');
+    window.history.replaceState({}, '', url);
+  } catch (e) {}
+}
+
 function doSearch() {
-  applyFilter('q', document.getElementById('searchQ').value.trim());
+  const input = document.getElementById('searchQ');
+  const val = input ? input.value.trim() : '';
+  filterCasesLive(val);
+  syncSearchUrl(val);
 }
 
 function applyFilter(key, val) {
   const url = new URL(window.location);
   if (val) url.searchParams.set(key, val);
   else url.searchParams.delete(key);
+  const q = document.getElementById('searchQ')?.value.trim();
+  if (q) url.searchParams.set('q', q);
   window.location = url;
 }
 
@@ -281,8 +394,25 @@ function clearFilters() {
   window.location = 'admin-cases.php';
 }
 
-// Pre-populate section dropdown and preserve active section if grade filter is active
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/[&<>"']/g, function(m) {
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];
+  });
+}
+
+// Live typing listener + pre-population
 document.addEventListener('DOMContentLoaded', function() {
+  const input = document.getElementById('searchQ');
+  if (input) {
+    input.addEventListener('input', function() {
+      filterCasesLive(this.value);
+    });
+    if (input.value.trim()) {
+      filterCasesLive(input.value.trim());
+    }
+  }
+
   if (CURRENT_GRADE) {
     populateSections(CURRENT_GRADE, CURRENT_SECTION);
   } else {

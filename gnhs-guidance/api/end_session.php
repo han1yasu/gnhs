@@ -66,6 +66,7 @@ try {
         $db->prepare("UPDATE cases 
             SET status = 'resolved', 
                 resolution = ?, 
+                resolution_process = 'Settled through Counseling Session',
                 sanctions = ?, 
                 resolved_at = NOW(), 
                 updated_at = NOW() 

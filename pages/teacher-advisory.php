@@ -133,15 +133,37 @@ if ($advisoryClass) {
     // 2. Fetch concerns raised by students in this advisory class
     // NOTE: Strictly exclude description, notes, witnesses, and evidence for privacy
     $cStmt = $db->prepare("SELECT c.id, c.case_number, c.student_id, c.is_anonymous, c.concern_type, c.priority, c.status, c.submitted_at,
+        c.subject, c.description, c.reported_teacher_name, c.is_against_adviser,
         s.first_name, s.last_name, s.id_number, s.avatar_initials, s.avatar_photo, s.grade_section,
         CONCAT(COALESCE(a.first_name,'Guidance'), ' ', COALESCE(a.last_name,'Counselor')) AS counselor_name
         FROM cases c
         JOIN users s ON c.student_id = s.id
         LEFT JOIN users a ON c.assigned_to = a.id
         WHERE REPLACE(s.grade_section, ' – ', ' - ') = REPLACE(?, ' – ', ' - ')
+          AND (c.is_against_adviser = 0 OR c.is_against_adviser IS NULL)
+          AND LOWER(c.concern_type) NOT LIKE '%teacher%'
+          AND LOWER(c.concern_type) NOT LIKE '%adviser%'
+          AND LOWER(c.concern_type) NOT LIKE '%faculty%'
+          AND LOWER(c.concern_type) NOT LIKE '%instructor%'
         ORDER BY c.submitted_at DESC");
     $cStmt->execute([$advisoryClass]);
-    $advisoryCases = $cStmt->fetchAll();
+    $rawAdvisoryCases = $cStmt->fetchAll();
+
+    // Secondary strict privacy filter: never display if student concern mentions the teacher by name
+    $teacherLastName  = strtolower(trim($user['last_name'] ?? ''));
+    $teacherFirstName = strtolower(trim($user['first_name'] ?? ''));
+    $advisoryCases    = [];
+
+    foreach ($rawAdvisoryCases as $c) {
+        $cSub = strtolower($c['subject'] ?? '');
+        $cDesc = strtolower($c['description'] ?? '');
+        $cRep = strtolower($c['reported_teacher_name'] ?? '');
+        if (($teacherLastName && strlen($teacherLastName) > 2 && (strpos($cSub, $teacherLastName) !== false || strpos($cDesc, $teacherLastName) !== false || strpos($cRep, $teacherLastName) !== false)) ||
+            ($teacherFirstName && strlen($teacherFirstName) > 2 && (strpos($cSub, $teacherFirstName) !== false || strpos($cDesc, $teacherFirstName) !== false || strpos($cRep, $teacherFirstName) !== false))) {
+            continue; // Adviser is strictly forbidden from seeing concerns about themselves
+        }
+        $advisoryCases[] = $c;
+    }
 
     foreach ($advisoryCases as $c) {
         if (in_array($c['status'], ['resolved', 'closed'])) {

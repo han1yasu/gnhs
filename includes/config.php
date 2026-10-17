@@ -38,6 +38,33 @@ function getDB(): PDO {
         try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_reset_requested TINYINT(1) DEFAULT 0"); } catch(Exception $e){}
         try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS failed_attempts INT DEFAULT 0"); } catch(Exception $e){}
         try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS lockout_until DATETIME DEFAULT NULL"); } catch(Exception $e){}
+        try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS security_question_1 VARCHAR(255) DEFAULT NULL"); } catch(Exception $e){}
+        try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS security_answer_1 VARCHAR(255) DEFAULT NULL"); } catch(Exception $e){}
+        try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS security_question_2 VARCHAR(255) DEFAULT NULL"); } catch(Exception $e){}
+        try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS security_answer_2 VARCHAR(255) DEFAULT NULL"); } catch(Exception $e){}
+        try { $pdo->exec("ALTER TABLE cases ADD COLUMN IF NOT EXISTS is_against_adviser TINYINT(1) DEFAULT 0"); } catch(Exception $e){}
+        try { $pdo->exec("ALTER TABLE cases ADD COLUMN IF NOT EXISTS reported_teacher_name VARCHAR(255) DEFAULT NULL"); } catch(Exception $e){}
+        try {
+            $pdo->exec("CREATE TABLE IF NOT EXISTS password_reset_requests (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                email VARCHAR(150) NOT NULL,
+                id_number VARCHAR(50) DEFAULT NULL,
+                full_name VARCHAR(150) NOT NULL,
+                role VARCHAR(30) DEFAULT 'student',
+                grade_section VARCHAR(100) DEFAULT NULL,
+                security_verified TINYINT(1) DEFAULT 1,
+                status VARCHAR(30) DEFAULT 'pending',
+                temp_password VARCHAR(255) DEFAULT NULL,
+                admin_notes TEXT DEFAULT NULL,
+                reviewed_by INT DEFAULT NULL,
+                reviewed_at DATETIME DEFAULT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                INDEX(user_id),
+                INDEX(email),
+                INDEX(status)
+            )");
+        } catch(Exception $e){}
     }
     return $pdo;
 }
@@ -104,6 +131,7 @@ function requireLogin(string $role = ''): array {
         try { $db->exec("ALTER TABLE counseling_sessions ADD COLUMN IF NOT EXISTS session_type VARCHAR(50) DEFAULT 'in-person'"); } catch(Exception $e){}
         try { $db->exec("ALTER TABLE counseling_sessions ADD COLUMN IF NOT EXISTS location VARCHAR(100) DEFAULT 'Guidance Office'"); } catch(Exception $e){}
         try { $db->exec("ALTER TABLE cases ADD COLUMN IF NOT EXISTS resolution TEXT DEFAULT NULL"); } catch(Exception $e){}
+        try { $db->exec("ALTER TABLE cases ADD COLUMN IF NOT EXISTS resolution_process VARCHAR(255) DEFAULT NULL"); } catch(Exception $e){}
         try { $db->exec("ALTER TABLE cases ADD COLUMN IF NOT EXISTS sanctions TEXT DEFAULT NULL"); } catch(Exception $e){}
         try { $db->exec("ALTER TABLE cases ADD COLUMN IF NOT EXISTS resolved_at DATETIME DEFAULT NULL"); } catch(Exception $e){}
         try { $db->exec("ALTER TABLE counseling_sessions ADD COLUMN IF NOT EXISTS notes TEXT DEFAULT NULL"); } catch(Exception $e){}

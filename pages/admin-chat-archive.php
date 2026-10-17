@@ -64,6 +64,14 @@ $st6 = $filterType==='behavioral'      ? 'selected' : '';
 $st7 = $filterType==='other'           ? 'selected' : '';
 
 $content = <<<HTML
+<!-- Archive Sub-Navigation Tabs -->
+<div class="totp-tab-bar" style="background:var(--bg2);padding:4px;border-radius:12px;border:1px solid var(--border);display:inline-flex;margin-bottom:18px">
+  <a href="admin-archive.php" class="tab-pill" style="text-decoration:none"><i class="fas fa-folder"></i> Cases Archive</a>
+  <a href="admin-chat-archive.php" class="tab-pill active" style="text-decoration:none"><i class="fas fa-history"></i> Chat Archive</a>
+  <a href="admin-referrals-archive.php" class="tab-pill" style="text-decoration:none"><i class="fas fa-exchange-alt"></i> Referrals Archive</a>
+  <a href="admin-sessions-archive.php" class="tab-pill" style="text-decoration:none"><i class="fas fa-calendar-check"></i> Sessions Archive</a>
+</div>
+
 <div class="content-card">
   <div class="card-header">
     <h3><i class="fas fa-comments"></i> Archived Chats <span style="font-size:13px;font-weight:600;color:var(--text-3);margin-left:6px">($total resolved/closed)</span></h3>

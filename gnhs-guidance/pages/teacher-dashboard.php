@@ -94,6 +94,7 @@ if ($advisoryClass) {
 
     // Active cases from students in advisory class - high-level summary fields only (no description or notes)
     $stmtCases = $db->prepare("SELECT c.id, c.case_number, c.student_id, c.is_anonymous, c.concern_type, c.priority, c.status, c.submitted_at,
+        c.subject, c.description, c.reported_teacher_name, c.is_against_adviser,
         CASE WHEN c.is_anonymous=1 THEN 'Anonymous Student' ELSE CONCAT(s.first_name,' ',s.last_name) END AS student_name,
         s.grade_section, s.id_number, s.avatar_photo, s.avatar_initials,
         CONCAT(COALESCE(a.first_name,'Guidance'), ' ', COALESCE(a.last_name,'Counselor')) AS counselor_name
@@ -102,12 +103,29 @@ if ($advisoryClass) {
         LEFT JOIN users a ON c.assigned_to=a.id
         WHERE REPLACE(s.grade_section, ' – ', ' - ') = REPLACE(?, ' – ', ' - ')
           AND c.status NOT IN ('resolved','closed')
+          AND (c.is_against_adviser = 0 OR c.is_against_adviser IS NULL)
+          AND LOWER(c.concern_type) NOT LIKE '%teacher%'
+          AND LOWER(c.concern_type) NOT LIKE '%adviser%'
+          AND LOWER(c.concern_type) NOT LIKE '%faculty%'
+          AND LOWER(c.concern_type) NOT LIKE '%instructor%'
         ORDER BY FIELD(c.priority,'high','medium','low'), c.submitted_at DESC
         LIMIT 10");
     $stmtCases->execute([$advisoryClass]);
-    $advisoryCases = $stmtCases->fetchAll();
+    $rawAdvisoryCases = $stmtCases->fetchAll();
 
-    foreach ($advisoryCases as $ac) {
+    $teacherLastName  = strtolower(trim($user['last_name'] ?? ''));
+    $teacherFirstName = strtolower(trim($user['first_name'] ?? ''));
+    $advisoryCases    = [];
+
+    foreach ($rawAdvisoryCases as $ac) {
+        $cSub = strtolower($ac['subject'] ?? '');
+        $cDesc = strtolower($ac['description'] ?? '');
+        $cRep = strtolower($ac['reported_teacher_name'] ?? '');
+        if (($teacherLastName && strlen($teacherLastName) > 2 && (strpos($cSub, $teacherLastName) !== false || strpos($cDesc, $teacherLastName) !== false || strpos($cRep, $teacherLastName) !== false)) ||
+            ($teacherFirstName && strlen($teacherFirstName) > 2 && (strpos($cSub, $teacherFirstName) !== false || strpos($cDesc, $teacherFirstName) !== false || strpos($cRep, $teacherFirstName) !== false))) {
+            continue; // Adviser is strictly forbidden from seeing concerns about themselves
+        }
+        $advisoryCases[] = $ac;
         if (empty($ac['is_anonymous'])) {
             $studentActiveCasesMap[(int)$ac['student_id']][] = $ac;
         }

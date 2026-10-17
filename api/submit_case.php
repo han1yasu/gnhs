@@ -26,6 +26,8 @@ $witnesses   = trim($raw['witnesses']         ?? '');
 $isPeerReport = isset($raw['is_peer_report']) ? (int)($raw['is_peer_report'] === '1' || $raw['is_peer_report'] === true || $raw['is_peer_report'] === 'true' || $raw['is_peer_report'] === 1) : 0;
 $reportedStudentName = trim($raw['reported_student_name'] ?? '');
 $reportedStudentGrade = trim($raw['reported_student_grade'] ?? '');
+$isAgainstAdviser = isset($raw['is_against_adviser']) ? (int)($raw['is_against_adviser'] === '1' || $raw['is_against_adviser'] === true || $raw['is_against_adviser'] === 'true' || $raw['is_against_adviser'] === 1) : 0;
+$reportedTeacherName = trim($raw['reported_teacher_name'] ?? '');
 
 if ($isPeerReport && empty($reportedStudentName)) {
     jsonOut(['success'=>false, 'message'=>'Please provide the name of the student you are reporting for.']);
@@ -179,15 +181,24 @@ try {
     $counselor  = $db->query("SELECT id FROM users WHERE role='admin' LIMIT 1")->fetch();
     $assignedTo = $counselor ? $counselor['id'] : null;
 
+    // Auto-flag is_against_adviser if text references teacher/adviser/instructor
+    if (stripos($concernType, 'teacher') !== false || stripos($concernType, 'adviser') !== false ||
+        stripos($subject, 'teacher') !== false || stripos($subject, 'adviser') !== false ||
+        stripos($description, 'teacher') !== false || stripos($description, 'adviser') !== false ||
+        !empty($reportedTeacherName)) {
+        $isAgainstAdviser = 1;
+    }
+
     $stmt = $db->prepare("INSERT INTO cases
-        (case_number,student_id,is_anonymous,anon_token,concern_type,subject,description,ai_summary,priority,status,incident_date,preferred_contact,witnesses,evidence_files,assigned_to,is_peer_report,reported_student_name,reported_student_grade)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+        (case_number,student_id,is_anonymous,anon_token,concern_type,subject,description,ai_summary,priority,status,incident_date,preferred_contact,witnesses,evidence_files,assigned_to,is_peer_report,reported_student_name,reported_student_grade,is_against_adviser,reported_teacher_name)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
     $stmt->execute([
         $caseNum, $studentId, (int)$isAnon, $anonToken,
         $concernType, $subject, $description, $aiSummary ?: null,
         $priority, 'pending', $incidentDate ?: null, $contact,
         $witnesses ?: null, $evidenceJson, $assignedTo,
-        $isPeerReport, $reportedStudentName ?: null, $reportedStudentGrade ?: null
+        $isPeerReport, $reportedStudentName ?: null, $reportedStudentGrade ?: null,
+        $isAgainstAdviser, $reportedTeacherName ?: null
     ]);
     $caseId = $db->lastInsertId();
 

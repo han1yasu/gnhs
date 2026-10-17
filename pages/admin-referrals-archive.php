@@ -105,6 +105,14 @@ foreach ($teachersList as $t) {
 }
 
 $content = <<<HTML
+<!-- Archive Sub-Navigation Tabs -->
+<div class="totp-tab-bar" style="background:var(--bg2);padding:4px;border-radius:12px;border:1px solid var(--border);display:inline-flex;margin-bottom:18px">
+  <a href="admin-archive.php" class="tab-pill" style="text-decoration:none"><i class="fas fa-folder"></i> Cases Archive</a>
+  <a href="admin-chat-archive.php" class="tab-pill" style="text-decoration:none"><i class="fas fa-history"></i> Chat Archive</a>
+  <a href="admin-referrals-archive.php" class="tab-pill active" style="text-decoration:none"><i class="fas fa-exchange-alt"></i> Referrals Archive</a>
+  <a href="admin-sessions-archive.php" class="tab-pill" style="text-decoration:none"><i class="fas fa-calendar-check"></i> Sessions Archive</a>
+</div>
+
 <div class="content-card">
   <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
     <div>

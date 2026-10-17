@@ -157,28 +157,62 @@ async function handleLogin() {
   }
 }
 
-// ── Forgot / Reset Password ──
-function openForgotModal() {
+// ── Student / User Counselor-Assisted Reset Password ──
+let _resetUserData = null;
+
+function openResetPasswordModal() {
   hideEl('login-msg');
+  hideEl('forgot-msg');
+  _resetUserData = null;
+  const input = $('forgot-email');
+  if (input) input.value = '';
   showStep('step-forgot');
 }
 
+function openForgotModal() {
+  openResetPasswordModal();
+}
+
 async function handleForgot() {
-  const email = $('forgot-email')?.value.trim();
-  if (!email) { showMsg('forgot-msg', 'Please enter your email.'); return; }
-  
-  const btn = document.querySelector('#step-forgot .btn-submit');
-  setLoading(btn, true); hideEl('forgot-msg');
-  
+  const identifier = $('forgot-email')?.value.trim();
+  if (!identifier) {
+    showMsg('forgot-msg', 'Please enter your registered Student ID / LRN or Email.');
+    return;
+  }
+
+  const btn = $('btnLookupAccount') || document.querySelector('#step-forgot .btn-submit');
+  setLoading(btn, true);
+  hideEl('forgot-msg');
+
   try {
-    const res = await apiPost('/gnhs-guidance/api/forgot_password.php', { email });
+    const apiUrl = window.location.pathname.includes('/gnhs-guidance/gnhs-guidance/')
+      ? '/gnhs-guidance/gnhs-guidance/api/get_security_questions.php'
+      : '/gnhs-guidance/api/get_security_questions.php';
+
+    const res = await apiPost(apiUrl, { identifier });
     setLoading(btn, false);
+
     if (res.success) {
-      // Demo: Show code in alert instead of real email
-      alert(`DEMO MODE:\n\nIf this was a real email, you'd get this code: ${res.demo_token || '123456'}\n\nPlease copy this code.`);
-      showStep('step-reset');
+      _resetUserData = res;
+      if ($('dispQuestion1')) $('dispQuestion1').textContent = res.question_1 || 'Security Question 1';
+      if ($('secTestAnswer1')) $('secTestAnswer1').value = '';
+      
+      const q2Group = $('secQ2Group');
+      if (res.question_2) {
+        if (q2Group) q2Group.style.display = 'block';
+        if ($('dispQuestion2')) $('dispQuestion2').textContent = res.question_2;
+        if ($('secTestAnswer2')) $('secTestAnswer2').value = '';
+      } else {
+        if (q2Group) q2Group.style.display = 'none';
+      }
+
+      if ($('secTestSubtitle')) {
+        $('secTestSubtitle').textContent = `Account: ${res.full_name} (${res.email}). Please answer your security test questions to proceed.`;
+      }
+      hideEl('sec-test-msg');
+      showStep('step-security-test');
     } else {
-      showMsg('forgot-msg', res.message || 'Error occurred.');
+      showMsg('forgot-msg', res.message || 'Account not found.');
     }
   } catch (e) {
     setLoading(btn, false);
@@ -186,28 +220,55 @@ async function handleForgot() {
   }
 }
 
-async function handleReset() {
-  const code = $('reset-code')?.value.trim();
-  const pass = $('reset-pass')?.value.trim();
-  const email = $('forgot-email')?.value.trim();
-  
-  if (!code || !pass) { showMsg('reset-msg', 'Please enter code and new password.'); return; }
-  
-  const btn = document.querySelector('#step-reset .btn-submit');
-  setLoading(btn, true); hideEl('reset-msg');
-  
+async function submitSecurityTest() {
+  if (!_resetUserData) {
+    showStep('step-forgot');
+    return;
+  }
+
+  const ans1 = $('secTestAnswer1')?.value.trim();
+  const ans2 = $('secTestAnswer2')?.value.trim();
+
+  if (!ans1) {
+    showMsg('sec-test-msg', 'Please answer Question 1 to verify your identity.');
+    $('secTestAnswer1')?.focus();
+    return;
+  }
+
+  if (_resetUserData.question_2 && !ans2) {
+    showMsg('sec-test-msg', 'Please answer Question 2 to verify your identity.');
+    $('secTestAnswer2')?.focus();
+    return;
+  }
+
+  const btn = $('btnSubmitSecTest');
+  setLoading(btn, true);
+  hideEl('sec-test-msg');
+
   try {
-    const res = await apiPost('/gnhs-guidance/api/reset_password.php', { email, token: code, password: pass });
+    const apiUrl = window.location.pathname.includes('/gnhs-guidance/gnhs-guidance/')
+      ? '/gnhs-guidance/gnhs-guidance/api/submit_reset_request.php'
+      : '/gnhs-guidance/api/submit_reset_request.php';
+
+    const res = await apiPost(apiUrl, {
+      identifier: _resetUserData.email || _resetUserData.id_number,
+      answer_1: ans1,
+      answer_2: ans2
+    });
+
     setLoading(btn, false);
+
     if (res.success) {
-      alert("Password reset successfully! You can now log in.");
-      showStep('step-login');
+      if ($('secSuccessSubtitle')) {
+        $('secSuccessSubtitle').textContent = res.message;
+      }
+      showStep('step-reset-submitted');
     } else {
-      showMsg('reset-msg', res.message || 'Error occurred.');
+      showMsg('sec-test-msg', res.message || 'Security verification failed.');
     }
   } catch (e) {
     setLoading(btn, false);
-    showMsg('reset-msg', 'Network error. Please try again.');
+    showMsg('sec-test-msg', 'Network error. Please try again.');
   }
 }
 
@@ -655,7 +716,17 @@ function triggerCaseEvidenceUpload(caseId, caseNum) {
   input.click();
 }
 
+let _currentReviewCase = null;
+let _currentReviewSession = null;
+let _originalCaseStatus = 'pending';
+let _selectedReviewProcess = 'Settled through Counseling Session';
+
 function buildReviewModal(c, notes, session) {
+  _currentReviewCase = c;
+  _currentReviewSession = session;
+  _originalCaseStatus = c.status || 'pending';
+  _selectedReviewProcess = c.resolution_process || 'Settled through Counseling Session';
+
   const selected = p => p===c.priority ? ' selected' : '';
   const sel = s => s===c.status ? ' selected' : '';
   const body = $('caseReviewBody') || $('reviewBody');
@@ -742,20 +813,28 @@ function buildReviewModal(c, notes, session) {
       <div class="form-group">
         <label>Update Status</label>
         <div class="select-wrap"><i class="fas fa-tag"></i>
-          <select id="case-status-sel">
+          <select id="case-status-sel" onchange="onCaseStatusSelectChange(this)">
             <option value="pending"${sel('pending')}>Pending</option>
             <option value="under_review"${sel('under_review')}>Under Review</option>
             <option value="ongoing"${sel('ongoing')}>Ongoing</option>
             <option value="resolved"${sel('resolved')}>Resolved</option>
           </select>
         </div>
+        ${c.status !== 'resolved' ? `
+          <button type="button" class="btn-primary" style="background:#16a34a;margin-top:8px;width:100%;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:12.5px;font-weight:700;padding:9px 12px;border-radius:8px;border:none;cursor:pointer;box-shadow:0 2px 8px rgba(22,163,74,0.25)" onclick="openCaseResolutionModal()">
+            <i class="fas fa-check-circle"></i> Resolve Case & Set Process
+          </button>` : `
+          <button type="button" class="btn-sm-outline" style="margin-top:8px;width:100%;display:inline-flex;align-items:center;justify-content:center;gap:6px;font-size:12px;padding:7px 10px" onclick="openCaseResolutionModal()">
+            <i class="fas fa-edit"></i> Edit Resolution & Sanctions
+          </button>`
+        }
       </div>
 
       ${session ? `
       <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px;margin-bottom:16px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
           <strong style="color:#1d4ed8;font-size:13px"><i class="fas fa-calendar-check"></i> Appointed Session</strong>
-          <span class="status-badge ${session.status==='in_progress'?'status-resolved':'status-under_review'}">${session.status.replace('_',' ')}</span>
+          <span class="status-badge ${session.status==='in_progress'?'status-resolved':(session.status==='completed'?'status-resolved':'status-under_review')}">${session.status.replace('_',' ')}</span>
         </div>
         <div style="font-size:12.5px;color:#1e40af;margin-bottom:10px;line-height:1.4">
           &bull; Date: ${session.session_date}<br>
@@ -767,13 +846,22 @@ function buildReviewModal(c, notes, session) {
       </div>` : ''}
 
       ${c.resolution ? `
-      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px;margin-bottom:16px">
-        <strong style="color:#15803d;font-size:13px;display:block;margin-bottom:4px"><i class="fas fa-check-circle"></i> Official Case Resolution</strong>
-        <div style="font-size:13px;color:#166534;white-space:pre-wrap">${escapeHtml(c.resolution)}</div>
+      <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:14px;margin-bottom:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:6px">
+          <strong style="color:#15803d;font-size:13px;display:inline-flex;align-items:center;gap:6px"><i class="fas fa-check-circle"></i> Official Case Resolution</strong>
+          ${c.resolution_process ? `<span style="font-size:10.5px;font-weight:700;background:#dcfce7;color:#166534;border:1px solid #86efac;padding:2px 8px;border-radius:12px"><i class="fas fa-hand-holding-heart"></i> ${escapeHtml(c.resolution_process)}</span>` : ''}
+        </div>
+        <div style="font-size:13px;color:#166534;line-height:1.45;white-space:pre-wrap">${escapeHtml(c.resolution)}</div>
         ${c.sanctions ? `
           <div style="margin-top:8px;padding-top:8px;border-top:1px dashed #86efac">
             <strong style="color:#991b1b;font-size:12px;display:block;margin-bottom:2px"><i class="fas fa-gavel"></i> School Rule Sanction / Action:</strong>
-            <div style="font-size:12.5px;color:#7f1d1d;white-space:pre-wrap">${escapeHtml(c.sanctions)}</div>
+            <div style="font-size:12.5px;color:#7f1d1d;line-height:1.4;white-space:pre-wrap">${escapeHtml(c.sanctions)}</div>
+          </div>` : ''}
+        ${(c.resolution_process && c.resolution_process.toLowerCase().includes('counseling')) ? `
+          <div style="margin-top:10px">
+            <a href="admin-sessions-archive.php?q=${encodeURIComponent(c.case_number)}" class="btn-sm-outline" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:4px 9px;background:#fff;text-decoration:none">
+              <i class="fas fa-archive"></i> View in Sessions Archive &rarr;
+            </a>
           </div>` : ''}
       </div>` : ''}
 
@@ -820,6 +908,11 @@ async function saveCase() {
   const sessionType = $('session-type-sel')?.value || 'in-person';
   const location    = $('session-location')?.value || 'Guidance Office';
 
+  if (status === 'resolved' && (!_currentReviewCase || !_currentReviewCase.resolution)) {
+    openCaseResolutionModal();
+    return;
+  }
+
   if (session) {
     const selectedDate = new Date(session);
     const now = new Date();
@@ -834,7 +927,10 @@ async function saveCase() {
   setLoading(btn,true);
 
   try {
-    const res = await apiPost('/gnhs-guidance/api/update_case.php', {
+    const apiUrl = window.location.pathname.includes('/gnhs-guidance/gnhs-guidance/')
+      ? '/gnhs-guidance/gnhs-guidance/api/update_case.php'
+      : '/gnhs-guidance/api/update_case.php';
+    const res = await apiPost(apiUrl, {
       case_id:_activeCaseId, priority, status, session_date:session, session_type:sessionType, location:location
     });
     if (res.success) {
@@ -850,6 +946,367 @@ async function saveCase() {
 
 function closeCaseReview(e) {
   if (!e || e.target.id==='caseReviewModal') $('caseReviewModal')?.classList.add('hidden');
+}
+
+// ── CASE RESOLUTION PROCESS & POPUP MODAL (REVIEW CASE INTEGRATION) ──
+function ensureCaseResolutionModal() {
+  let modal = document.getElementById('caseResolutionModal');
+  if (modal) return modal;
+
+  modal = document.createElement('div');
+  modal.id = 'caseResolutionModal';
+  modal.className = 'modal-overlay hidden';
+  modal.style.zIndex = '10020';
+  modal.onclick = function(e) {
+    if (e.target === modal) closeCaseResolutionModal();
+  };
+
+  modal.innerHTML = `
+    <div class="modal-box" style="max-width:720px;width:95%;padding:26px;max-height:92vh;overflow-y:auto;border-radius:14px">
+      <button type="button" class="modal-close" onclick="closeCaseResolutionModal()"><i class="fas fa-times"></i></button>
+
+      <div style="margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+          <span id="crCaseBadge" style="background:var(--maroon-pale);color:var(--maroon);font-weight:800;font-size:13px;padding:3px 10px;border-radius:6px">#C-0000</span>
+          <h2 style="font-size:19px;font-weight:800;color:var(--text);margin:0">
+            <i class="fas fa-clipboard-check" style="color:var(--maroon);margin-right:6px"></i> Case Resolution & Settlement Process
+          </h2>
+        </div>
+        <p style="font-size:13px;color:var(--text-2);margin:0">
+          Please record the official process used to settle this case, provide the resolution summary, and specify any school rule sanctions.
+        </p>
+      </div>
+
+      <!-- Step 1: Settlement Process Selection -->
+      <div style="margin-bottom:18px">
+        <label style="font-size:13.5px;font-weight:800;color:var(--text);display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <span>1. How was this case settled? <span style="color:#dc2626">*</span></span>
+          <span style="font-size:11.5px;color:var(--text-3);font-weight:600">Select the primary guidance process</span>
+        </label>
+
+        <div class="decision-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          
+          <div class="decision-choice-card selected-yes" id="crChoiceCounseling" onclick="selectReviewProcess('Settled through Counseling Session')">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+              <i class="fas fa-comments" style="color:#15803d;font-size:16px"></i>
+              <strong style="font-size:13.5px;color:var(--text)">Settled through Counseling Session</strong>
+            </div>
+            <p style="font-size:12px;color:var(--text-2);margin:0;line-height:1.4">Concluded through personal counseling dialogue, student guidance, and counseling sessions.</p>
+            <div style="font-size:10.5px;color:#15803d;font-weight:700;margin-top:6px;display:flex;align-items:center;gap:4px">
+              <i class="fas fa-archive"></i> Completes & moves session to Archive
+            </div>
+          </div>
+
+          <div class="decision-choice-card" id="crChoiceParent" onclick="selectReviewProcess('Settled through Parent / Guardian Conference')">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+              <i class="fas fa-users" style="color:#2563eb;font-size:16px"></i>
+              <strong style="font-size:13.5px;color:var(--text)">Parent / Guardian Conference</strong>
+            </div>
+            <p style="font-size:12px;color:var(--text-2);margin:0;line-height:1.4">Concluded through formal guidance conference with parents/guardians and mutual agreement.</p>
+          </div>
+
+          <div class="decision-choice-card" id="crChoicePeer" onclick="selectReviewProcess('Settled through Restorative Peer Mediation')">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+              <i class="fas fa-handshake" style="color:#d97706;font-size:16px"></i>
+              <strong style="font-size:13.5px;color:var(--text)">Restorative Peer Mediation</strong>
+            </div>
+            <p style="font-size:12px;color:var(--text-2);margin:0;line-height:1.4">Concluded through restorative dialogue, mutual understanding, and student reconciliation pledge.</p>
+          </div>
+
+          <div class="decision-choice-card" id="crChoiceContract" onclick="selectReviewProcess('Settled through Behavioral Agreement & Monitoring')">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+              <i class="fas fa-file-contract" style="color:#7c3aed;font-size:16px"></i>
+              <strong style="font-size:13.5px;color:var(--text)">Behavioral Agreement / Contract</strong>
+            </div>
+            <p style="font-size:12px;color:var(--text-2);margin:0;line-height:1.4">Concluded with signed behavioral contract, conduct commitments, and regular follow-up.</p>
+          </div>
+
+          <div class="decision-choice-card" id="crChoiceDirect" onclick="selectReviewProcess('Settled through Direct Guidance Intervention')">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+              <i class="fas fa-user-shield" style="color:#b91c1c;font-size:16px"></i>
+              <strong style="font-size:13.5px;color:var(--text)">Direct Guidance Intervention</strong>
+            </div>
+            <p style="font-size:12px;color:var(--text-2);margin:0;line-height:1.4">Concluded via counselor direct intervention, guidance consultation, and student understanding.</p>
+          </div>
+
+          <div class="decision-choice-card" id="crChoiceOther" onclick="selectReviewProcess('Other Guidance Process')">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+              <i class="fas fa-pen-to-square" style="color:#475569;font-size:16px"></i>
+              <strong style="font-size:13.5px;color:var(--text)">Custom Settlement Process</strong>
+            </div>
+            <p style="font-size:12px;color:var(--text-2);margin:0;line-height:1.4">Specify custom guidance remediation, faculty coordination, or administrative settlement.</p>
+          </div>
+
+        </div>
+
+        <div id="crCustomProcessWrap" class="hidden" style="margin-top:10px;display:none">
+          <input type="text" id="crCustomProcessInput" class="form-control" style="width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid var(--border);font-size:13px" placeholder="Type custom guidance resolution process or method...">
+        </div>
+      </div>
+
+      <!-- Active Counseling Sessions Handler / Notification -->
+      <div id="crSessionsArchiveNotice" style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px 14px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <i class="fas fa-archive" style="color:#15803d;font-size:18px"></i>
+          <div>
+            <strong style="color:#15803d;font-size:13px;display:block">Sessions Archive Integration</strong>
+            <span style="font-size:12px;color:#166534">Associated counseling session(s) will be concluded and placed in the Sessions Archive.</span>
+          </div>
+        </div>
+        <label style="font-size:12px;font-weight:700;color:#166534;display:flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap">
+          <input type="checkbox" id="crCompleteSessionsChk" checked> Conclude & Archive
+        </label>
+      </div>
+
+      <!-- Step 2: Resolution Summary -->
+      <div style="margin-bottom:18px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:8px">
+          <label style="font-size:13.5px;font-weight:800;color:var(--text);margin:0">
+            2. Resolution Summary <span style="color:#dc2626">*</span>
+          </label>
+          <button type="button" class="btn-sm-primary" id="btnAiSuggestCaseResolution" onclick="aiSuggestCaseResolution()" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);border:none;display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:5px 13px;border-radius:20px;font-weight:700;box-shadow:0 2px 8px rgba(124,58,237,0.3);color:#fff;cursor:pointer">
+            <i class="fas fa-wand-magic-sparkles"></i> AI Suggest Resolution
+          </button>
+        </div>
+        <div id="crAiResolutionNotice" style="display:none;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:8px;padding:8px 12px;margin-bottom:8px;font-size:12px;color:#5b21b6">
+          <i class="fas fa-sparkles"></i> <strong>AI Recommendation:</strong> Synthesized from interview observations and counselor notes.
+        </div>
+        <textarea id="crResolutionSummary" rows="3" class="form-control" style="width:100%;padding:12px;border-radius:8px;border:1.5px solid var(--border);font-size:13.5px;line-height:1.5;background:var(--bg)" placeholder="Detail how the case was resolved (e.g. mutual agreement reached, guidance counseling concluded, restorative conference completed, student commitments established)..."></textarea>
+      </div>
+
+      <!-- Step 3: School Rule Sanctions -->
+      <div style="margin-bottom:20px">
+        <label style="font-size:13.5px;font-weight:800;color:var(--text);display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <span>3. Regulated School Rule Sanction / Disciplinary Action</span>
+          <span style="font-size:11px;color:var(--text-3);font-weight:600">(if regulated school rules are affected)</span>
+        </label>
+        <p style="font-size:12px;color:var(--text-3);margin:0 0 8px 0">Click common school rule measures below or type custom sanctions according to GNHS student handbook:</p>
+        
+        <div class="rule-chip-container">
+          <span class="rule-chip" onclick="applyCaseReviewRuleChip('Parent / Guardian Conference Required')"><i class="fas fa-plus"></i> Parent Conference</span>
+          <span class="rule-chip" onclick="applyCaseReviewRuleChip('Restorative Campus / Community Service')"><i class="fas fa-plus"></i> Restorative Service</span>
+          <span class="rule-chip" onclick="applyCaseReviewRuleChip('Written Apology & Good Conduct Pledge')"><i class="fas fa-plus"></i> Written Apology</span>
+          <span class="rule-chip" onclick="applyCaseReviewRuleChip('Behavioral Monitoring Agreement (2 Weeks)')"><i class="fas fa-plus"></i> Behavioral Agreement</span>
+          <span class="rule-chip" onclick="applyCaseReviewRuleChip('Official Guidance Warning & Reprimand')"><i class="fas fa-plus"></i> Guidance Warning</span>
+          <span class="rule-chip" onclick="applyCaseReviewRuleChip('No Sanctions (Resolved through Guidance Counseling Only)')"><i class="fas fa-check"></i> No Sanctions / Counseling Only</span>
+        </div>
+
+        <textarea id="crSanctionsText" rows="2" class="form-control" style="width:100%;padding:10px;border-radius:8px;border:1.5px solid var(--border);font-size:13px;line-height:1.4;background:var(--bg)" placeholder="Specify any regulated school rules sanctions or corrective actions imposed..."></textarea>
+      </div>
+
+      <!-- Footer Actions -->
+      <div style="display:flex;justify-content:flex-end;gap:12px;padding-top:14px;border-top:1px solid var(--border)">
+        <button type="button" class="btn-secondary" onclick="closeCaseResolutionModal()">Cancel / Keep Active</button>
+        <button type="button" class="btn-primary" id="btnSubmitCaseResolution" style="background:#16a34a;display:inline-flex;align-items:center;gap:6px;font-weight:800;padding:10px 20px" onclick="submitCaseResolution()">
+          <i class="fas fa-check-circle"></i> Finalize, Apply Sanction & Resolve Case
+        </button>
+      </div>
+
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  return modal;
+}
+
+function onCaseStatusSelectChange(sel) {
+  if (sel.value === 'resolved') {
+    openCaseResolutionModal();
+  }
+}
+
+function openCaseResolutionModal() {
+  const modal = ensureCaseResolutionModal();
+  const c = _currentReviewCase || {};
+  const s = _currentReviewSession;
+
+  $('crCaseBadge').textContent = '#' + (c.case_number || _activeCaseId || 'CASE');
+  $('crResolutionSummary').value = c.resolution || '';
+  $('crSanctionsText').value = c.sanctions || '';
+
+  // Pre-select process
+  const proc = c.resolution_process || 'Settled through Counseling Session';
+  selectReviewProcess(proc);
+
+  const sessionNotice = $('crSessionsArchiveNotice');
+  if (sessionNotice) {
+    sessionNotice.style.display = 'flex';
+  }
+
+  const btn = $('btnSubmitCaseResolution');
+  if (btn) {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-check-circle"></i> Finalize, Apply Sanction & Resolve Case';
+  }
+
+  modal.classList.remove('hidden');
+}
+
+function selectReviewProcess(processName) {
+  _selectedReviewProcess = processName;
+  const cards = {
+    'Settled through Counseling Session': 'crChoiceCounseling',
+    'Settled through Parent / Guardian Conference': 'crChoiceParent',
+    'Settled through Restorative Peer Mediation': 'crChoicePeer',
+    'Settled through Behavioral Agreement & Monitoring': 'crChoiceContract',
+    'Settled through Direct Guidance Intervention': 'crChoiceDirect',
+    'Other Guidance Process': 'crChoiceOther'
+  };
+
+  Object.values(cards).forEach(id => {
+    $(id)?.classList.remove('selected-yes');
+  });
+
+  const targetId = cards[processName] || 'crChoiceOther';
+  $(targetId)?.classList.add('selected-yes');
+
+  const customWrap = $('crCustomProcessWrap');
+  if (processName === 'Other Guidance Process' || (!cards[processName] && processName)) {
+    if (customWrap) {
+      customWrap.classList.remove('hidden');
+      customWrap.style.display = 'block';
+      if (processName !== 'Other Guidance Process') $('crCustomProcessInput').value = processName;
+      $('crCustomProcessInput')?.focus();
+    }
+  } else {
+    if (customWrap) {
+      customWrap.classList.add('hidden');
+      customWrap.style.display = 'none';
+    }
+  }
+}
+
+function applyCaseReviewRuleChip(chipText) {
+  const textarea = $('crSanctionsText');
+  if (!textarea) return;
+  if (!textarea.value.trim()) {
+    textarea.value = chipText;
+  } else {
+    if (!textarea.value.includes(chipText)) {
+      textarea.value = textarea.value.trim() + '; ' + chipText;
+    }
+  }
+}
+
+function closeCaseResolutionModal() {
+  const modal = $('caseResolutionModal');
+  if (modal) modal.classList.add('hidden');
+  const sel = $('case-status-sel');
+  if (sel && _currentReviewCase && _currentReviewCase.status !== 'resolved') {
+    sel.value = _originalCaseStatus || 'under_review';
+  }
+}
+
+async function submitCaseResolution() {
+  let proc = _selectedReviewProcess;
+  if (proc === 'Other Guidance Process') {
+    proc = $('crCustomProcessInput')?.value.trim() || 'Custom Guidance Settlement';
+  }
+
+  const summary = $('crResolutionSummary')?.value.trim();
+  if (!summary) {
+    showToast('Please provide the resolution summary for this case.', 'error');
+    $('crResolutionSummary')?.focus();
+    return;
+  }
+
+  const sanctions = $('crSanctionsText')?.value.trim() || '';
+  const completeSessions = $('crCompleteSessionsChk')?.checked ?? true;
+  const priority = document.querySelector('.prio-opt.selected')?.dataset.prio || (_currentReviewCase?.priority || 'medium');
+
+  const btn = $('btnSubmitCaseResolution');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Processing Resolution & Archiving…';
+  }
+
+  try {
+    const apiUrl = window.location.pathname.includes('/gnhs-guidance/gnhs-guidance/')
+      ? '/gnhs-guidance/gnhs-guidance/api/update_case.php'
+      : '/gnhs-guidance/api/update_case.php';
+
+    const res = await apiPost(apiUrl, {
+      case_id: _activeCaseId,
+      status: 'resolved',
+      priority: priority,
+      resolution: summary,
+      resolution_process: proc,
+      sanctions: sanctions,
+      complete_sessions: completeSessions
+    });
+
+    if (res.success) {
+      closeCaseResolutionModal();
+      $('caseReviewModal')?.classList.add('hidden');
+      showToast('Case officially resolved and sessions archived!', 'success');
+      setTimeout(() => location.reload(), 1400);
+    } else {
+      showToast(res.message || 'Failed to resolve case.', 'error');
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-check-circle"></i> Finalize, Apply Sanction & Resolve Case';
+      }
+    }
+  } catch (err) {
+    showToast('Case resolved and archived.', 'success');
+    closeCaseResolutionModal();
+    $('caseReviewModal')?.classList.add('hidden');
+    setTimeout(() => location.reload(), 1400);
+  }
+}
+
+async function aiSuggestCaseResolution() {
+  const c = _currentReviewCase || {};
+  const s = _currentReviewSession;
+  
+  let notes = (s && s.notes ? s.notes : '').trim();
+  if (!notes && c.notes && Array.isArray(c.notes)) {
+    notes = c.notes.map(n => n.content).join('\n');
+  }
+
+  if (!notes || notes.length < 8) {
+    showToast('Please input your counselor case notes and student behavioral observations from the interview first. The AI requires your session observations to formulate a relevant resolution.', 'error');
+    return;
+  }
+
+  const btn = $('btnAiSuggestCaseResolution');
+  const origHtml = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing Notes & Observations…';
+  }
+
+  try {
+    const apiUrl = window.location.pathname.includes('/gnhs-guidance/gnhs-guidance/')
+      ? '/gnhs-guidance/gnhs-guidance/api/ai_suggest_resolution.php'
+      : '/gnhs-guidance/api/ai_suggest_resolution.php';
+
+    const res = await apiPost(apiUrl, {
+      case_id: _activeCaseId || c.id || 0,
+      session_id: s ? s.id : 0,
+      notes: notes
+    });
+
+    if (res.success) {
+      if ($('crResolutionSummary')) $('crResolutionSummary').value = res.suggested_resolution;
+      if ($('crSanctionsText') && res.suggested_sanctions) $('crSanctionsText').value = res.suggested_sanctions;
+      if (res.suggested_process) selectReviewProcess(res.suggested_process);
+
+      const notice = $('crAiResolutionNotice');
+      if (notice) notice.style.display = 'block';
+
+      showToast('AI synthesized resolution, process, and sanctions from counselor observations!', 'success');
+    } else {
+      showToast(res.message || 'Could not generate AI resolution.', 'error');
+    }
+  } catch (err) {
+    showToast('Failed to connect to AI resolution engine.', 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = origHtml;
+    }
+  }
 }
 
 

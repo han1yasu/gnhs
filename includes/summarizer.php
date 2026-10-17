@@ -234,3 +234,101 @@ function cleanSentence(string $s): string {
     }
     return $s;
 }
+
+/**
+ * AI Resolution & Sanction Suggester based on Counselor Case Notes & Interview Observations
+ */
+function generateResolutionSuggestion(string $concernType, string $subject, string $description, string $counselorNotes, string $studentName = 'Student'): array {
+    $counselorNotes = trim($counselorNotes);
+    if (empty($counselorNotes)) {
+        return [
+            'success' => false,
+            'message' => 'Counselor case notes and student behavioral observations are required.'
+        ];
+    }
+
+    $apiKey = getenv('GEMINI_API_KEY') ?: (defined('GEMINI_API_KEY') ? GEMINI_API_KEY : '');
+    if (!empty($apiKey) && strpos($apiKey, 'AQ.') !== 0 && function_exists('curl_init')) {
+        $typeLabel = ucfirst(str_replace('_', ' ', $concernType));
+        $prompt = "You are a professional school guidance counselor at Guinayang National High School (GNHS).\n"
+                . "Based on the case details and the counselor's direct interview observations and case notes, suggest an official resolution summary and appropriate student handbook sanction.\n\n"
+                . "Student Name: {$studentName}\n"
+                . "Concern Type: {$typeLabel}\n"
+                . "Case Subject: {$subject}\n"
+                . "Student Description: {$description}\n"
+                . "Counselor's Live Notes & Student Behavioral Observations:\n{$counselorNotes}\n\n"
+                . "Respond ONLY in valid JSON format with three string keys:\n"
+                . "1. \"resolution\": A 2-3 sentence professional, empathetic guidance resolution summary describing the outcome of counseling, student agreements, and case conclusion.\n"
+                . "2. \"sanctions\": Recommended GNHS student handbook sanction or guidance measure (e.g., 'No Sanctions (Resolved through Guidance Counseling Only)', 'Written Apology & Good Conduct Pledge', 'Parent / Guardian Conference Required', 'Behavioral Monitoring Agreement (2 Weeks)', or 'Restorative Campus / Community Service').\n"
+                . "3. \"process\": One exact choice from: 'Settled through Counseling Session', 'Settled through Parent / Guardian Conference', 'Settled through Restorative Peer Mediation', 'Settled through Behavioral Agreement & Monitoring', or 'Settled through Direct Guidance Intervention'.\n"
+                . "Do not wrap in markdown quotes if possible or output plain json.";
+
+        $rawResponse = executeGeminiPrompt($apiKey, $prompt);
+        if (!empty($rawResponse)) {
+            $jsonStr = trim($rawResponse);
+            if (preg_match('/```(?:json)?\s*(\{.*?\})\s*```/s', $jsonStr, $matches)) {
+                $jsonStr = $matches[1];
+            }
+            $parsed = json_decode($jsonStr, true);
+            if (is_array($parsed) && !empty($parsed['resolution'])) {
+                return [
+                    'success'              => true,
+                    'suggested_resolution' => trim($parsed['resolution']),
+                    'suggested_sanctions'  => trim($parsed['sanctions'] ?? 'No Sanctions (Resolved through Guidance Counseling Only)'),
+                    'suggested_process'    => trim($parsed['process'] ?? 'Settled through Counseling Session'),
+                    'source'               => 'gemini'
+                ];
+            }
+        }
+    }
+
+    // High-quality guidance counselor fallback heuristics
+    return smartSuggestResolution($concernType, $subject, $description, $counselorNotes, $studentName);
+}
+
+function smartSuggestResolution(string $concernType, string $subject, string $description, string $counselorNotes, string $studentName = 'Student'): array {
+    $typeLower = strtolower(trim($concernType));
+    $notesClean = trim($counselorNotes);
+
+    $process = 'Settled through Counseling Session';
+    $sanctions = 'No Sanctions (Resolved through Guidance Counseling Only)';
+
+    if (stripos($notesClean, 'parent') !== false || stripos($notesClean, 'guardian') !== false) {
+        $process = 'Settled through Parent / Guardian Conference';
+        $sanctions = 'Parent / Guardian Conference Required; Good Conduct Pledge';
+    } elseif (stripos($notesClean, 'peer') !== false || stripos($notesClean, 'mediate') !== false || stripos($typeLower, 'peer') !== false) {
+        $process = 'Settled through Restorative Peer Mediation';
+        $sanctions = 'Restorative Dialogue Completed; Written Apology & Good Conduct Pledge';
+    } elseif (stripos($notesClean, 'contract') !== false || stripos($notesClean, 'agreement') !== false || stripos($typeLower, 'behavior') !== false) {
+        $process = 'Settled through Behavioral Agreement & Monitoring';
+        $sanctions = 'Behavioral Monitoring Agreement (2 Weeks); Guidance Warning';
+    } elseif (stripos($typeLower, 'bullying') !== false) {
+        $process = 'Settled through Counseling Session';
+        $sanctions = 'Official Guidance Warning & Reprimand; Restorative Campus / Community Service';
+    }
+
+    // Build resolution text based on counselor observations
+    $firstNotesLine = '';
+    $lines = preg_split('/[\r\n]+/', $notesClean);
+    foreach ($lines as $l) {
+        $lt = trim($l);
+        if (strlen($lt) > 15 && stripos($lt, 'officially started') === false) {
+            $firstNotesLine = $lt;
+            break;
+        }
+    }
+
+    $resolution = "Personal counseling session successfully conducted with {$studentName}. ";
+    if (!empty($firstNotesLine)) {
+        $resolution .= "Based on counselor observations: \"" . rtrim($firstNotesLine, '.') . ".\" ";
+    }
+    $resolution .= "The student demonstrated reflective accountability, established cooperative conduct goals, and reached a positive guidance conclusion under official school monitoring.";
+
+    return [
+        'success'              => true,
+        'suggested_resolution' => $resolution,
+        'suggested_sanctions'  => $sanctions,
+        'suggested_process'    => $process,
+        'source'               => 'guidance_engine'
+    ];
+}

@@ -128,9 +128,15 @@ $emptyActiveHtml = "
     <p style='color:var(--text-3);font-size:13.5px;max-width:400px;margin:0 auto'>Users will appear here once they complete two-factor authentication setup.</p>
 </div>";
 
+$pendingPassResets = 0;
+try {
+    $pendingPassResets = (int)$db->query("SELECT COUNT(*) FROM password_reset_requests WHERE status = 'pending'")->fetchColumn();
+} catch (\Throwable $e) {}
+
 $content = <<<HTML
 <style>
 .totp-tab-bar {
+
     display: flex;
     align-items: center;
     gap: 6px;
@@ -223,6 +229,21 @@ $content = <<<HTML
     color: #fbbf24;
 }
 </style>
+
+<!-- Top Tab Bar: 2FA Requests vs Password Reset Requests -->
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px">
+  <div class="totp-tab-bar" style="background:var(--bg2);padding:4px;border-radius:12px;border:1px solid var(--border);display:inline-flex">
+    <a href="admin-2fa-requests.php" class="tab-pill active" style="text-decoration:none">
+      <i class="fas fa-shield-alt"></i> 2FA Reset Requests <span style="font-size:11px;font-weight:800;background:var(--maroon);color:#fff;padding:1px 6px;border-radius:10px;margin-left:4px">$pendingCount</span>
+    </a>
+    <a href="admin-reset-requests.php" class="tab-pill" style="text-decoration:none">
+      <i class="fas fa-key"></i> Password Reset Requests <span style="font-size:11px;opacity:0.8">($pendingPassResets)</span>
+    </a>
+    <a href="admin-users.php" class="tab-pill" style="text-decoration:none">
+      <i class="fas fa-users"></i> Users Directory
+    </a>
+  </div>
+</div>
 
 <!-- Summary Cards -->
 <div class="summary-cards" style="grid-template-columns:repeat(3, 1fr);margin-bottom:24px;">

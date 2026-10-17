@@ -82,6 +82,23 @@ $content = <<<HTML
         <div class="input-wrap"><i class="fas fa-edit"></i><input type="text" id="otherConcern" placeholder="Specify your concern type"/></div>
       </div>
 
+      <!-- Adviser / Teacher Concern Protection Section -->
+      <div class="form-group" style="background:var(--bg2);padding:14px 16px;border-radius:10px;border:1px solid var(--border);margin-bottom:18px">
+        <label style="font-weight:700;font-size:13px;color:var(--text);display:flex;align-items:center;gap:10px;cursor:pointer;margin:0">
+          <input type="checkbox" id="chkTeacherConcern" onchange="toggleTeacherConcern(this.checked)" style="accent-color:var(--maroon);width:16px;height:16px;cursor:pointer"/>
+          <span><i class="fas fa-user-shield" style="color:var(--maroon)"></i> This concern involves my Class Adviser or a Subject Teacher</span>
+        </label>
+        <div id="teacherConcernWrap" style="display:none;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)">
+          <div style="background:#fff1f2;border:1px solid #fecdd3;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:#9f1239">
+            <i class="fas fa-lock"></i> <strong>Adviser Confidentiality Protection:</strong> Your class adviser will be strictly restricted from seeing this concern in their advisory portal. Only authorized Guidance Counselors will have access.
+          </div>
+          <div class="input-wrap">
+            <i class="fas fa-chalkboard-teacher" style="color:var(--maroon)"></i>
+            <input type="text" id="reportedTeacherName" placeholder="Name of Teacher / Adviser involved (Optional)"/>
+          </div>
+        </div>
+      </div>
+
       <!-- Bullying Guidance Tip -->
       <div id="bullyingTip" class="evidence-tip-banner" style="display:none">
         <div class="etb-icon"><i class="fas fa-shield-alt"></i></div>
@@ -487,6 +504,11 @@ function escapeHtml(str) {
   });
 }
 
+function toggleTeacherConcern(checked) {
+  const wrap = document.getElementById('teacherConcernWrap');
+  if (wrap) wrap.style.display = checked ? 'block' : 'none';
+}
+
 function resolveEvidenceUrl(path) {
   if (!path) return '';
   if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:') || path.startsWith('blob:')) {
@@ -641,6 +663,15 @@ async function submitConcern() {
     }
     if (witnesses) {
       formData.append('witnesses', witnesses);
+    }
+
+    const isAgainstAdviser = document.getElementById('chkTeacherConcern')?.checked;
+    const reportedTeacherName = (document.getElementById('reportedTeacherName')?.value || '').trim();
+    if (isAgainstAdviser) {
+      formData.append('is_against_adviser', '1');
+    }
+    if (reportedTeacherName) {
+      formData.append('reported_teacher_name', reportedTeacherName);
     }
     
     // Synchronize from input files if any are still pending

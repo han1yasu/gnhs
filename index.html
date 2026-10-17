@@ -305,44 +305,81 @@
               onclick="togglePass('login-pass')"><i class="fas fa-eye"></i></button></div>
         </div>
         <div class="form-options"><label class="checkbox-label"><input type="checkbox"> Remember me</label><a href="#"
-            class="forgot-link" onclick="openForgotModal()">Forgot password?</a></div>
+            class="forgot-link" onclick="openResetPasswordModal()">Reset password?</a></div>
         <button class="btn-submit" onclick="handleLogin()">Login &nbsp;<i class="fas fa-arrow-right"></i></button>
       </div>
 
-      <!-- FORGOT PASSWORD STEP -->
+      <!-- RESET PASSWORD REQUEST STEP 1: IDENTIFIER -->
       <div class="modal-step hidden" id="step-forgot">
         <button class="modal-close" onclick="closeLoginModal()"><i class="fas fa-times"></i></button>
         <button class="modal-back" onclick="goBack('step-login')"><i class="fas fa-arrow-left"></i> Back</button>
-        <div class="modal-logo"><i class="fas fa-unlock-alt"></i></div>
+        <div class="modal-logo"><i class="fas fa-key"></i></div>
         <h2 class="modal-title">Reset Password</h2>
-        <p class="modal-sub">Enter your email to receive a 6-digit recovery code.</p>
+        <p class="modal-sub">Enter your registered Student ID / LRN or Email to begin identity verification.</p>
         <div id="forgot-msg" style="display:none"></div>
-        <div class="form-group"><label>Email Address</label>
-          <div class="input-wrap"><i class="fas fa-envelope"></i><input type="text" id="forgot-email"
-              placeholder="Enter your email" /></div>
+        <div class="form-group"><label>Student ID / LRN or Email</label>
+          <div class="input-wrap"><i class="fas fa-id-card"></i><input type="text" id="forgot-email"
+              placeholder="Enter Student ID or Email" onkeydown="if(event.key==='Enter') handleForgot()" /></div>
         </div>
-        <button class="btn-submit" onclick="handleForgot()">Send Code &nbsp;<i class="fas fa-paper-plane"></i></button>
+        <button class="btn-submit" id="btnLookupAccount" onclick="handleForgot()">Verify Account &nbsp;<i class="fas fa-arrow-right"></i></button>
       </div>
 
-      <!-- RESET PASSWORD STEP -->
-      <div class="modal-step hidden" id="step-reset">
+      <!-- RESET PASSWORD REQUEST STEP 2: SECURITY TEST -->
+      <div class="modal-step hidden" id="step-security-test">
         <button class="modal-close" onclick="closeLoginModal()"><i class="fas fa-times"></i></button>
-        <button class="modal-back" onclick="goBack('step-forgot')"><i class="fas fa-arrow-left"></i> Back</button>
-        <div class="modal-logo"><i class="fas fa-key"></i></div>
-        <h2 class="modal-title">New Password</h2>
-        <p class="modal-sub">Enter the 6-digit code and your new password.</p>
-        <div id="reset-msg" style="display:none"></div>
-        <div class="form-group"><label>6-Digit Code</label>
-          <div class="input-wrap"><i class="fas fa-hashtag"></i><input type="text" id="reset-code"
-              placeholder="Enter code" maxlength="6" style="text-align:center;letter-spacing:4px;font-weight:700;" />
+        <button class="modal-back" onclick="showStep('step-forgot')"><i class="fas fa-arrow-left"></i> Back</button>
+        <div class="modal-logo" style="background:rgba(217,119,6,0.12);color:#d97706"><i class="fas fa-shield-halved"></i></div>
+        <h2 class="modal-title">Security Verification Test</h2>
+        <p class="modal-sub" id="secTestSubtitle">Please answer your personal security questions to verify your identity.</p>
+        <div id="sec-test-msg" style="display:none"></div>
+        
+        <div id="secQuestionsForm">
+          <div class="form-group">
+            <label style="font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:4px;display:block">
+              <i class="fas fa-question-circle" style="color:var(--maroon)"></i> Question 1
+            </label>
+            <div id="dispQuestion1" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px"></div>
+            <div class="input-wrap">
+              <i class="fas fa-lock"></i>
+              <input type="text" id="secTestAnswer1" placeholder="Type your answer" autocomplete="off" />
+            </div>
           </div>
+
+          <div class="form-group" id="secQ2Group">
+            <label style="font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:4px;display:block">
+              <i class="fas fa-question-circle" style="color:var(--maroon)"></i> Question 2
+            </label>
+            <div id="dispQuestion2" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px"></div>
+            <div class="input-wrap">
+              <i class="fas fa-lock"></i>
+              <input type="text" id="secTestAnswer2" placeholder="Type your answer" autocomplete="off" onkeydown="if(event.key==='Enter') submitSecurityTest()" />
+            </div>
+          </div>
+
+          <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:#1e40af">
+            <i class="fas fa-info-circle"></i> Once verified, your request will be recorded for Counselor Milena Jacob to approve and issue your new password.
+          </div>
+
+          <button class="btn-submit" id="btnSubmitSecTest" onclick="submitSecurityTest()">Submit Request to Counselor &nbsp;<i class="fas fa-paper-plane"></i></button>
         </div>
-        <div class="form-group"><label>New Password</label>
-          <div class="input-wrap"><i class="fas fa-lock"></i><input type="password" id="reset-pass"
-              placeholder="Enter new password" /><button class="toggle-pass" type="button"
-              onclick="togglePass('reset-pass')"><i class="fas fa-eye"></i></button></div>
+      </div>
+
+      <!-- RESET PASSWORD REQUEST STEP 3: SUBMITTED CONFIRMATION -->
+      <div class="modal-step hidden" id="step-reset-submitted">
+        <button class="modal-close" onclick="closeLoginModal()"><i class="fas fa-times"></i></button>
+        <div class="modal-logo" style="background:#dcfce7;color:#16a34a"><i class="fas fa-check-circle"></i></div>
+        <h2 class="modal-title">Request Submitted to Guidance</h2>
+        <p class="modal-sub" id="secSuccessSubtitle" style="font-size:13.5px;line-height:1.5">
+          Your identity has been verified! A password reset request has been officially recorded for Guidance Counselor Milena Jacob.
+        </p>
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:18px;text-align:left;font-size:12.5px;color:var(--text-2);line-height:1.5">
+          <strong><i class="fas fa-clipboard-user" style="color:var(--maroon)"></i> Next Steps:</strong>
+          <ul style="margin:6px 0 0 18px;padding:0">
+            <li>Visit the Guidance Office or wait for the counselor to approve your request.</li>
+            <li>The counselor will issue your temporary credentials and unlock your account.</li>
+          </ul>
         </div>
-        <button class="btn-submit" onclick="handleReset()">Save Password &nbsp;<i class="fas fa-check"></i></button>
+        <button class="btn-submit" style="background:#16a34a" onclick="closeLoginModal()">Done &nbsp;<i class="fas fa-check"></i></button>
       </div>
       <div class="modal-step hidden" id="step-register">
         <button class="modal-close" onclick="closeLoginModal()"><i class="fas fa-times"></i></button>

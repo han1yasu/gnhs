@@ -17,6 +17,14 @@ $middleName= trim($raw['middle_name'] ?? '');
 $lastName  = trim($raw['last_name'] ?? '');
 $role      = $_SESSION['user']['role'];
 
+$q1 = trim($raw['security_question_1'] ?? '');
+$a1 = trim($raw['security_answer_1'] ?? '');
+$q2 = trim($raw['security_question_2'] ?? '');
+$a2 = trim($raw['security_answer_2'] ?? '');
+
+$hashedA1 = $a1 ? password_hash(strtolower($a1), PASSWORD_DEFAULT) : null;
+$hashedA2 = $a2 ? password_hash(strtolower($a2), PASSWORD_DEFAULT) : null;
+
 if (!$firstName || !$lastName) {
     jsonOut(['success'=>false,'message'=>'First and last name are required.']);
 }
@@ -33,16 +41,28 @@ try {
             jsonOut(['success'=>false,'message'=>'Age and Grade & Section are required.']);
         }
         
-        $stmt = $db->prepare("UPDATE users SET first_name=?, middle_name=?, last_name=?, age=?, grade_section=?, is_setup_complete=1 WHERE id=?");
-        $stmt->execute([$firstName, $middleName, $lastName, $age, $gradeSection, $userId]);
+        $stmt = $db->prepare("UPDATE users SET first_name=?, middle_name=?, last_name=?, age=?, grade_section=?, 
+            security_question_1=COALESCE(?, security_question_1),
+            security_answer_1=COALESCE(?, security_answer_1),
+            security_question_2=COALESCE(?, security_question_2),
+            security_answer_2=COALESCE(?, security_answer_2),
+            is_setup_complete=1 
+            WHERE id=?");
+        $stmt->execute([$firstName, $middleName, $lastName, $age, $gradeSection, $q1 ?: null, $hashedA1, $q2 ?: null, $hashedA2, $userId]);
         
         $_SESSION['user']['age'] = $age;
         $_SESSION['user']['grade_section'] = $gradeSection;
     } else if ($role === 'teacher') {
         $advisoryClass = trim($raw['advisory_class'] ?? '');
         
-        $stmt = $db->prepare("UPDATE users SET first_name=?, middle_name=?, last_name=?, advisory_class=?, is_setup_complete=1 WHERE id=?");
-        $stmt->execute([$firstName, $middleName, $lastName, $advisoryClass ?: null, $userId]);
+        $stmt = $db->prepare("UPDATE users SET first_name=?, middle_name=?, last_name=?, advisory_class=?, 
+            security_question_1=COALESCE(?, security_question_1),
+            security_answer_1=COALESCE(?, security_answer_1),
+            security_question_2=COALESCE(?, security_question_2),
+            security_answer_2=COALESCE(?, security_answer_2),
+            is_setup_complete=1 
+            WHERE id=?");
+        $stmt->execute([$firstName, $middleName, $lastName, $advisoryClass ?: null, $q1 ?: null, $hashedA1, $q2 ?: null, $hashedA2, $userId]);
         
         $_SESSION['user']['advisory_class'] = $advisoryClass ?: null;
     }

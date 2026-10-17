@@ -99,9 +99,53 @@ $middleName = $dbUser['middle_name'] ?? '';
             <input type="text" id="gradeSection" class="setup-input" value="<?= htmlspecialchars($user['grade_section'] ?? '') ?>" placeholder="e.g. Grade 10 - Diamond" required>
         </div>
         
-        <div class="form-row" style="margin-bottom: 20px;">
+        <div class="form-row" style="margin-bottom: 16px;">
             <label>Age</label>
             <input type="number" id="age" class="setup-input" min="10" max="100" placeholder="e.g. 15" required>
+        </div>
+
+        <!-- Security Verification Questions -->
+        <div style="margin: 18px 0 14px 0; padding: 12px 14px; background: rgba(85,0,0,0.35); border: 1px solid rgba(255,255,255,0.25); border-radius: 10px;">
+            <div style="font-weight: 700; font-size: 13.5px; color: #fff; margin-bottom: 4px; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-shield-halved" style="color: #fbbf24;"></i> Security Recovery Questions
+            </div>
+            <p style="font-size: 11.5px; color: rgba(255,255,255,0.85); margin: 0; line-height: 1.4;">
+                Select and answer two personal security questions. These will serve as your security test whenever you request a password reset from the Guidance Office.
+            </p>
+        </div>
+
+        <div class="form-row">
+            <label>Security Question 1 <span style="color:#fbbf24">*</span></label>
+            <select id="secQuestion1" class="setup-input" style="background: rgba(0,0,0,0.4); color:#fff;" required>
+                <option value="" style="background:#222;color:#fff">Select your first security question</option>
+                <option value="What was the name of your first elementary school?" style="background:#222;color:#fff">What was the name of your first elementary school?</option>
+                <option value="What is your mother's maiden name?" style="background:#222;color:#fff">What is your mother's maiden name?</option>
+                <option value="In what municipality or city were you born?" style="background:#222;color:#fff">In what municipality or city were you born?</option>
+                <option value="What was the name of your first childhood pet?" style="background:#222;color:#fff">What was the name of your first childhood pet?</option>
+                <option value="What is the name of your favorite elementary teacher?" style="background:#222;color:#fff">What is the name of your favorite elementary teacher?</option>
+            </select>
+        </div>
+
+        <div class="form-row">
+            <label>Answer to Question 1 <span style="color:#fbbf24">*</span></label>
+            <input type="text" id="secAnswer1" class="setup-input" placeholder="Your secret answer (case-insensitive)" required autocomplete="off">
+        </div>
+
+        <div class="form-row">
+            <label>Security Question 2 <span style="color:#fbbf24">*</span></label>
+            <select id="secQuestion2" class="setup-input" style="background: rgba(0,0,0,0.4); color:#fff;" required>
+                <option value="" style="background:#222;color:#fff">Select your second security question</option>
+                <option value="What was your childhood nickname?" style="background:#222;color:#fff">What was your childhood nickname?</option>
+                <option value="What is your favorite academic subject or hobby?" style="background:#222;color:#fff">What is your favorite academic subject or hobby?</option>
+                <option value="What is your dream career or profession?" style="background:#222;color:#fff">What is your dream career or profession?</option>
+                <option value="What street or barangay did you grow up on?" style="background:#222;color:#fff">What street or barangay did you grow up on?</option>
+                <option value="What is your favorite food or Filipino dish?" style="background:#222;color:#fff">What is your favorite food or Filipino dish?</option>
+            </select>
+        </div>
+
+        <div class="form-row" style="margin-bottom: 22px;">
+            <label>Answer to Question 2 <span style="color:#fbbf24">*</span></label>
+            <input type="text" id="secAnswer2" class="setup-input" placeholder="Your secret answer (case-insensitive)" required autocomplete="off">
         </div>
         
         <button type="submit" class="glass-btn" id="submitBtn" style="padding: 12px; font-size: 15px;">Save and Continue</button>
@@ -120,12 +164,30 @@ async function completeSetup(e) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
     err.style.display = 'none';
 
+    const q1 = document.getElementById('secQuestion1').value;
+    const a1 = document.getElementById('secAnswer1').value.trim();
+    const q2 = document.getElementById('secQuestion2').value;
+    const a2 = document.getElementById('secAnswer2').value.trim();
+
+    if (!q1 || !a1 || !q2 || !a2) {
+        err.style.display = 'block';
+        err.textContent = 'Please choose both security questions and provide your answers.';
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.innerHTML = 'Save and Continue';
+        return;
+    }
+
     const data = {
         first_name: document.getElementById('firstName').value,
         middle_name: document.getElementById('middleName').value,
         last_name: document.getElementById('lastName').value,
         grade_section: document.getElementById('gradeSection').value,
-        age: document.getElementById('age').value
+        age: document.getElementById('age').value,
+        security_question_1: q1,
+        security_answer_1: a1,
+        security_question_2: q2,
+        security_answer_2: a2
     };
 
     try {

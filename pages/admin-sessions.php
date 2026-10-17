@@ -10,6 +10,9 @@ $search       = trim($_GET['q'] ?? '');
 $where = "WHERE 1=1";
 if ($statusFilter) {
     $where .= " AND cs.status = '" . addslashes($statusFilter) . "'";
+} else {
+    // Show active sessions by default — completed sessions are kept in Sessions Archive!
+    $where .= " AND cs.status != 'completed'";
 }
 if ($search) {
     $sq = addslashes($search);
@@ -50,6 +53,7 @@ $sessions = $db->query("SELECT cs.*,
 
 // Counts for summary metrics
 $countTotal     = (int)$db->query("SELECT COUNT(*) FROM counseling_sessions")->fetchColumn();
+$countActive    = (int)$db->query("SELECT COUNT(*) FROM counseling_sessions WHERE status IN ('scheduled','in_progress','ongoing')")->fetchColumn();
 $countScheduled = (int)$db->query("SELECT COUNT(*) FROM counseling_sessions WHERE status='scheduled'")->fetchColumn();
 $countLive      = (int)$db->query("SELECT COUNT(*) FROM counseling_sessions WHERE status='in_progress'")->fetchColumn();
 $countOngoing   = (int)$db->query("SELECT COUNT(*) FROM counseling_sessions WHERE status='ongoing'")->fetchColumn();
@@ -132,6 +136,24 @@ $fComp  = $statusFilter === 'completed' ? 'selected' : '';
 $fCanc  = $statusFilter === 'cancelled' ? 'selected' : '';
 
 $content = <<<HTML
+<!-- Top Tab Bar: Active Sessions vs Completed Sessions Archive -->
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px">
+  <div class="totp-tab-bar" style="background:var(--bg2);padding:4px;border-radius:12px;border:1px solid var(--border);display:inline-flex">
+    <a href="admin-sessions.php" class="tab-pill active" style="text-decoration:none">
+      <i class="fas fa-calendar-alt"></i> Active Sessions <span style="font-size:11px;font-weight:800;background:var(--maroon);color:#fff;padding:1px 6px;border-radius:10px;margin-left:4px">$countActive</span>
+    </a>
+    <a href="admin-sessions-archive.php" class="tab-pill" style="text-decoration:none">
+      <i class="fas fa-archive"></i> Sessions Archive <span style="font-size:11px;opacity:0.85">($countCompleted)</span>
+    </a>
+  </div>
+
+  <div style="display:inline-flex;gap:8px;align-items:center">
+    <a href="admin-sessions-archive.php" class="btn-sm-primary" style="background:var(--maroon);text-decoration:none;display:inline-flex;align-items:center;gap:6px">
+      <i class="fas fa-box-archive"></i> Go to Sessions Archive
+    </a>
+  </div>
+</div>
+
 <!-- Summary Metric Strip -->
 <div class="summary-cards" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-bottom: 22px;">
   <div class="sum-card">
@@ -150,16 +172,24 @@ $content = <<<HTML
     <div class="sum-icon" style="background:rgba(217,119,6,0.15);color:#b45309"><i class="fas fa-clock-rotate-left"></i></div>
     <div><div class="sum-num" style="color:#b45309">$countOngoing</div><div class="sum-label" style="font-weight:700;color:#92400e">Ongoing Progress</div></div>
   </div>
-  <div class="sum-card">
-    <div class="sum-icon" style="background:rgba(22,163,74,0.12);color:#16a34a"><i class="fas fa-check-double"></i></div>
-    <div><div class="sum-num">$countCompleted</div><div class="sum-label">Completed Sessions</div></div>
+  <div class="sum-card" style="border: 1px solid rgba(22,163,74,0.3); background: rgba(240,253,244,0.6); cursor:pointer" onclick="window.location.href='admin-sessions-archive.php'" title="Click to open Sessions Archive">
+    <div class="sum-icon" style="background:rgba(22,163,74,0.15);color:#16a34a"><i class="fas fa-check-double"></i></div>
+    <div>
+      <div class="sum-num" style="color:#15803d">$countCompleted</div>
+      <div class="sum-label" style="font-weight:700;color:#166534">Sessions Archive &rarr;</div>
+    </div>
   </div>
 </div>
 
 <div class="content-card">
   <div class="card-header">
-    <h3><i class="fas fa-calendar-alt"></i> Counseling Sessions Console</h3>
-    <span style="font-size:13px;color:var(--text-3)">Click any appointed session to start, write notes, and manage resolutions</span>
+    <div>
+      <h3><i class="fas fa-calendar-alt"></i> Counseling Sessions Console</h3>
+      <span style="font-size:13px;color:var(--text-3)">Click any appointed session to start, write notes, and manage resolutions</span>
+    </div>
+    <a href="admin-sessions-archive.php" class="btn-sm-outline" style="display:inline-flex;align-items:center;gap:6px">
+      <i class="fas fa-box-archive"></i> View Sessions Archive
+    </a>
   </div>
 
   <!-- Search & Filter Bar -->
@@ -167,16 +197,16 @@ $content = <<<HTML
     <div style="display:flex;gap:8px;flex:1;min-width:240px">
       <div class="input-wrap" style="flex:1">
         <i class="fas fa-search"></i>
-        <input type="text" id="sessionSearchQ" value="$sqVal" placeholder="Search by case #, student name, concern, location…" onkeydown="if(event.key==='Enter') doSessionSearch()"/>
+        <input type="text" id="sessionSearchQ" value="$sqVal" placeholder="Search active sessions by case #, student name, concern, location…" onkeydown="if(event.key==='Enter') doSessionSearch()"/>
       </div>
       <button class="btn-sm-primary" onclick="doSessionSearch()"><i class="fas fa-search"></i> Search</button>
     </div>
     <select class="status-select" onchange="filterSessionStatus(this.value)">
-      <option value="" $fAll>All Statuses</option>
+      <option value="" $fAll>All Active Sessions</option>
       <option value="scheduled" $fSched>Scheduled (Appointed)</option>
       <option value="in_progress" $fProg>Live In-Session</option>
       <option value="ongoing" $fOng>Ongoing Progress</option>
-      <option value="completed" $fComp>Completed</option>
+      <option value="completed" $fComp>Completed (Archived)</option>
       <option value="cancelled" $fCanc>Cancelled</option>
     </select>
     <button class="btn-sm-outline" onclick="window.location='admin-sessions.php'"><i class="fas fa-times"></i> Reset</button>
@@ -276,7 +306,15 @@ $content = <<<HTML
         <i class="fas fa-clipboard-check"></i> Case Resolution & Sanctions
       </h4>
       <div class="form-group">
-        <label>Resolution Summary <span class="req">*</span></label>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:8px">
+          <label style="margin:0">Resolution Summary <span class="req">*</span></label>
+          <button type="button" class="btn-sm-primary" id="btnAiSuggestEndSession" onclick="aiSuggestEndSessionResolution()" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);border:none;display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:5px 13px;border-radius:20px;font-weight:700;box-shadow:0 2px 8px rgba(124,58,237,0.3);color:#fff;cursor:pointer">
+            <i class="fas fa-wand-magic-sparkles"></i> AI Suggest Resolution
+          </button>
+        </div>
+        <div id="aiResolutionNotice" style="display:none;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:8px;padding:8px 12px;margin-bottom:8px;font-size:12px;color:#5b21b6">
+          <i class="fas fa-sparkles"></i> <strong>AI Recommendation:</strong> Synthesized from interview observations and counselor notes.
+        </div>
         <textarea id="caseResolutionText" rows="3" class="form-control" style="width:100%;padding:12px;border-radius:8px;border:1.5px solid var(--border);font-size:14px" placeholder="Detail how the case was resolved (e.g. mutual agreement reached, guidance counseling concluded, restorative conference completed, student commitments established)..."></textarea>
       </div>
       
@@ -306,6 +344,27 @@ $content = <<<HTML
       <button type="button" class="btn-secondary" onclick="closeEndSessionModal()">Back to Session</button>
       <button type="button" class="btn-primary" id="btnConfirmEndSession" onclick="submitEndSessionDecision()" disabled style="opacity:0.6">
         <i class="fas fa-check"></i> Select an Option
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- CANCEL LIVE SESSION CONFIRMATION MODAL                         -->
+<!-- ============================================================== -->
+<div class="modal-overlay hidden" id="cancelSessionConfirmModal" onclick="if(event.target===this) closeCancelSessionModal()">
+  <div class="modal-box" style="max-width:460px;width:95%;padding:28px;text-align:center">
+    <div style="width:64px;height:64px;border-radius:50%;background:#fee2e2;color:#dc2626;display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 16px auto">
+      <i class="fas fa-triangle-exclamation"></i>
+    </div>
+    <h3 style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:8px">Cancel Live Counseling Session?</h3>
+    <p style="font-size:13.5px;color:var(--text-2);line-height:1.5;margin-bottom:24px">
+      Are you sure you want to cancel this active session? This will stop the active live timer and revert the status back to <strong>Scheduled</strong> if it was started by accident.
+    </p>
+    <div style="display:flex;gap:12px;justify-content:center">
+      <button type="button" class="btn-secondary" style="padding:10px 18px" onclick="closeCancelSessionModal()">Keep Session Active</button>
+      <button type="button" class="btn-primary" id="btnConfirmCancelLiveSession" style="background:#dc2626;padding:10px 18px;display:inline-flex;align-items:center;gap:6px" onclick="executeCancelLiveSession()">
+        <i class="fas fa-undo"></i> Yes, Cancel Session
       </button>
     </div>
   </div>
@@ -708,10 +767,27 @@ async function startPersonalSession(sessionId) {
   }
 }
 
-// ── CANCEL LIVE SESSION (REVERT ACCIDENTAL START) ─────────────────
-async function cancelLiveSession(sessionId) {
-  if (!confirm("Are you sure you want to cancel this live session?\\n\\nThis will stop the active timer and return the session status to Scheduled if it was started by accident.")) {
-    return;
+// ── CANCEL LIVE SESSION (CUSTOM CONFIRMATION POPUP) ──────────────
+let _cancelSessionTargetId = null;
+
+function cancelLiveSession(sessionId) {
+  _cancelSessionTargetId = sessionId;
+  const modal = document.getElementById('cancelSessionConfirmModal');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeCancelSessionModal() {
+  const modal = document.getElementById('cancelSessionConfirmModal');
+  if (modal) modal.classList.add('hidden');
+  _cancelSessionTargetId = null;
+}
+
+async function executeCancelLiveSession() {
+  if (!_cancelSessionTargetId) return;
+  const btn = document.getElementById('btnConfirmCancelLiveSession');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Canceling…';
   }
   try {
     const apiUrl = window.location.pathname.includes('/gnhs-guidance/gnhs-guidance/')
@@ -720,18 +796,88 @@ async function cancelLiveSession(sessionId) {
     const res = await fetch(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ session_id: sessionId })
+      body: JSON.stringify({ session_id: _cancelSessionTargetId })
     });
     const data = await res.json();
     if (data.success) {
       if (_sessionTimerInterval) clearInterval(_sessionTimerInterval);
+      closeCancelSessionModal();
       showToast('Live session canceled. Reverted to Scheduled status.', 'success');
-      setTimeout(() => openSessionConsole(sessionId), 400);
+      setTimeout(() => openSessionConsole(_cancelSessionTargetId), 400);
     } else {
       showToast(data.message || 'Could not cancel session.', 'error');
     }
   } catch (err) {
     showToast('Network error while canceling session.', 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-undo"></i> Yes, Cancel Session';
+    }
+  }
+}
+
+// ── AI RESOLUTION & SANCTION SUGGESTER ───────────────────────────
+async function aiSuggestEndSessionResolution() {
+  const notes = (document.getElementById('liveSessionNotesInput')?.value || '').trim() ||
+                (_currentSessionData?.session?.notes || '').trim();
+  
+  if (!notes || notes.length < 8) {
+    showToast('Please input your counselor case notes and student behavioral observations from the interview first. The AI requires your session observations to formulate a relevant resolution.', 'error');
+    const input = document.getElementById('liveSessionNotesInput');
+    if (input) {
+      input.focus();
+      input.style.border = '2px solid #ef4444';
+      setTimeout(() => input.style.border = '', 2500);
+    }
+    return;
+  }
+
+  const btn = document.getElementById('btnAiSuggestEndSession');
+  const originalHtml = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing Notes & Observations…';
+  }
+
+  try {
+    const apiUrl = window.location.pathname.includes('/gnhs-guidance/gnhs-guidance/')
+      ? '/gnhs-guidance/gnhs-guidance/api/ai_suggest_resolution.php'
+      : '/gnhs-guidance/api/ai_suggest_resolution.php';
+    
+    const res = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        session_id: _currentSessionData?.session?.id || 0,
+        case_id: _currentSessionData?.session?.case_id || 0,
+        notes: notes
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      const resText = document.getElementById('caseResolutionText');
+      if (resText) resText.value = data.suggested_resolution;
+      
+      const sancText = document.getElementById('caseSanctionsText');
+      if (sancText && data.suggested_sanctions) {
+        sancText.value = data.suggested_sanctions;
+      }
+
+      const notice = document.getElementById('aiResolutionNotice');
+      if (notice) notice.style.display = 'block';
+
+      showToast('AI synthesized resolution & sanctions from counselor observations!', 'success');
+    } else {
+      showToast(data.message || 'Could not generate AI resolution.', 'error');
+    }
+  } catch (err) {
+    showToast('Error connecting to AI resolution engine.', 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = originalHtml;
+    }
   }
 }
 

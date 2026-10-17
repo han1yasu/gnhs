@@ -11,6 +11,11 @@ $session  = trim($raw['session_date'] ?? '');
 $sessionType = trim($raw['session_type'] ?? 'in-person');
 $location = trim($raw['location'] ?? 'Guidance Office');
 
+$resolution        = trim($raw['resolution'] ?? '');
+$resolutionProcess = trim($raw['resolution_process'] ?? '');
+$sanctions         = trim($raw['sanctions'] ?? '');
+$completeSessions  = filter_var($raw['complete_sessions'] ?? true, FILTER_VALIDATE_BOOLEAN);
+
 if (!$caseId) jsonOut(['success'=>false,'message'=>'Case ID required.']);
 
 try {
@@ -31,7 +36,70 @@ try {
     $counselorName = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''));
     if (!$counselorName) $counselorName = 'Guidance Counselor';
 
-    // Update case status and priority
+    // ── IF RESOLVED: Validate and process resolution, process, and sanctions ──
+    if ($status === 'resolved') {
+        if (!$resolution && !empty($caseData['resolution'])) {
+            $resolution = $caseData['resolution'];
+        }
+        if (!$resolution) {
+            jsonOut(['success' => false, 'message' => 'Please provide the resolution summary to mark this case as resolved.'], 400);
+        }
+
+        if (!$resolutionProcess) {
+            $resolutionProcess = !empty($caseData['resolution_process']) ? $caseData['resolution_process'] : 'Settled through Counseling Session';
+        }
+
+        // Update cases table
+        $updates = ['status=?', 'resolution=?', 'resolution_process=?', 'sanctions=?', 'resolved_at=NOW()', 'updated_at=NOW()'];
+        $params  = ['resolved', $resolution, $resolutionProcess, $sanctions ?: null];
+        if ($priority) {
+            $updates[] = 'priority=?';
+            $params[]  = $priority;
+        }
+        $params[] = $caseId;
+        $db->prepare("UPDATE cases SET " . implode(',', $updates) . " WHERE id=?")->execute($params);
+
+        // Conclude and archive any open counseling sessions for this case
+        if ($completeSessions || stripos($resolutionProcess, 'counseling') !== false) {
+            $completionNote = "Session concluded upon case resolution via {$resolutionProcess}.";
+            $db->prepare("UPDATE counseling_sessions 
+                SET status = 'completed', 
+                    ended_at = NOW(), 
+                    notes = CASE WHEN notes IS NULL OR notes = '' THEN ? ELSE CONCAT(notes, '\n\n', ?) END 
+                WHERE case_id = ? AND status IN ('scheduled', 'in_progress', 'ongoing')")
+               ->execute([$completionNote, $completionNote, $caseId]);
+        }
+
+        // Add resolution record in case_notes
+        $noteLog = "Case officially RESOLVED by Counselor {$counselorName}.\n\n• Guidance Settlement Process: {$resolutionProcess}\n• Resolution Summary:\n{$resolution}";
+        if ($sanctions) {
+            $noteLog .= "\n\n• Regulated School Rule Sanction / Action Imposed:\n{$sanctions}";
+        }
+        $db->prepare("INSERT INTO case_notes (case_id, author_id, note_type, content, is_visible_to_student, created_at) VALUES (?, ?, 'resolution', ?, 1, NOW())")
+           ->execute([$caseId, $user['id'], $noteLog]);
+
+        // Send student notification
+        if ($studentId) {
+            $statusTitle = "Case #{$caseNumber} Officially Resolved";
+            $statusMsg   = "Your counseling case #{$caseNumber} (\"{$caseSubject}\") has been officially marked as RESOLVED by Counselor {$counselorName}.\n\n• Settlement Process:\n{$resolutionProcess}\n\n• Case Resolution:\n{$resolution}\n";
+            if ($sanctions) {
+                $statusMsg .= "\n• Regulated School Rule Sanction / Action Imposed:\n{$sanctions}\n";
+            }
+            $statusMsg .= "\nDate Resolved: " . date('F d, Y \a\t g:i A') . "\nThank you for working cooperatively with the Guidance Office.";
+
+            $db->prepare("INSERT INTO notifications (user_id, title, message, type, is_read, created_at) VALUES (?, ?, ?, 'case_update', 0, NOW())")
+               ->execute([$studentId, $statusTitle, $statusMsg]);
+        }
+
+        jsonOut([
+            'success'            => true,
+            'is_resolved'        => true,
+            'resolution_process' => $resolutionProcess,
+            'message'            => 'Case officially resolved, settlement process recorded, and sessions archived!'
+        ]);
+    }
+
+    // ── IF OTHER STATUS: Normal priority & status update ──
     $updates = []; $params = [];
     if ($priority) { $updates[]='priority=?'; $params[]=$priority; }
     if ($status)   { $updates[]='status=?';   $params[]=$status;   }
@@ -51,7 +119,7 @@ try {
     $newStatusLabel = $statusLabels[$status] ?? ucfirst(str_replace('_', ' ', $status));
     $oldStatusLabel = $statusLabels[$oldStatus] ?? ucfirst(str_replace('_', ' ', $oldStatus));
 
-    // 1. Send detailed Case Status notification to the student if status was updated
+    // Send status notification to student
     if ($studentId && $status && ($status !== $oldStatus || empty($session))) {
         if ($status === 'under_review') {
             $statusTitle = 'Case Status Updated: Under Review';
@@ -59,37 +127,33 @@ try {
         } else if ($status === 'ongoing') {
             $statusTitle = 'Case Status Updated: Ongoing';
             $statusMsg   = "Your case #{$caseNumber} (\"{$caseSubject}\") status has been set to Ongoing by Counselor {$counselorName}.\n\nGuidance interventions and support actions are actively in progress.";
-        } else if ($status === 'resolved') {
-            $statusTitle = 'Case Resolved';
-            $statusMsg   = "Your case #{$caseNumber} (\"{$caseSubject}\") has been marked as Resolved by Counselor {$counselorName}.\n\nIf you have further questions or require additional support, you may reach out through the chat system.";
         } else {
             $statusTitle = "Case Status Updated: {$newStatusLabel}";
             $statusMsg   = "Your case #{$caseNumber} (\"{$caseSubject}\") status has been updated from {$oldStatusLabel} to {$newStatusLabel} by Counselor {$counselorName}.";
         }
 
-        $db->prepare("INSERT INTO notifications (user_id, title, message, type, is_read) VALUES (?, ?, ?, 'case_update', 0)")
+        $db->prepare("INSERT INTO notifications (user_id, title, message, type, is_read, created_at) VALUES (?, ?, ?, 'case_update', 0, NOW())")
            ->execute([$studentId, $statusTitle, $statusMsg]);
     }
 
-    // 2. Schedule counseling session and send detailed notification
+    // Schedule counseling session if provided
     if ($session) {
         $sessionTimestamp = strtotime($session);
         if (!$sessionTimestamp || $sessionTimestamp < (time() - 60)) {
             jsonOut(['success'=>false, 'message'=>'Counseling session cannot be scheduled in the past. Please select a present or future date and time.']);
         }
 
-        $db->prepare("INSERT INTO counseling_sessions (case_id,student_id,counselor_id,session_date,status,session_type,location) VALUES (?,?,?,?,'scheduled',?,?)")
+        $db->prepare("INSERT INTO counseling_sessions (case_id,student_id,counselor_id,session_date,status,session_type,location,created_at) VALUES (?,?,?,?,'scheduled',?,?,NOW())")
            ->execute([$caseId, $studentId, $user['id'], $session, $sessionType, $location]);
 
         if ($studentId) {
-            $sessionTimestamp = strtotime($session);
             $formattedDate = date('F d, Y \a\t g:i A', $sessionTimestamp);
             $formattedMode = ucfirst(str_replace('-', ' ', $sessionType));
 
             $sessionTitle = 'Counseling Session Scheduled';
             $sessionMsg   = "A counseling session for Case #{$caseNumber} (\"{$caseSubject}\") has been scheduled with Counselor {$counselorName}.\n\n• Date & Time: {$formattedDate}\n• Session Mode: {$formattedMode}\n• Location / Link: {$location}\n\nPlease attend punctually at the scheduled date and time.";
 
-            $db->prepare("INSERT INTO notifications (user_id, title, message, type, is_read) VALUES (?, ?, ?, 'session', 0)")
+            $db->prepare("INSERT INTO notifications (user_id, title, message, type, is_read, created_at) VALUES (?, ?, ?, 'session', 0, NOW())")
                ->execute([$studentId, $sessionTitle, $sessionMsg]);
         }
     }

@@ -102,8 +102,15 @@ try {
         $hasQuestions = !empty($user['security_question_1']) && !empty($user['security_answer_1']);
         $dt = !empty($prr['reviewed_at']) ? new DateTime($prr['reviewed_at']) : new DateTime($prr['created_at']);
 
-        // Check if security answer was provided
-        if ($hasQuestions && empty($ans1)) {
+        // Check if this was a direct in-person reset by Guidance Counselor in User Management
+        $isDirectAdminReset = !empty($prr['admin_notes']) && (
+            stripos($prr['admin_notes'], 'User Management') !== false ||
+            stripos($prr['admin_notes'], 'In-Person Backup') !== false ||
+            stripos($prr['admin_notes'], 'security recovery questions reset') !== false
+        );
+
+        // Check if security answer was provided (only required if questions exist and NOT a direct in-person admin backup)
+        if ($hasQuestions && !$isDirectAdminReset && empty($ans1)) {
             // Require user to answer security question 1 to reveal the password
             jsonOut([
                 'success'                 => true,
@@ -122,8 +129,8 @@ try {
             ]);
         }
 
-        // Verify security question answer if questions exist
-        if ($hasQuestions) {
+        // Verify security question answer if questions exist and not bypassed by admin backup
+        if ($hasQuestions && !$isDirectAdminReset) {
             $cleanAns1 = strtolower($ans1);
             $storedHash1 = $user['security_answer_1'];
             $passed1 = password_verify($cleanAns1, $storedHash1) || ($cleanAns1 === strtolower($storedHash1));

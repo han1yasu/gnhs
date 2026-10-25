@@ -29,7 +29,7 @@ try {
             jsonOut(['success'=>false, 'message'=>'User not found.']);
         }
         $hash = password_hash($password, PASSWORD_DEFAULT);
-        $db->prepare("UPDATE users SET password=? WHERE id=?")->execute([$hash, $id]);
+        $db->prepare("UPDATE users SET password=?, failed_attempts=0, lockout_until=NULL, is_active=1 WHERE id=?")->execute([$hash, $id]);
         try {
             $db->prepare("DELETE FROM password_resets WHERE email=?")->execute([$targetUser['email']]);
         } catch (Exception $e) {}

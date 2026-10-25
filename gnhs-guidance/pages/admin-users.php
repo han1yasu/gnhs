@@ -36,7 +36,7 @@ foreach ($users as $u) {
     $rawEmailAttr = htmlspecialchars($u['email'], ENT_QUOTES);
     $rawRoleAttr  = htmlspecialchars($roleLabel, ENT_QUOTES);
     
-    $resetBtn = "<button class='btn-icon' onclick='openResetPasswordModal({$u['id']}, this.dataset.name, this.dataset.email, this.dataset.role)' data-name=\"$rawNameAttr\" data-email=\"$rawEmailAttr\" data-role=\"$rawRoleAttr\" title='Reset Password'><i class='fas fa-key'></i></button>";
+    $resetBtn = "<button class='btn-icon' id='btn-reset-pw-{$u['id']}' onclick='openResetPasswordModal({$u['id']}, this.dataset.name, this.dataset.email, this.dataset.role)' data-name=\"$rawNameAttr\" data-email=\"$rawEmailAttr\" data-role=\"$rawRoleAttr\" title='Reset Password'><i class='fas fa-key' style='pointer-events:none'></i></button>";
     
     $totpRequested = !empty($u['totp_reset_requested']);
     $totpEnabled   = !empty($u['totp_enabled']);
@@ -48,11 +48,11 @@ foreach ($users as $u) {
     $totpStyle = $totpRequested ? 'background:#fef3c7;border-color:#f59e0b;color:#d97706;animation:pulseTotp 2s infinite;' : '';
     $totpTitle = $totpRequested ? '2FA Reset Requested by User - Click to Reset Authenticator' : 'Reset Two-Factor Authentication (2FA)';
 
-    $totpBtn = "<button class='btn-icon' style='$totpStyle' onclick='openResetTotpModal({$u['id']}, this.dataset.name, this.dataset.email, this.dataset.role, ".($totpEnabled?1:0).", ".($totpRequested?1:0).")' data-name=\"$rawNameAttr\" data-email=\"$rawEmailAttr\" data-role=\"$rawRoleAttr\" title='$totpTitle'><i class='fas $totpIcon'></i></button>";
+    $totpBtn = "<button class='btn-icon' id='btn-reset-totp-{$u['id']}' style='$totpStyle' onclick='openResetTotpModal({$u['id']}, this.dataset.name, this.dataset.email, this.dataset.role, ".($totpEnabled?1:0).", ".($totpRequested?1:0).")' data-name=\"$rawNameAttr\" data-email=\"$rawEmailAttr\" data-role=\"$rawRoleAttr\" title='$totpTitle'><i class='fas $totpIcon'></i></button>";
     
     $statusBtn = $u['is_active']
-        ? "<button class='btn-icon danger' onclick='deleteUser({$u['id']},\"$name\")' title='Deactivate Account'><i class='fas fa-user-slash'></i></button>"
-        : "<button class='btn-icon' style='color:#16a34a;border-color:#bbf7d0;background:#f0fdf4' onclick='activateUser({$u['id']},\"$name\")' title='Activate Account'><i class='fas fa-user-check'></i></button>";
+        ? "<button class='btn-icon danger' id='btn-status-{$u['id']}' onclick='deleteUser({$u['id']},\"$name\")' title='Deactivate Account'><i class='fas fa-user-slash'></i></button>"
+        : "<button class='btn-icon' id='btn-status-{$u['id']}' style='color:#16a34a;border-color:#bbf7d0;background:#f0fdf4' onclick='activateUser({$u['id']},\"$name\")' title='Activate Account'><i class='fas fa-user-check'></i></button>";
 
     $avatarEl = !empty($u['avatar_photo'])
         ? "<div class='user-card-avatar' style='background:none;padding:0;overflow:hidden'><img src='".htmlspecialchars($u['avatar_photo'])."' style='width:60px;height:60px;object-fit:cover;object-position:center top;border-radius:16px;display:block;'/></div>"
@@ -272,9 +272,25 @@ $bannerHtml
       </div>
 
       <!-- Quick Preset Badge -->
-      <div style="background:var(--bg2);border:1px dashed var(--border);border-radius:10px;padding:10px 14px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;font-size:12px;gap:8px">
+      <div style="background:var(--bg2);border:1px dashed var(--border);border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;font-size:12px;gap:8px">
         <span style="color:var(--text-2)"><i class="fas fa-lightbulb" style="color:#eab308;margin-right:4px"></i> Default suggestion: <strong style="font-family:monospace;background:var(--bg);padding:2px 6px;border-radius:4px;border:1px solid var(--border)">GNHS@2026</strong></span>
         <button type="button" onclick="useDefaultPassword('GNHS@2026')" style="padding:4px 10px;font-size:11px;border-radius:6px;border:1px solid var(--border);background:#fff;cursor:pointer;font-weight:700;color:var(--maroon);white-space:nowrap">Use Default</button>
+      </div>
+
+      <!-- Backup for Forgotten Startup Questions Checkbox -->
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:18px;text-align:left">
+        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;margin:0;font-size:13px;font-weight:600;color:var(--text)">
+          <input type="checkbox" id="reset-clear-sec-questions" style="margin-top:3px;accent-color:var(--maroon);width:16px;height:16px" checked />
+          <div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <i class="fas fa-shield-halved" style="color:var(--maroon);font-size:13px"></i>
+              <span id="resetClearQuestionsTitle">Reset Startup Security Questions (Backup)</span>
+            </div>
+            <div id="resetClearQuestionsSub" style="font-size:11.5px;color:var(--text-3);font-weight:400;margin-top:3px;line-height:1.4">
+              Backup for students who forgot their password and security questions on startup. Clears their forgotten questions and prompts them to choose fresh questions upon next login.
+            </div>
+          </div>
+        </label>
       </div>
 
       <div class="form-actions" style="display:flex;gap:10px;justify-content:flex-end">
@@ -297,6 +313,9 @@ $bannerHtml
           <button type="button" id="copyPasswordBtn" onclick="copyResetPassword()" class="btn-sm-primary" style="padding:6px 12px;font-size:12px;display:flex;align-items:center;gap:6px">
             <i class="fas fa-copy"></i> <span id="copyBtnLabel">Copy</span>
           </button>
+        </div>
+        <div id="resetSecQuestionsNotice" style="font-size:11.5px;color:#166534;background:rgba(22,101,52,0.08);padding:9px 12px;border-radius:8px;margin-top:10px;display:none;line-height:1.4">
+          <i class="fas fa-info-circle"></i> <strong>Startup Questions Reset:</strong> The student's forgotten recovery questions have been cleared. When they log in with this password, they will be prompted on startup to set new recovery questions they will remember.
         </div>
       </div>
       <div style="margin-top:14px;display:flex;justify-content:flex-end">
@@ -420,6 +439,18 @@ function openResetPasswordModal(userId, name, email, role) {
   _resetTargetUserId = userId;
   _resetLastPassword = '';
 
+  if (!name || !email) {
+    const btn = document.getElementById('btn-reset-pw-' + userId);
+    if (btn) {
+      name = name || btn.getAttribute('data-name');
+      email = email || btn.getAttribute('data-email');
+      role = role || btn.getAttribute('data-role');
+    }
+  }
+  name = name || 'User';
+  email = email || '';
+  role = role || 'Student';
+
   const targetText = document.getElementById('resetUserTargetText');
   if (targetText) targetText.textContent = 'Set a new password for ' + name;
 
@@ -433,6 +464,23 @@ function openResetPasswordModal(userId, name, email, role) {
   if (badge) {
     badge.textContent = role || 'User';
     badge.className = 'user-card-role role-' + (role ? role.toLowerCase() : 'student');
+  }
+
+  const chkQuestions = document.getElementById('reset-clear-sec-questions');
+  const qTitle = document.getElementById('resetClearQuestionsTitle');
+  const qSub = document.getElementById('resetClearQuestionsSub');
+  const isStudent = !role || role.toLowerCase() === 'student';
+  if (chkQuestions) {
+    chkQuestions.checked = isStudent;
+  }
+  if (qTitle && qSub) {
+    if (isStudent) {
+      qTitle.textContent = 'Reset Startup Security Questions (Backup)';
+      qSub.textContent = 'Backup for students who forgot their password and security questions on startup. Clears their forgotten questions and prompts them to choose fresh questions upon next login.';
+    } else {
+      qTitle.textContent = 'Reset Security Recovery Questions';
+      qSub.textContent = 'Clears security recovery questions so user can configure new ones upon their next login.';
+    }
   }
 
   const p1 = document.getElementById('reset-new-pass');
@@ -547,6 +595,7 @@ function checkPasswordMatch() {
 async function submitResetPassword() {
   const p1 = document.getElementById('reset-new-pass')?.value.trim();
   const p2 = document.getElementById('reset-confirm-pass')?.value.trim();
+  const clearQuestions = document.getElementById('reset-clear-sec-questions')?.checked ? 1 : 0;
   const btn = document.getElementById('saveResetPwBtn');
 
   hideEl('resetPwMsg');
@@ -570,13 +619,24 @@ async function submitResetPassword() {
 
   setLoading(btn, true);
 
+  const isNested = window.location.pathname.includes('/gnhs-guidance/gnhs-guidance/');
+  const endpoint = isNested
+    ? '/gnhs-guidance/gnhs-guidance/api/admin_reset_password.php'
+    : '/gnhs-guidance/api/admin_reset_password.php';
+
   try {
-    const res = await apiPost('/gnhs-guidance/api/admin_reset_password.php', {
+    const postFn = typeof apiPost === 'function' ? apiPost : async (url, data) => {
+      const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+      return r.json();
+    };
+
+    const res = await postFn(endpoint, {
       user_id: _resetTargetUserId,
-      password: p1
+      password: p1,
+      reset_questions: clearQuestions
     });
 
-    if (res.success) {
+    if (res && res.success) {
       showToast('Password reset successfully.', 'success');
       _resetLastPassword = p1;
 
@@ -586,9 +646,13 @@ async function submitResetPassword() {
         sc.style.display = 'block';
         document.getElementById('resetSavedPasswordDisplay').value = p1;
         document.getElementById('copyBtnLabel').textContent = 'Copy';
+        const qNotice = document.getElementById('resetSecQuestionsNotice');
+        if (qNotice) {
+          qNotice.style.display = clearQuestions ? 'block' : 'none';
+        }
       }
     } else {
-      showMsg('resetPwMsg', res.message || 'Failed to reset password.');
+      showMsg('resetPwMsg', (res && res.message) || 'Failed to reset password.');
     }
   } catch (err) {
     showMsg('resetPwMsg', 'Failed to connect to the server. Please try again.');

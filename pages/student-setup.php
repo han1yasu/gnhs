@@ -101,7 +101,7 @@ $middleName = $dbUser['middle_name'] ?? '';
         
         <div class="form-row" style="margin-bottom: 16px;">
             <label>Age</label>
-            <input type="number" id="age" class="setup-input" min="10" max="100" placeholder="e.g. 15" required>
+            <input type="number" id="age" class="setup-input" min="10" max="100" value="<?= htmlspecialchars($user['age'] ?? '') ?>" placeholder="e.g. 15" required>
         </div>
 
         <!-- Security Verification Questions -->

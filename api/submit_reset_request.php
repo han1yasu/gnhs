@@ -58,16 +58,45 @@ try {
         }
     }
 
+    // Check if there is already an approved request ready for this user
+    $apprStmt = $db->prepare("SELECT prr.*, 
+        CONCAT(COALESCE(c.first_name, 'Guidance'), ' ', COALESCE(c.last_name, 'Counselor')) AS counselor_name
+        FROM password_reset_requests prr
+        LEFT JOIN users c ON prr.reviewed_by = c.id
+        WHERE prr.user_id = ? AND prr.status = 'approved'
+        ORDER BY prr.id DESC LIMIT 1");
+    $apprStmt->execute([$userId]);
+    $approvedReq = $apprStmt->fetch();
+
+    if ($approvedReq) {
+        $cName = $approvedReq['counselor_name'] ?: 'Guidance Counselor Milena Jacob';
+        $dt = !empty($approvedReq['reviewed_at']) ? new DateTime($approvedReq['reviewed_at']) : new DateTime($approvedReq['created_at']);
+        jsonOut([
+            'success'          => true,
+            'status'           => 'approved',
+            'already_approved' => true,
+            'temp_password'    => $approvedReq['temp_password'],
+            'admin_notes'      => $approvedReq['admin_notes'] ?: 'Approved and temporary password issued by Guidance Office.',
+            'counselor_name'   => $cName,
+            'reviewed_at_fmt'  => $dt->format('M d, Y h:i A'),
+            'full_name'        => $fullName,
+            'email'            => $email,
+            'id_number'        => $idNum,
+            'message'          => "Your password reset was already APPROVED by {$cName}! Your updated credentials are ready to use."
+        ]);
+    }
+
     // Check for existing pending request
-    $chkStmt = $db->prepare("SELECT id FROM password_reset_requests WHERE user_id = ? AND status = 'pending' LIMIT 1");
+    $chkStmt = $db->prepare("SELECT id, created_at FROM password_reset_requests WHERE user_id = ? AND status = 'pending' LIMIT 1");
     $chkStmt->execute([$userId]);
     $existing = $chkStmt->fetch();
 
     if ($existing) {
         jsonOut([
-            'success' => true,
+            'success'         => true,
+            'status'          => 'pending',
             'already_pending' => true,
-            'message' => "Security identity verified! You already have a pending password reset request on file. Please visit Guidance Counselor Milena Jacob to claim your new password."
+            'message'         => "Security identity verified! You already have a pending password reset request on file. Guidance Counselor Milena Jacob has received your request and will review it soon."
         ]);
     }
 

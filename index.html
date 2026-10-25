@@ -263,8 +263,10 @@
         </div>
       </div>
       <div class="modal-step hidden" id="step-role">
-        <button class="modal-close" onclick="closeLoginModal()"><i class="fas fa-times"></i></button>
-        <button class="modal-back" onclick="goBack('step-choose')"><i class="fas fa-arrow-left"></i> Back</button>
+        <div class="modal-top-nav">
+          <button type="button" class="modal-back" onclick="goBack('step-choose')"><i class="fas fa-arrow-left"></i> Back</button>
+          <button type="button" class="modal-close" onclick="closeLoginModal()"><i class="fas fa-times"></i></button>
+        </div>
         <div class="modal-logo"><i class="fas fa-users"></i></div>
         <h2 class="modal-title">Select Your Role</h2>
         <p class="modal-sub" id="role-sub-text">Who are you logging in as?</p>
@@ -285,8 +287,10 @@
         </div>
       </div>
       <div class="modal-step hidden" id="step-login">
-        <button class="modal-close" onclick="closeLoginModal()"><i class="fas fa-times"></i></button>
-        <button class="modal-back" onclick="goBack('step-role')"><i class="fas fa-arrow-left"></i> Back</button>
+        <div class="modal-top-nav">
+          <button type="button" class="modal-back" onclick="goBack('step-role')"><i class="fas fa-arrow-left"></i> Back</button>
+          <button type="button" class="modal-close" onclick="closeLoginModal()"><i class="fas fa-times"></i></button>
+        </div>
         <div class="modal-logo" id="login-role-badge"><i class="fas fa-user-graduate"></i></div>
         <div class="modal-tab-header tab-login">
           <div class="modal-tab-indicator"></div>
@@ -304,31 +308,71 @@
               placeholder="Enter your password" required /><button class="toggle-pass" type="button"
               onclick="togglePass('login-pass')"><i class="fas fa-eye"></i></button></div>
         </div>
-        <div class="form-options"><label class="checkbox-label"><input type="checkbox"> Remember me</label><a href="#"
-            class="forgot-link" onclick="openResetPasswordModal()">Reset password?</a></div>
+        <div class="form-options">
+          <label class="checkbox-label"><input type="checkbox"> Remember me</label>
+          <a href="#" class="forgot-link" onclick="openResetPasswordModal('request')">Reset password?</a>
+        </div>
+        <div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);display:flex;justify-content:flex-end">
+          <a href="#" class="forgot-link" onclick="openResetPasswordModal('status')" style="color:var(--maroon);font-weight:700;font-size:12px;display:inline-flex;align-items:center;gap:5px">
+            <i class="fas fa-clock-rotate-left"></i> Check reset request update?
+          </a>
+        </div>
         <button class="btn-submit" onclick="handleLogin()">Login &nbsp;<i class="fas fa-arrow-right"></i></button>
       </div>
 
-      <!-- RESET PASSWORD REQUEST STEP 1: IDENTIFIER -->
+      <!-- RESET PASSWORD REQUEST / STATUS STEP -->
       <div class="modal-step hidden" id="step-forgot">
-        <button class="modal-close" onclick="closeLoginModal()"><i class="fas fa-times"></i></button>
-        <button class="modal-back" onclick="goBack('step-login')"><i class="fas fa-arrow-left"></i> Back</button>
-        <div class="modal-logo"><i class="fas fa-key"></i></div>
-        <h2 class="modal-title">Reset Password</h2>
-        <p class="modal-sub">Enter your registered Student ID / LRN or Email to begin identity verification.</p>
-        <div id="forgot-msg" style="display:none"></div>
-        <div class="form-group"><label>Student ID / LRN or Email</label>
-          <div class="input-wrap"><i class="fas fa-id-card"></i><input type="text" id="forgot-email"
-              placeholder="Enter Student ID or Email" onkeydown="if(event.key==='Enter') handleForgot()" /></div>
+        <div class="modal-top-nav">
+          <button type="button" class="modal-back" onclick="goBack('step-login')"><i class="fas fa-arrow-left"></i> Back</button>
+          <button type="button" class="modal-close" onclick="closeLoginModal()"><i class="fas fa-times"></i></button>
         </div>
-        <button class="btn-submit" id="btnLookupAccount" onclick="handleForgot()">Verify Account &nbsp;<i class="fas fa-arrow-right"></i></button>
+
+        <!-- Mode Toggle Tabs: Submit Request vs Check Update -->
+        <div class="profile-tabs-nav" style="margin:4px 0 20px 0">
+          <button type="button" class="profile-tab-pill active" id="tabBtnRequestReset" onclick="switchResetTab('request')">
+            <i class="fas fa-key"></i> Request Reset
+          </button>
+          <button type="button" class="profile-tab-pill" id="tabBtnCheckStatus" onclick="switchResetTab('status')">
+            <i class="fas fa-clock-rotate-left"></i> Check Request Update
+          </button>
+        </div>
+
+        <!-- PANE 1: Submit Reset Request -->
+        <div id="paneResetRequest">
+          <div class="modal-logo"><i class="fas fa-key"></i></div>
+          <h2 class="modal-title">Reset Password</h2>
+          <p class="modal-sub">Enter your registered Student ID / LRN or Email to begin identity verification.</p>
+          <div id="forgot-msg" style="display:none"></div>
+          <div class="form-group"><label>Student ID / LRN or Email</label>
+            <div class="input-wrap"><i class="fas fa-id-card"></i><input type="text" id="forgot-email"
+                placeholder="Enter Student ID or Email" onkeydown="if(event.key==='Enter') handleForgot()" /></div>
+          </div>
+          <button class="btn-submit" id="btnLookupAccount" onclick="handleForgot()">Verify Account &nbsp;<i class="fas fa-arrow-right"></i></button>
+        </div>
+
+        <!-- PANE 2: Check Reset Request Status & View Changed Password -->
+        <div id="paneResetStatus" class="hidden">
+          <div class="modal-logo" style="background:var(--maroon-pale);color:var(--maroon)"><i class="fas fa-shield-halved"></i></div>
+          <h2 class="modal-title">Check Request Update</h2>
+          <p class="modal-sub">See if Guidance Counselor has changed your password and retrieve your credentials.</p>
+          <div id="status-check-msg" style="display:none"></div>
+          <div class="form-group"><label>Student ID / LRN or Email</label>
+            <div class="input-wrap"><i class="fas fa-id-card"></i><input type="text" id="status-email"
+                placeholder="Enter Student ID or Email" onkeydown="if(event.key==='Enter') handleCheckResetStatus()" /></div>
+          </div>
+          <button class="btn-submit" id="btnCheckResetStatus" onclick="handleCheckResetStatus()">
+            Check Request Status &nbsp;<i class="fas fa-search"></i>
+          </button>
+        </div>
       </div>
 
       <!-- RESET PASSWORD REQUEST STEP 2: SECURITY TEST -->
       <div class="modal-step hidden" id="step-security-test">
-        <button class="modal-close" onclick="closeLoginModal()"><i class="fas fa-times"></i></button>
-        <button class="modal-back" onclick="showStep('step-forgot')"><i class="fas fa-arrow-left"></i> Back</button>
-        <div class="modal-logo" style="background:rgba(217,119,6,0.12);color:#d97706"><i class="fas fa-shield-halved"></i></div>
+        <div class="modal-top-nav">
+          <button type="button" class="modal-back" onclick="showStep('step-forgot')"><i class="fas fa-arrow-left"></i> Back</button>
+          <button type="button" class="modal-close" onclick="closeLoginModal()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-logo" style="background:var(--maroon-pale);color:var(--maroon)"><i class="fas fa-shield-halved"></i></div>
         <h2 class="modal-title">Security Verification Test</h2>
         <p class="modal-sub" id="secTestSubtitle">Please answer your personal security questions to verify your identity.</p>
         <div id="sec-test-msg" style="display:none"></div>
@@ -366,8 +410,11 @@
 
       <!-- RESET PASSWORD REQUEST STEP 3: SUBMITTED CONFIRMATION -->
       <div class="modal-step hidden" id="step-reset-submitted">
-        <button class="modal-close" onclick="closeLoginModal()"><i class="fas fa-times"></i></button>
-        <div class="modal-logo" style="background:#dcfce7;color:#16a34a"><i class="fas fa-check-circle"></i></div>
+        <div class="modal-top-nav">
+          <div style="width:20px"></div>
+          <button type="button" class="modal-close" onclick="closeLoginModal()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-logo" style="background:var(--maroon-pale);color:var(--maroon)"><i class="fas fa-check-circle"></i></div>
         <h2 class="modal-title">Request Submitted to Guidance</h2>
         <p class="modal-sub" id="secSuccessSubtitle" style="font-size:13.5px;line-height:1.5">
           Your identity has been verified! A password reset request has been officially recorded for Guidance Counselor Milena Jacob.
@@ -377,13 +424,25 @@
           <ul style="margin:6px 0 0 18px;padding:0">
             <li>Visit the Guidance Office or wait for the counselor to approve your request.</li>
             <li>The counselor will issue your temporary credentials and unlock your account.</li>
+            <li>You can check your request update anytime by clicking <strong>Check Request Update</strong>.</li>
           </ul>
         </div>
-        <button class="btn-submit" style="background:#16a34a" onclick="closeLoginModal()">Done &nbsp;<i class="fas fa-check"></i></button>
+        <button class="btn-submit" onclick="closeLoginModal()">Done &nbsp;<i class="fas fa-check"></i></button>
+      </div>
+
+      <!-- RESET PASSWORD STATUS UPDATE RESULT STEP -->
+      <div class="modal-step hidden" id="step-status-result">
+        <div class="modal-top-nav">
+          <button type="button" class="modal-back" onclick="showStep('step-forgot')"><i class="fas fa-arrow-left"></i> Back</button>
+          <button type="button" class="modal-close" onclick="closeLoginModal()"><i class="fas fa-times"></i></button>
+        </div>
+        <div id="statusResultContainer"></div>
       </div>
       <div class="modal-step hidden" id="step-register">
-        <button class="modal-close" onclick="closeLoginModal()"><i class="fas fa-times"></i></button>
-        <button class="modal-back" onclick="goBack('step-role')"><i class="fas fa-arrow-left"></i> Back</button>
+        <div class="modal-top-nav">
+          <button type="button" class="modal-back" onclick="goBack('step-role')"><i class="fas fa-arrow-left"></i> Back</button>
+          <button type="button" class="modal-close" onclick="closeLoginModal()"><i class="fas fa-times"></i></button>
+        </div>
         <div class="modal-logo" id="reg-role-badge"><i class="fas fa-user-graduate"></i></div>
         <div class="modal-tab-header tab-register">
           <div class="modal-tab-indicator"></div>

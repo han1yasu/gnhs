@@ -133,7 +133,7 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title><?= htmlspecialchars($pageTitle) ?> — GNHS Guidance</title>
-  <link rel="stylesheet" href="/gnhs-guidance/style.css?v=3.2"/>
+  <link rel="stylesheet" href="/gnhs-guidance/style.css?v=3.3"/>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" rel="stylesheet"/>
@@ -160,7 +160,7 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
   <nav class="sb-nav">
     <?= $sidebarLinks ?>
   </nav>
-  <div class="sb-user">
+  <div class="sb-user" id="sidebarUserBtn" onclick="openProfileModal()" style="cursor:pointer" title="View Profile / Change Password">
     <div style="width:36px;height:36px;min-width:36px;min-height:36px;border-radius:10px;overflow:hidden;flex-shrink:0;border:2px solid rgba(255,255,255,.25);">
       <?php if ($avatarPhoto): ?>
         <img src="<?= htmlspecialchars($avatarPhoto) ?>" alt="Avatar" style="width:36px;height:36px;object-fit:cover;object-position:center top;display:block;"/>
@@ -172,7 +172,7 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
       <div class="sb-user-name"><?= $fullName ?></div>
       <div class="sb-user-role"><?= $roleLabel ?></div>
     </div>
-    <a href="#" class="sb-logout" title="Logout" onclick="event.preventDefault();confirmLogout()">
+    <a href="#" class="sb-logout" title="Logout" onclick="event.stopPropagation();event.preventDefault();confirmLogout()">
       <i class="fas fa-sign-out-alt"></i>
     </a>
   </div>
@@ -213,7 +213,7 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
         <i class="fas fa-bell"></i>
         <span class="notif-dot hidden" id="notifDot"></span>
       </button>
-      <div class="topbar-user" onclick="toggleProfileMenu()" style="cursor:pointer;position:relative">
+      <div class="topbar-user" id="topbarUserBtn" onclick="toggleProfileMenu(event)" style="cursor:pointer;position:relative">
         <div style="width:32px;height:32px;min-width:32px;min-height:32px;border-radius:8px;overflow:hidden;flex-shrink:0;">
           <?php if ($avatarPhoto): ?>
             <img src="<?= htmlspecialchars($avatarPhoto) ?>" alt="Avatar" style="width:32px;height:32px;object-fit:cover;object-position:center top;display:block;"/>
@@ -326,60 +326,139 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
   </div>
 
   <!-- Profile Modal -->
-  <div class="modal-overlay hidden" id="profileModal" onclick="if(event.target.id==='profileModal')this.classList.add('hidden')">
-    <div class="modal-box" style="max-width:460px">
-      <button class="modal-close" onclick="document.getElementById('profileModal').classList.add('hidden')"><i class="fas fa-times"></i></button>
-      <div style="text-align:center;margin-bottom:24px">
-        <!-- Avatar circle — click overlay to change -->
-        <div class="profile-avatar-wrap" onclick="document.getElementById('avatarFileInput').click()" title="Click to change photo">
-          <?php if ($avatarPhoto): ?>
-            <img src="<?= htmlspecialchars($avatarPhoto) ?>" alt="Avatar" class="profile-big-avatar-img" id="profileAvatarPreview"/>
-          <?php else: ?>
-            <div class="profile-big-avatar" id="profileAvatarPreview"><?= $initials ?></div>
-          <?php endif; ?>
-          <div class="profile-avatar-overlay">
-            <i class="fas fa-camera"></i>
-            <span>Change</span>
+  <div class="modal-overlay hidden" id="profileModal" onclick="if(event.target.id==='profileModal')closeProfileModal()">
+    <div class="modal-box" style="max-width:480px;padding:26px 28px">
+      <button class="modal-close" onclick="closeProfileModal()"><i class="fas fa-times"></i></button>
+
+      <!-- Tab 1: Profile Info -->
+      <div id="pTabContentInfo">
+        <div style="text-align:center;margin-bottom:20px">
+          <!-- Avatar circle — click overlay to change -->
+          <div class="profile-avatar-wrap" onclick="document.getElementById('avatarFileInput').click()" title="Click to change photo">
+            <?php if ($avatarPhoto): ?>
+              <img src="<?= htmlspecialchars($avatarPhoto) ?>" alt="Avatar" class="profile-big-avatar-img" id="profileAvatarPreview"/>
+            <?php else: ?>
+              <div class="profile-big-avatar" id="profileAvatarPreview"><?= $initials ?></div>
+            <?php endif; ?>
+            <div class="profile-avatar-overlay">
+              <i class="fas fa-camera"></i>
+              <span>Change</span>
+            </div>
           </div>
+          <input type="file" id="avatarFileInput" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="uploadAvatar(this)"/>
+          <!-- Buttons row -->
+          <div class="profile-avatar-actions">
+            <button class="profile-change-photo" onclick="document.getElementById('avatarFileInput').click()">
+              <i class="fas fa-camera"></i> Change Photo
+            </button>
+            <?php if ($avatarPhoto): ?>
+              <button class="profile-remove-photo" id="removePhotoBtn" onclick="removeAvatar()">
+                <i class="fas fa-trash-alt"></i> Remove
+              </button>
+            <?php else: ?>
+              <button class="profile-remove-photo" id="removePhotoBtn" onclick="removeAvatar()" style="display:none">
+                <i class="fas fa-trash-alt"></i> Remove
+              </button>
+            <?php endif; ?>
+          </div>
+          <h2 style="font-size:20px;font-weight:900;margin-top:12px"><?= $fullName ?></h2>
+          <span class="profile-role-badge"><?= $roleLabel ?></span>
         </div>
-        <input type="file" id="avatarFileInput" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="uploadAvatar(this)"/>
-        <!-- Buttons row -->
-        <div class="profile-avatar-actions">
-          <button class="profile-change-photo" onclick="document.getElementById('avatarFileInput').click()">
-            <i class="fas fa-camera"></i> Change Photo
+        <div class="profile-info-grid">
+          <div class="profile-info-item">
+            <i class="fas fa-envelope"></i>
+            <div><label>Email Address</label><span><?= $email ?></span></div>
+          </div>
+          <div class="profile-info-item">
+            <i class="fas fa-id-card"></i>
+            <div><label>ID Number</label><span><?= $idNumber ?></span></div>
+          </div>
+          <div class="profile-info-item">
+            <i class="fas fa-user-tag"></i>
+            <div><label>Role</label><span><?= $roleLabel ?></span></div>
+          </div>
+          <?= $gradeRow ?>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:20px">
+          <button type="button" class="btn-secondary" style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px" onclick="switchProfileModalTab('security')">
+            <i class="fas fa-key"></i> Change Password
           </button>
-          <?php if ($avatarPhoto): ?>
-            <button class="profile-remove-photo" id="removePhotoBtn" onclick="removeAvatar()">
-              <i class="fas fa-trash-alt"></i> Remove
-            </button>
-          <?php else: ?>
-            <button class="profile-remove-photo" id="removePhotoBtn" onclick="removeAvatar()" style="display:none">
-              <i class="fas fa-trash-alt"></i> Remove
-            </button>
-          <?php endif; ?>
+          <button type="button" class="btn-primary" style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px" onclick="confirmLogout()">
+            <i class="fas fa-sign-out-alt"></i> Logout
+          </button>
         </div>
-        <h2 style="font-size:20px;font-weight:900;margin-top:12px"><?= $fullName ?></h2>
-        <span class="profile-role-badge"><?= $roleLabel ?></span>
       </div>
-      <div class="profile-info-grid">
-        <div class="profile-info-item">
-          <i class="fas fa-envelope"></i>
-          <div><label>Email Address</label><span><?= $email ?></span></div>
+
+      <!-- Tab 2: Change Password -->
+      <div id="pTabContentSecurity" class="hidden">
+        <div style="display:flex;align-items:center;justify-content:flex-start;margin-bottom:12px">
+          <button type="button" class="modal-back" onclick="switchProfileModalTab('info')" style="margin:0;cursor:pointer;background:none;border:none;color:var(--text-3);font-size:13px;display:inline-flex;align-items:center;gap:6px;font-weight:600">
+            <i class="fas fa-arrow-left"></i> Back to Profile
+          </button>
         </div>
-        <div class="profile-info-item">
-          <i class="fas fa-id-card"></i>
-          <div><label>ID Number</label><span><?= $idNumber ?></span></div>
+        <div style="text-align:center;margin-bottom:18px">
+          <div style="width:52px;height:52px;border-radius:14px;background:var(--maroon-pale);color:var(--maroon);display:flex;align-items:center;justify-content:center;margin:0 auto 10px;font-size:22px">
+            <i class="fas fa-shield-alt"></i>
+          </div>
+          <h2 style="font-size:19px;font-weight:900;color:var(--text);margin-bottom:4px">Change Password</h2>
+          <span style="font-size:12.5px;color:var(--text-3)">Update your account password. Choose at least 8 characters.</span>
         </div>
-        <div class="profile-info-item">
-          <i class="fas fa-user-tag"></i>
-          <div><label>Role</label><span><?= $roleLabel ?></span></div>
-        </div>
-        <?= $gradeRow ?>
-      </div>
-      <div style="margin-top:20px">
-        <button class="btn-primary" style="width:100%" onclick="confirmLogout()">
-          <i class="fas fa-sign-out-alt"></i> Logout
-        </button>
+
+        <div id="cpAlertMsg" style="display:none;margin-bottom:14px"></div>
+
+        <form id="profileChangePassForm" onsubmit="event.preventDefault();submitChangePassword();">
+          <div class="form-group" style="margin-bottom:14px">
+            <label style="font-size:12px;font-weight:700;color:var(--text-2);margin-bottom:5px;display:block">
+              Current Password <span style="color:#dc2626">*</span>
+            </label>
+            <div class="input-wrap" style="position:relative">
+              <i class="fas fa-lock"></i>
+              <input type="password" id="cpCurrentPass" placeholder="Enter your current password" required autocomplete="current-password" style="width:100%;padding-right:40px"/>
+              <button type="button" class="toggle-pass" onclick="togglePassVisibility('cpCurrentPass', this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-3);cursor:pointer">
+                <i class="fas fa-eye"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom:14px">
+            <label style="font-size:12px;font-weight:700;color:var(--text-2);margin-bottom:5px;display:block">
+              New Password <span style="color:#dc2626">*</span>
+            </label>
+            <div class="input-wrap" style="position:relative">
+              <i class="fas fa-key"></i>
+              <input type="password" id="cpNewPass" placeholder="Minimum 8 characters" minlength="8" required autocomplete="new-password" oninput="checkProfilePassStrength()" style="width:100%;padding-right:40px"/>
+              <button type="button" class="toggle-pass" onclick="togglePassVisibility('cpNewPass', this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-3);cursor:pointer">
+                <i class="fas fa-eye"></i>
+              </button>
+            </div>
+            <div id="cpStrengthIndicator" style="font-size:11.5px;color:var(--text-3);margin-top:4px">
+              <i class="fas fa-info-circle"></i> Must be at least 8 characters
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom:18px">
+            <label style="font-size:12px;font-weight:700;color:var(--text-2);margin-bottom:5px;display:block">
+              Confirm New Password <span style="color:#dc2626">*</span>
+            </label>
+            <div class="input-wrap" style="position:relative">
+              <i class="fas fa-check-double"></i>
+              <input type="password" id="cpConfirmPass" placeholder="Re-type new password" minlength="8" required autocomplete="new-password" oninput="checkProfilePassStrength()" style="width:100%;padding-right:40px"/>
+              <button type="button" class="toggle-pass" onclick="togglePassVisibility('cpConfirmPass', this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-3);cursor:pointer">
+                <i class="fas fa-eye"></i>
+              </button>
+            </div>
+            <div id="cpMatchIndicator" style="font-size:11.5px;color:var(--text-3);margin-top:4px"></div>
+          </div>
+
+          <div style="display:flex;gap:10px">
+            <button type="button" class="btn-secondary" style="flex:1" onclick="switchProfileModalTab('info')">
+              Cancel
+            </button>
+            <button type="submit" class="btn-primary" id="btnSubmitChangePass" style="flex:1.5;background:var(--maroon);display:inline-flex;align-items:center;justify-content:center;gap:6px">
+              <i class="fas fa-check-circle"></i> Update Password
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </div>
@@ -672,14 +751,175 @@ document.addEventListener('click', function(e) {
     }
   }
 });
-function toggleProfileMenu() {
+function toggleProfileMenu(e) {
+  if (e && e.stopPropagation) e.stopPropagation();
   const dd = document.getElementById('profileDropdown');
   if (dd) dd.classList.toggle('hidden');
 }
 function openProfileModal() {
   document.getElementById('profileDropdown')?.classList.add('hidden');
+  switchProfileModalTab('info');
   document.getElementById('profileModal')?.classList.remove('hidden');
 }
+
+function closeProfileModal() {
+  document.getElementById('profileModal')?.classList.add('hidden');
+  switchProfileModalTab('info');
+}
+
+function switchProfileModalTab(tab) {
+  const tabInfo = document.getElementById('pTabContentInfo');
+  const tabSec = document.getElementById('pTabContentSecurity');
+  const alertBox = document.getElementById('cpAlertMsg');
+  if (alertBox) alertBox.style.display = 'none';
+
+  if (tab === 'security') {
+    tabInfo?.classList.add('hidden');
+    tabSec?.classList.remove('hidden');
+    setTimeout(() => document.getElementById('cpCurrentPass')?.focus(), 100);
+  } else {
+    tabInfo?.classList.remove('hidden');
+    tabSec?.classList.add('hidden');
+  }
+}
+
+function togglePassVisibility(inputId, btn) {
+  const el = document.getElementById(inputId);
+  if (!el) return;
+  const isPass = el.type === 'password';
+  el.type = isPass ? 'text' : 'password';
+  const icon = btn.querySelector('i');
+  if (icon) {
+    icon.className = isPass ? 'fas fa-eye-slash' : 'fas fa-eye';
+  }
+}
+
+function checkProfilePassStrength() {
+  const p1 = document.getElementById('cpNewPass')?.value || '';
+  const p2 = document.getElementById('cpConfirmPass')?.value || '';
+  const lenEl = document.getElementById('cpStrengthIndicator');
+  const matchEl = document.getElementById('cpMatchIndicator');
+
+  if (lenEl) {
+    if (p1.length === 0) {
+      lenEl.innerHTML = '<i class="fas fa-info-circle"></i> Must be at least 8 characters';
+      lenEl.style.color = 'var(--text-3)';
+    } else if (p1.length < 8) {
+      lenEl.innerHTML = '<i class="fas fa-times-circle" style="color:#dc2626"></i> Password is too short (' + p1.length + '/8 characters)';
+      lenEl.style.color = '#dc2626';
+    } else {
+      lenEl.innerHTML = '<i class="fas fa-check-circle" style="color:#16a34a"></i> Password length meets minimum requirement (' + p1.length + ' chars)';
+      lenEl.style.color = '#16a34a';
+    }
+  }
+
+  if (matchEl) {
+    if (p2.length === 0) {
+      matchEl.innerHTML = '';
+    } else if (p1 === p2) {
+      matchEl.innerHTML = '<i class="fas fa-check-circle" style="color:#16a34a"></i> Passwords match!';
+      matchEl.style.color = '#16a34a';
+    } else {
+      matchEl.innerHTML = '<i class="fas fa-times-circle" style="color:#dc2626"></i> Passwords do not match';
+      matchEl.style.color = '#dc2626';
+    }
+  }
+}
+
+async function submitChangePassword() {
+  const curPass = document.getElementById('cpCurrentPass')?.value || '';
+  const newPass = document.getElementById('cpNewPass')?.value || '';
+  const confPass = document.getElementById('cpConfirmPass')?.value || '';
+  const alertBox = document.getElementById('cpAlertMsg');
+  const btn = document.getElementById('btnSubmitChangePass');
+
+  if (!curPass || !newPass || !confPass) {
+    if (alertBox) {
+      alertBox.style.display = 'block';
+      alertBox.innerHTML = '<div style="background:#fee2e2;color:#991b1b;border:1px solid #fecaca;padding:10px 14px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:8px"><i class="fas fa-exclamation-circle"></i> Please fill in all password fields.</div>';
+    }
+    return;
+  }
+
+  if (newPass.length < 8) {
+    if (alertBox) {
+      alertBox.style.display = 'block';
+      alertBox.innerHTML = '<div style="background:#fee2e2;color:#991b1b;border:1px solid #fecaca;padding:10px 14px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:8px"><i class="fas fa-exclamation-circle"></i> New password must be at least 8 characters long.</div>';
+    }
+    document.getElementById('cpNewPass')?.focus();
+    return;
+  }
+
+  if (newPass !== confPass) {
+    if (alertBox) {
+      alertBox.style.display = 'block';
+      alertBox.innerHTML = '<div style="background:#fee2e2;color:#991b1b;border:1px solid #fecaca;padding:10px 14px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:8px"><i class="fas fa-exclamation-circle"></i> New password and confirmation do not match.</div>';
+    }
+    document.getElementById('cpConfirmPass')?.focus();
+    return;
+  }
+
+  const origBtnHtml = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating…';
+  }
+  if (alertBox) alertBox.style.display = 'none';
+
+  try {
+    const apiUrl = window.location.pathname.includes('/gnhs-guidance/gnhs-guidance/')
+      ? '/gnhs-guidance/gnhs-guidance/api/change_password.php'
+      : '/gnhs-guidance/api/change_password.php';
+
+    const res = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        current_password: curPass,
+        new_password: newPass,
+        confirm_password: confPass
+      })
+    });
+    const data = await res.json();
+
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = origBtnHtml;
+    }
+
+    if (data.success) {
+      if (alertBox) {
+        alertBox.style.display = 'block';
+        alertBox.innerHTML = '<div style="background:#dcfce7;color:#166534;border:1px solid #86efac;padding:12px 14px;border-radius:8px;font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:8px"><i class="fas fa-check-circle" style="font-size:16px"></i> ' + (data.message || 'Password changed successfully!') + '</div>';
+      }
+      document.getElementById('cpCurrentPass').value = '';
+      document.getElementById('cpNewPass').value = '';
+      document.getElementById('cpConfirmPass').value = '';
+      if (document.getElementById('cpMatchIndicator')) document.getElementById('cpMatchIndicator').innerHTML = '';
+      if (typeof showToast === 'function') {
+        showToast('Password changed successfully!', 'success');
+      }
+      setTimeout(() => {
+        switchProfileModalTab('info');
+      }, 2000);
+    } else {
+      if (alertBox) {
+        alertBox.style.display = 'block';
+        alertBox.innerHTML = '<div style="background:#fee2e2;color:#991b1b;border:1px solid #fecaca;padding:10px 14px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:8px"><i class="fas fa-exclamation-circle"></i> ' + (data.message || 'Failed to change password.') + '</div>';
+      }
+    }
+  } catch (err) {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = origBtnHtml;
+    }
+    if (alertBox) {
+      alertBox.style.display = 'block';
+      alertBox.innerHTML = '<div style="background:#fee2e2;color:#991b1b;border:1px solid #fecaca;padding:10px 14px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:8px"><i class="fas fa-exclamation-circle"></i> Network error. Please try again.</div>';
+    }
+  }
+}
+
 function confirmLogout() {
   document.getElementById('profileDropdown')?.classList.add('hidden');
   document.getElementById('profileModal')?.classList.add('hidden');
@@ -696,6 +936,16 @@ document.addEventListener('click', function(e) {
   }
 });
 loadNotifs();
+
+document.addEventListener('DOMContentLoaded', function() {
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('profile') === '1' || window.location.hash === '#profile') {
+    openProfileModal();
+  } else if (urlParams.get('change_password') === '1' || window.location.hash === '#change-password') {
+    openProfileModal();
+    switchProfileModalTab('security');
+  }
+});
 
 // ── Avatar Upload & Cropping ─────────────────────────────────────────────
 let cropperInstance = null;

@@ -332,3 +332,213 @@ function smartSuggestResolution(string $concernType, string $subject, string $de
         'source'               => 'guidance_engine'
     ];
 }
+
+/**
+ * AI Session Conclusion Analyzer
+ * Evaluates counselor notes and observations to determine whether the student
+ * needs a follow-up counseling session, is ready for case resolution, or requires a parent conference.
+ */
+function analyzeSessionConclusion(string $concernType, string $subject, string $description, string $counselorNotes, string $studentName = 'Student', array $existingSessions = []): array {
+    $counselorNotes = trim($counselorNotes);
+    if (empty($counselorNotes) || strlen($counselorNotes) < 15) {
+        return [
+            'success'        => false,
+            'requires_notes' => true,
+            'message'        => 'Detailed counselor case notes and behavioral observations are required for AI conclusion assessment.'
+        ];
+    }
+
+    $apiKey = getenv('GEMINI_API_KEY') ?: (defined('GEMINI_API_KEY') ? GEMINI_API_KEY : '');
+    if (!empty($apiKey) && strpos($apiKey, 'AQ.') !== 0 && function_exists('curl_init')) {
+        $typeLabel = ucfirst(str_replace('_', ' ', $concernType));
+        $sessionCount = count($existingSessions);
+        $prompt = "You are a licensed school guidance counselor and clinical supervisor at Guinayang National High School (GNHS) in the Philippines.\n"
+                . "Analyze the following confidential counseling session notes and student behavioral observations to recommend whether this student needs another counseling session or if this case can be officially resolved.\n\n"
+                . "Student Name: {$studentName}\n"
+                . "Concern Type: {$typeLabel}\n"
+                . "Case Subject: {$subject}\n"
+                . "Initial Case Description: {$description}\n"
+                . "Current Session Count for Case: {$sessionCount}\n"
+                . "Counselor's Live Session Notes & Observations:\n\"\"\"\n{$counselorNotes}\n\"\"\"\n\n"
+                . "Instructions:\n"
+                . "1. Evaluate student emotional stability, remorse, fear/anxiety, safety risks, behavioral compliance, mutual agreements, and accountability.\n"
+                . "2. Decide the primary recommendation: 'needs_follow_up' (if student needs more support, monitoring, is anxious/distressed, or needs check-in), 'ready_to_resolve' (if student reached mutual reconciliation, agreements fulfilled, problem settled), or 'parent_conference' (if parent/guardian involvement is critically required).\n"
+                . "3. Provide 2-3 concise, factual bullet points explaining why, directly citing or referencing observations from the notes.\n"
+                . "4. Provide a suggested next action, suggested follow-up interval in days (e.g. 5, 7, 14), suggested remarks for the next session (if follow-up) or resolution summary (if ready to resolve).\n\n"
+                . "Respond ONLY with a valid JSON object in this exact schema without markdown backticks:\n"
+                . "{\n"
+                . "  \"recommendation\": \"needs_follow_up\",\n"
+                . "  \"confidence\": \"High\",\n"
+                . "  \"headline\": \"Follow-Up Session Recommended for Continuous Monitoring\",\n"
+                . "  \"reasons\": [\n"
+                . "    \"Point 1 citing notes observation\",\n"
+                . "    \"Point 2 citing notes observation\"\n"
+                . "  ],\n"
+                . "  \"suggested_action\": \"Schedule a follow-up counseling session in 1 week to evaluate progress.\",\n"
+                . "  \"suggested_followup_days\": 7,\n"
+                . "  \"suggested_remarks\": \"Follow-up on student adjustment, monitor peer relationship, and verify behavioral agreement.\",\n"
+                . "  \"suggested_resolution\": \"\",\n"
+                . "  \"suggested_sanctions\": \"\"\n"
+                . "}";
+
+        $rawResponse = executeGeminiPrompt($apiKey, $prompt);
+        if (!empty($rawResponse)) {
+            $jsonStr = trim($rawResponse);
+            if (preg_match('/```(?:json)?\s*(\{.*?\})\s*```/s', $jsonStr, $matches)) {
+                $jsonStr = $matches[1];
+            }
+            $parsed = json_decode($jsonStr, true);
+            if (is_array($parsed) && !empty($parsed['recommendation'])) {
+                $rec = strtolower(trim($parsed['recommendation']));
+                if (!in_array($rec, ['needs_follow_up', 'ready_to_resolve', 'parent_conference'])) {
+                    $rec = 'needs_follow_up';
+                }
+                return [
+                    'success'                 => true,
+                    'recommendation'          => $rec,
+                    'confidence'              => trim($parsed['confidence'] ?? 'High'),
+                    'headline'                => trim($parsed['headline'] ?? ($rec === 'ready_to_resolve' ? 'Case Ready for Official Resolution' : 'Follow-Up Counseling Session Recommended')),
+                    'reasons'                 => (array)($parsed['reasons'] ?? []),
+                    'suggested_action'        => trim($parsed['suggested_action'] ?? ''),
+                    'suggested_followup_days' => (int)($parsed['suggested_followup_days'] ?? 7),
+                    'suggested_remarks'       => trim($parsed['suggested_remarks'] ?? ''),
+                    'suggested_resolution'    => trim($parsed['suggested_resolution'] ?? ''),
+                    'suggested_sanctions'     => trim($parsed['suggested_sanctions'] ?? 'No Sanctions (Resolved through Guidance Counseling Only)'),
+                    'source'                  => 'gemini'
+                ];
+            }
+        }
+    }
+
+    // Production-grade fallback heuristic guidance analyzer
+    return smartAnalyzeSessionConclusion($concernType, $subject, $description, $counselorNotes, $studentName);
+}
+
+function smartAnalyzeSessionConclusion(string $concernType, string $subject, string $description, string $counselorNotes, string $studentName = 'Student'): array {
+    $notesClean = trim($counselorNotes);
+    $typeLower  = strtolower($concernType);
+
+    $followUpScore = 0;
+    $resolveScore  = 0;
+    $parentScore   = 0;
+
+    $followUpReasons = [];
+    $resolveReasons  = [];
+    $parentReasons   = [];
+
+    // Signals of Ongoing Distress / Bullying / Conflict / Academic
+    if (preg_match('/(fear|scared|anxious|anxiety|nervous|cry|crying|distress|depress|sad|overwhelm|withdrawn|trauma)/i', $notesClean)) {
+        $followUpScore += 3;
+        $followUpReasons[] = "Emotional vulnerability, stress, or anxiety was observed during the interview.";
+    }
+    if (preg_match('/(bully|bullied|threat|retaliat|fight|hostil|anger|harass|physical|rumor|tense|tension|revenge)/i', $notesClean)) {
+        $followUpScore += 4;
+        $followUpReasons[] = "Interpersonal tension, peer conflict, or safety/retaliation concerns remain present.";
+    }
+    if (preg_match('/(monitor|monitoring|contract|agreement|follow up|follow-up|trial|observe|check-in|check in|next time|continue)/i', $notesClean)) {
+        $followUpScore += 3;
+        $followUpReasons[] = "Student agreed to guidance goals or behavioral terms requiring active monitoring.";
+    }
+    if (preg_match('/(fail|failing|grades|absent|absenteeism|cutting|tardy|truan)/i', $notesClean)) {
+        $followUpScore += 2;
+        $followUpReasons[] = "Academic performance or attendance concerns require verification in coming days.";
+    }
+
+    // Signals of Parent involvement needed
+    if (preg_match('/(parent|guardian|mother|father|nanay|tatay|magulang|family problem|home issue|call parent)/i', $notesClean)) {
+        $parentScore += 4;
+        $parentReasons[] = "Observations indicate family factors or a need for direct parent/guardian conference.";
+    }
+
+    // Signals of Resolution
+    if (preg_match('/(resolved|reconciled|settled|peace|forgave|forgiven|mutual agreement|handshake|apologized|sincere apology|admitted fault|remorseful|understood mistake)/i', $notesClean)) {
+        $resolveScore += 4;
+        $resolveReasons[] = "Student demonstrated reflective accountability, remorse, and reached mutual agreement.";
+    }
+    if (preg_match('/(good conduct pledge|willing to change|cooperative|satisfaction|calm|relieved|positive outlook|concluded successfully)/i', $notesClean)) {
+        $resolveScore += 3;
+        $resolveReasons[] = "Student exhibited cooperative conduct and positive receptiveness to guidance advice.";
+    }
+
+    // Default weight if notes are neutral
+    if ($followUpScore === 0 && $resolveScore === 0 && $parentScore === 0) {
+        if (in_array($typeLower, ['bullying', 'emotional', 'mental_health', 'behavioral', 'family'])) {
+            $followUpScore += 2;
+            $followUpReasons[] = "Case concern type ({$concernType}) benefits from an active check-in session.";
+        } else {
+            $resolveScore += 1;
+            $resolveReasons[] = "Counseling interview established clear guidance reminders and mutual understanding.";
+        }
+    }
+
+    // Decision Logic
+    if ($parentScore >= 4 && $parentScore >= $resolveScore) {
+        $headline = "Parent / Guardian Conference Advised";
+        $suggestedAction = "Schedule a follow-up counseling session and invite the student's parent/guardian to the Guidance Office.";
+        $remarks = "Parent-Guardian guidance conference regarding {$subject}; discuss cooperative student support plan.";
+        return [
+            'success'                 => true,
+            'recommendation'          => 'parent_conference',
+            'confidence'              => 'High',
+            'headline'                => $headline,
+            'reasons'                 => array_slice(array_merge($parentReasons, $followUpReasons), 0, 3),
+            'suggested_action'        => $suggestedAction,
+            'suggested_followup_days' => 5,
+            'suggested_remarks'       => $remarks,
+            'suggested_resolution'    => '',
+            'suggested_sanctions'     => 'Parent / Guardian Conference Required',
+            'source'                  => 'guidance_engine'
+        ];
+    }
+
+    if ($followUpScore >= $resolveScore) {
+        $headline = "Follow-Up Counseling Session Recommended";
+        $suggestedAction = "Set another session in 5–7 days to assess compliance, emotional well-being, and adjustment.";
+        $remarks = "Follow-up counseling session: check progress on agreed guidance goals and emotional well-being.";
+        if (empty($followUpReasons)) {
+            $followUpReasons[] = "Continuous monitoring advised to verify sustained behavioral improvement.";
+        }
+        return [
+            'success'                 => true,
+            'recommendation'          => 'needs_follow_up',
+            'confidence'              => $followUpScore >= 5 ? 'High' : 'Moderate',
+            'headline'                => $headline,
+            'reasons'                 => array_slice($followUpReasons, 0, 3),
+            'suggested_action'        => $suggestedAction,
+            'suggested_followup_days' => 7,
+            'suggested_remarks'       => $remarks,
+            'suggested_resolution'    => '',
+            'suggested_sanctions'     => 'Behavioral Monitoring Agreement (2 Weeks)',
+            'source'                  => 'guidance_engine'
+        ];
+    } else {
+        $headline = "Case is Suitable for Official Resolution";
+        $suggestedAction = "Record formal resolution summary, confirm student commitments, and conclude the case.";
+        if (empty($resolveReasons)) {
+            $resolveReasons[] = "Student demonstrated positive accountability and agreements were satisfactorily established.";
+        }
+
+        $resolution = "Counseling session successfully conducted with {$studentName}. The student demonstrated positive reflection, cooperative accountability, and committed to sustained good school conduct. The guidance concern is settled under official monitoring.";
+        $sanctions  = "No Sanctions (Resolved through Guidance Counseling Only)";
+        if (stripos($notesClean, 'apolog') !== false) {
+            $sanctions = "Written Apology & Good Conduct Pledge";
+        } elseif (stripos($notesClean, 'service') !== false || stripos($typeLower, 'bullying') !== false) {
+            $sanctions = "Restorative Campus / Community Service";
+        }
+
+        return [
+            'success'                 => true,
+            'recommendation'          => 'ready_to_resolve',
+            'confidence'              => $resolveScore >= 5 ? 'High' : 'Moderate',
+            'headline'                => $headline,
+            'reasons'                 => array_slice($resolveReasons, 0, 3),
+            'suggested_action'        => $suggestedAction,
+            'suggested_followup_days' => 0,
+            'suggested_remarks'       => '',
+            'suggested_resolution'    => $resolution,
+            'suggested_sanctions'     => $sanctions,
+            'source'                  => 'guidance_engine'
+        ];
+    }
+}
+

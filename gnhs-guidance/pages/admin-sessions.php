@@ -251,9 +251,13 @@ $content = <<<HTML
       </p>
     </div>
 
+    <!-- AI Conclusion Decision Support Banner / Card -->
+    <div id="aiConclusionContainer"></div>
+
     <!-- Choice Cards -->
     <div class="decision-grid">
       <div class="decision-choice-card" id="choiceCardNo" onclick="selectEndSessionChoice('no')">
+        <span id="choiceCardNoAiBadge"></span>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
           <i class="fas fa-calendar-plus" style="color:#b45309;font-size:16px"></i>
           <strong style="font-size:15px;color:var(--text)">Needs Another Session</strong>
@@ -262,6 +266,7 @@ $content = <<<HTML
       </div>
 
       <div class="decision-choice-card" id="choiceCardYes" onclick="selectEndSessionChoice('yes')">
+        <span id="choiceCardYesAiBadge"></span>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
           <i class="fas fa-check-circle" style="color:#15803d;font-size:16px"></i>
           <strong style="font-size:15px;color:var(--text)">Case is Resolved</strong>
@@ -939,14 +944,23 @@ async function saveLiveSessionNotes() {
   }
 }
 
-// ── END SESSION WORKFLOW ────────────────────────────────────────
+// ── END SESSION WORKFLOW WITH AI CONCLUSION DECISION SUPPORT ────
+let _currentAiConclusion = null;
+
 function openEndSessionModal() {
   _selectedEndDecision = null;
+  _currentAiConclusion = null;
   document.getElementById('choiceCardNo').classList.remove('selected-no');
   document.getElementById('choiceCardYes').classList.remove('selected-yes');
   document.getElementById('subFormScheduleNext').classList.add('hidden');
   document.getElementById('subFormResolution').classList.add('hidden');
   
+  // Clear any previous AI badges
+  const badgeNo = document.getElementById('choiceCardNoAiBadge');
+  const badgeYes = document.getElementById('choiceCardYesAiBadge');
+  if (badgeNo) badgeNo.innerHTML = '';
+  if (badgeYes) badgeYes.innerHTML = '';
+
   const confirmBtn = document.getElementById('btnConfirmEndSession');
   confirmBtn.disabled = true;
   confirmBtn.style.opacity = '0.6';
@@ -965,8 +979,212 @@ function openEndSessionModal() {
     nextDtInput.value = localIso;
   }
 
+  // Trigger AI Session Conclusion Analysis based on counselor notes
+  initAiConclusionAnalysis();
+
   document.getElementById('endSessionModal').classList.remove('hidden');
 }
+
+function initAiConclusionAnalysis() {
+  const aiContainer = document.getElementById('aiConclusionContainer');
+  if (!aiContainer) return;
+
+  const liveNotes = (document.getElementById('liveSessionNotesInput')?.value || '').trim();
+
+  if (!liveNotes || liveNotes.length < 15) {
+    aiContainer.innerHTML = `
+      <div class="ai-conclusion-tip">
+        <i class="fas fa-wand-magic-sparkles" style="color:var(--maroon);font-size:16px;flex-shrink:0"></i>
+        <div>
+          <strong style="color:var(--text)">AI Guidance Assistant:</strong>
+          <span style="color:var(--text-2);margin-left:4px">Type detailed session notes in the workspace to receive AI suggestions on whether this student needs a follow-up session or case closure.</span>
+        </div>
+      </div>`;
+    return;
+  }
+
+  aiContainer.innerHTML = `
+    <div class="ai-conclusion-loading">
+      <i class="fas fa-wand-magic-sparkles fa-spin" style="font-size:18px"></i>
+      <div>
+        <div style="font-weight:800;letter-spacing:0.3px">Analyzing Session Notes with AI Guidance Assistant…</div>
+        <div style="font-size:12px;opacity:0.85;font-weight:400">Synthesizing behavioral observations, emotional stability, and case closure readiness.</div>
+      </div>
+    </div>`;
+
+  fetchAiSessionConclusion(liveNotes);
+}
+
+async function fetchAiSessionConclusion(notes) {
+  const aiContainer = document.getElementById('aiConclusionContainer');
+  if (!aiContainer) return;
+
+  const s = _currentSessionData?.session;
+  const apiUrl = window.location.pathname.includes('/gnhs-guidance/gnhs-guidance/')
+    ? '/gnhs-guidance/gnhs-guidance/api/ai_analyze_session_conclusion.php'
+    : '/gnhs-guidance/api/ai_analyze_session_conclusion.php';
+
+  try {
+    const res = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        session_id: s?.id || 0,
+        case_id: s?.case_id || 0,
+        notes: notes
+      })
+    });
+    const data = await res.json();
+    if (!data.success) {
+      aiContainer.innerHTML = `
+        <div class="ai-conclusion-tip">
+          <i class="fas fa-info-circle" style="color:var(--text-3)"></i>
+          <span>\${escapeHtml(data.message || 'AI conclusion analysis unavailable.')}</span>
+        </div>`;
+      return;
+    }
+
+    _currentAiConclusion = data;
+    renderAiConclusionCard(data);
+
+  } catch (err) {
+    aiContainer.innerHTML = '';
+  }
+}
+
+function renderAiConclusionCard(data) {
+  const aiContainer = document.getElementById('aiConclusionContainer');
+  const badgeNo = document.getElementById('choiceCardNoAiBadge');
+  const badgeYes = document.getElementById('choiceCardYesAiBadge');
+  if (!aiContainer) return;
+
+  const isFollowUp = (data.recommendation === 'needs_follow_up' || data.recommendation === 'parent_conference');
+  const cardClass = isFollowUp 
+    ? (data.recommendation === 'parent_conference' ? 'ai-conclusion-parent' : 'ai-conclusion-followup') 
+    : 'ai-conclusion-resolve';
+
+  const badgeClass = isFollowUp 
+    ? (data.recommendation === 'parent_conference' ? 'ai-rec-badge-blue' : 'ai-rec-badge-amber') 
+    : 'ai-rec-badge-green';
+
+  const iconName = isFollowUp 
+    ? (data.recommendation === 'parent_conference' ? 'fa-users' : 'fa-calendar-plus') 
+    : 'fa-check-circle';
+
+  const recTitle = isFollowUp 
+    ? (data.recommendation === 'parent_conference' ? 'Parent / Guardian Conference Required' : 'Needs Follow-Up Session') 
+    : 'Case Ready for Official Resolution';
+
+  // Mark recommended card with badge chip
+  if (isFollowUp && badgeNo) {
+    badgeNo.innerHTML = `<span class="ai-card-recommended-chip"><i class="fas fa-wand-magic-sparkles"></i> AI Suggested</span>`;
+    if (badgeYes) badgeYes.innerHTML = '';
+  } else if (!isFollowUp && badgeYes) {
+    badgeYes.innerHTML = `<span class="ai-card-recommended-chip"><i class="fas fa-wand-magic-sparkles"></i> AI Suggested</span>`;
+    if (badgeNo) badgeNo.innerHTML = '';
+  }
+
+  const reasonsHtml = (data.reasons || []).map(r => `
+    <div class="ai-reason-item">
+      <i class="fas \${isFollowUp ? 'fa-circle-exclamation' : 'fa-check'}" style="color:\${isFollowUp ? '#b45309' : '#15803d'}"></i>
+      <span>\${escapeHtml(r)}</span>
+    </div>
+  `).join('');
+
+  aiContainer.innerHTML = `
+    <div class="ai-conclusion-card \${cardClass}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="ai-rec-badge \${badgeClass}">
+            <i class="fas \${iconName}"></i> AI Suggestion: \${escapeHtml(recTitle)}
+          </span>
+          <span style="font-size:11px;font-weight:700;color:var(--text-3);background:rgba(255,255,255,0.7);padding:2px 8px;border-radius:10px;border:1px solid rgba(0,0,0,0.06)">
+            \${escapeHtml(data.confidence || 'High')} Confidence
+          </span>
+        </div>
+        <button type="button" class="btn-sm-primary" onclick="applyAiSessionConclusion()" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);border:none;box-shadow:0 2px 10px rgba(124,58,237,0.3);color:#fff;padding:6px 14px;border-radius:20px;font-size:12.5px;font-weight:800;display:inline-flex;align-items:center;gap:6px;cursor:pointer">
+          <i class="fas fa-wand-magic-sparkles"></i> Apply AI Recommendation
+        </button>
+      </div>
+
+      <div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:8px">
+        \${escapeHtml(data.headline || '')}
+      </div>
+
+      <div style="margin-bottom:10px">
+        <div style="font-size:11.5px;font-weight:800;color:var(--text-2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">
+          Key Observations from Session Notes:
+        </div>
+        \${reasonsHtml}
+      </div>
+
+      \${data.suggested_action ? `
+        <div style="font-size:12.5px;color:var(--text-2);background:rgba(255,255,255,0.7);padding:8px 12px;border-radius:8px;border:1px solid rgba(0,0,0,0.05);display:flex;align-items:center;gap:8px">
+          <i class="fas fa-lightbulb" style="color:#d97706"></i>
+          <span><strong>Guidance Plan:</strong> \${escapeHtml(data.suggested_action)}</span>
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
+function applyAiSessionConclusion() {
+  if (!_currentAiConclusion) return;
+  const data = _currentAiConclusion;
+  const isFollowUp = (data.recommendation === 'needs_follow_up' || data.recommendation === 'parent_conference');
+
+  if (isFollowUp) {
+    selectEndSessionChoice('no');
+
+    const daysToAdd = data.suggested_followup_days || 7;
+    const targetDate = new Date();
+    targetDate.setDate(targetDate.getDate() + daysToAdd);
+    targetDate.setHours(10, 0, 0, 0);
+    const localIso = new Date(targetDate.getTime() - (targetDate.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+    
+    const nextDtInput = document.getElementById('nextSessionDate');
+    if (nextDtInput) nextDtInput.value = localIso;
+
+    const remarksInput = document.getElementById('nextSessionRemarks');
+    if (remarksInput && data.suggested_remarks) {
+      remarksInput.value = data.suggested_remarks;
+    }
+
+    if (data.recommendation === 'parent_conference') {
+      const locInput = document.getElementById('nextSessionLocation');
+      if (locInput) locInput.value = 'Guidance Office (Parent Conference)';
+    }
+
+    const subSchedule = document.getElementById('subFormScheduleNext');
+    if (subSchedule) {
+      subSchedule.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    showToast('AI follow-up recommendation applied!', 'success');
+
+  } else {
+    selectEndSessionChoice('yes');
+
+    const resInput = document.getElementById('caseResolutionText');
+    if (resInput && data.suggested_resolution) {
+      resInput.value = data.suggested_resolution;
+    }
+
+    const sancInput = document.getElementById('caseSanctionsText');
+    if (sancInput && data.suggested_sanctions) {
+      sancInput.value = data.suggested_sanctions;
+    }
+
+    const notice = document.getElementById('aiResolutionNotice');
+    if (notice) notice.style.display = 'block';
+
+    const subRes = document.getElementById('subFormResolution');
+    if (subRes) {
+      subRes.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    showToast('AI case resolution recommendation applied!', 'success');
+  }
+}
+
 
 function closeEndSessionModal() {
   document.getElementById('endSessionModal').classList.add('hidden');

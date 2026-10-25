@@ -348,6 +348,11 @@
                 placeholder="Enter Student ID or Email" onkeydown="if(event.key==='Enter') handleForgot()" /></div>
           </div>
           <button class="btn-submit" id="btnLookupAccount" onclick="handleForgot()">Verify Account &nbsp;<i class="fas fa-arrow-right"></i></button>
+          <div style="margin-top:14px;text-align:center">
+            <a href="#" onclick="showStep('step-login')" style="color:var(--maroon);font-size:12.5px;font-weight:700;display:inline-flex;align-items:center;gap:6px;text-decoration:none">
+              <i class="fas fa-arrow-left"></i> Remembered your password? Back to Login
+            </a>
+          </div>
         </div>
 
         <!-- PANE 2: Check Reset Request Status & View Changed Password -->
@@ -363,6 +368,11 @@
           <button class="btn-submit" id="btnCheckResetStatus" onclick="handleCheckResetStatus()">
             Check Request Status &nbsp;<i class="fas fa-search"></i>
           </button>
+          <div style="margin-top:14px;text-align:center">
+            <a href="#" onclick="showStep('step-login')" style="color:var(--maroon);font-size:12.5px;font-weight:700;display:inline-flex;align-items:center;gap:6px;text-decoration:none">
+              <i class="fas fa-arrow-left"></i> Remembered your password? Back to Login
+            </a>
+          </div>
         </div>
       </div>
 
@@ -377,6 +387,10 @@
         <p class="modal-sub" id="secTestSubtitle">Please answer your personal security questions to verify your identity.</p>
         <div id="sec-test-msg" style="display:none"></div>
         
+        <div id="secTestAdminNotice" style="display:none;background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:#92400e;line-height:1.4;text-align:left">
+          <i class="fas fa-user-shield" style="color:#d97706;margin-right:4px"></i> <strong>Guidance Counselor Account:</strong> Your existing password is never invalidated. If you remember your password or clicked reset by mistake, you can return to login and sign in immediately.
+        </div>
+
         <div id="secQuestionsForm">
           <div class="form-group">
             <label style="font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:4px;display:block">
@@ -405,6 +419,12 @@
           </div>
 
           <button class="btn-submit" id="btnSubmitSecTest" onclick="submitSecurityTest()">Submit Request to Counselor &nbsp;<i class="fas fa-paper-plane"></i></button>
+          
+          <div style="margin-top:12px;text-align:center">
+            <a href="#" onclick="showStep('step-login')" style="color:var(--maroon);font-size:12.5px;font-weight:700;display:inline-flex;align-items:center;gap:6px;text-decoration:none">
+              <i class="fas fa-key"></i> Remembered your password? Cancel &amp; Back to Login
+            </a>
+          </div>
         </div>
       </div>
 
@@ -420,14 +440,17 @@
           Your identity has been verified! A password reset request has been officially recorded for Guidance Counselor Milena Jacob.
         </p>
         <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:18px;text-align:left;font-size:12.5px;color:var(--text-2);line-height:1.5">
-          <strong><i class="fas fa-clipboard-user" style="color:var(--maroon)"></i> Next Steps:</strong>
+          <strong><i class="fas fa-shield-halved" style="color:var(--maroon)"></i> Your Existing Password:</strong>
           <ul style="margin:6px 0 0 18px;padding:0">
-            <li>Visit the Guidance Office or wait for the counselor to approve your request.</li>
-            <li>The counselor will issue your temporary credentials and unlock your account.</li>
-            <li>You can check your request update anytime by clicking <strong>Check Request Update</strong>.</li>
+            <li><strong>Your current password is NOT invalidated.</strong> If you remember it, you can log in directly at any time.</li>
+            <li>Logging in with your current password automatically resolves this reset request.</li>
+            <li>You can also check your request update anytime by clicking <strong>Check Request Update</strong>.</li>
           </ul>
         </div>
-        <button class="btn-submit" onclick="closeLoginModal()">Done &nbsp;<i class="fas fa-check"></i></button>
+        <button class="btn-submit" onclick="showStep('step-login');if($('login-pass'))$('login-pass').focus();" style="margin-bottom:8px">
+          <i class="fas fa-key"></i> I Remember My Password — Log In Now
+        </button>
+        <button class="btn-submit" onclick="closeLoginModal()" style="background:var(--bg2);color:var(--text);border:1px solid var(--border)">Done &nbsp;<i class="fas fa-check"></i></button>
       </div>
 
       <!-- RESET PASSWORD STATUS UPDATE RESULT STEP -->

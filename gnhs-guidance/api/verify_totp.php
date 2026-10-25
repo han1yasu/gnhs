@@ -42,9 +42,12 @@ try {
         // Code is correct, promote pending_user to full user session
         
         if (empty($user['totp_enabled'])) {
-            $db->prepare("UPDATE users SET totp_enabled = 1 WHERE id = ?")->execute([$userId]);
+            $db->prepare("UPDATE users SET totp_enabled = 1, totp_reset_requested = 0 WHERE id = ?")->execute([$userId]);
             $_SESSION['pending_user']['totp_enabled'] = 1;
+        } else {
+            $db->prepare("UPDATE users SET totp_reset_requested = 0 WHERE id = ?")->execute([$userId]);
         }
+        $_SESSION['pending_user']['totp_reset_requested'] = 0;
 
         $_SESSION['user'] = $_SESSION['pending_user'];
         $_SESSION['last_activity'] = time();

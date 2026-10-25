@@ -18,8 +18,8 @@ if (!$email || !$password) {
 
 try {
     $db   = getDB();
-    $stmt = $db->prepare("SELECT * FROM users WHERE email = ? AND is_active = 1 LIMIT 1");
-    $stmt->execute([$email]);
+    $stmt = $db->prepare("SELECT * FROM users WHERE (email = ? OR id_number = ?) AND (is_active = 1 OR is_active IS NULL) LIMIT 1");
+    $stmt->execute([$email, $email]);
     $user = $stmt->fetch();
 
     if ($user) {
@@ -66,6 +66,16 @@ try {
 
         // Successful password verification: reset failed attempts
         $db->prepare("UPDATE users SET failed_attempts = 0, lockout_until = NULL WHERE id = ?")->execute([$user['id']]);
+
+        // Auto-resolve any pending password reset requests since the user knows and logged in with their password
+        try {
+            $db->prepare("UPDATE password_reset_requests 
+                          SET status = 'completed', 
+                              admin_notes = 'User successfully signed in using remembered password',
+                              reviewed_at = NOW() 
+                          WHERE user_id = ? AND status = 'pending'")
+               ->execute([$user['id']]);
+        } catch (Exception $e) {}
     } else {
         jsonOut(['success'=>false,'message'=>'Invalid credentials. Please try again.']);
     }

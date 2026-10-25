@@ -70,8 +70,16 @@ $qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" . urle
             <div style="display:flex; align-items:center; gap:8px; font-weight:700; color:#fbbf24; margin-bottom:4px;">
                 <i class="fas fa-clock"></i> 2FA Reset Requested
             </div>
-            Your request is pending Counselor review. Once approved and reset, log in again to scan your new QR code.
+            Your request is pending Counselor review. If you have access to your authenticator code, you can still enter it above!
+            <div style="margin-top:8px">
+                <button type="button" class="glass-setup-link" onclick="cancelTotpReset()" style="color:#fff;text-decoration:underline;background:none;border:none;cursor:pointer;font-size:12px;padding:0">
+                    <i class="fas fa-undo"></i> Cancel 2FA reset request
+                </button>
+            </div>
         </div>
+        <button type="button" class="glass-setup-link" id="lostAuthBtn" style="display:none" onclick="requestTotpReset()">
+            <i class="fas fa-question-circle"></i> Lost your authenticator app? Request 2FA Reset
+        </button>
         <?php else: ?>
         <button type="button" class="glass-setup-link" id="lostAuthBtn" onclick="requestTotpReset()">
             <i class="fas fa-question-circle"></i> Lost your authenticator app? Request 2FA Reset
@@ -80,7 +88,12 @@ $qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" . urle
             <div style="display:flex; align-items:center; gap:8px; font-weight:700; color:#34d399; margin-bottom:4px;">
                 <i class="fas fa-check-circle"></i> Request Sent!
             </div>
-            Your 2FA reset request was submitted to the Guidance Counselor. Please wait for approval, then log in again.
+            Your 2FA reset request was submitted to the Guidance Counselor. If you find your code, you can still enter it above.
+            <div style="margin-top:8px">
+                <button type="button" class="glass-setup-link" onclick="cancelTotpReset()" style="color:#fff;text-decoration:underline;background:none;border:none;cursor:pointer;font-size:12px;padding:0">
+                    <i class="fas fa-undo"></i> Cancel reset request
+                </button>
+            </div>
         </div>
         <?php endif; ?>
     </div>
@@ -185,6 +198,25 @@ async function requestTotpReset() {
             btn.innerHTML = '<i class="fas fa-question-circle"></i> Lost your authenticator app? Request 2FA Reset';
         }
     }
+}
+
+async function cancelTotpReset() {
+    try {
+        const isNested = window.location.pathname.includes('/gnhs-guidance/gnhs-guidance/');
+        const apiUrl = isNested ? '/gnhs-guidance/gnhs-guidance/api/cancel_totp_reset.php' : '/gnhs-guidance/api/cancel_totp_reset.php';
+        const res = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+        const data = await res.json();
+        if (data.success) {
+            const badge = document.getElementById('resetRequestedBadge');
+            if (badge) badge.style.display = 'none';
+            const btn = document.getElementById('lostAuthBtn');
+            if (btn) {
+                btn.style.display = 'inline-block';
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-question-circle"></i> Lost your authenticator app? Request 2FA Reset';
+            }
+        }
+    } catch(e) {}
 }
 
 window.addEventListener('load', () => input.focus());

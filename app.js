@@ -231,6 +231,35 @@ async function handleCheckResetStatus() {
   }
 }
 
+async function cancelPendingRequestAndLogin(identifier) {
+  identifier = decodeURIComponent(identifier || '');
+  const btn = event?.currentTarget;
+  if (btn) setLoading(btn, true);
+
+  try {
+    const isNested = window.location.pathname.includes('/gnhs-guidance/gnhs-guidance/');
+    const apiUrl = isNested ? '/gnhs-guidance/gnhs-guidance/api/cancel_reset_request.php' : '/gnhs-guidance/api/cancel_reset_request.php';
+    const res = await apiPost(apiUrl, { identifier });
+    
+    showStep('step-login');
+    const emailInput = document.getElementById('login-email-input') || document.querySelector('#step-login input[type="text"]');
+    if (emailInput && (res?.email || identifier)) {
+      emailInput.value = res?.email || identifier;
+    }
+    const passInput = $('login-pass');
+    if (passInput) {
+      passInput.value = '';
+      passInput.focus();
+    }
+    showToast('Reset request cancelled! You can now enter your password to sign in.', 'success');
+  } catch (e) {
+    showStep('step-login');
+    const emailInput = document.getElementById('login-email-input') || document.querySelector('#step-login input[type="text"]');
+    if (emailInput && identifier) emailInput.value = identifier;
+    $('login-pass')?.focus();
+  }
+}
+
 function renderResetStatusResult(res, identifier) {
   _pendingStatusCheckData = { res, identifier };
   const container = $('statusResultContainer');
@@ -254,28 +283,30 @@ function renderResetStatusResult(res, identifier) {
 
   // PENDING STATUS
   if (res.status === 'pending') {
+    const safeId = encodeURIComponent(identifier || res.email || res.id_number || '');
     container.innerHTML = `
       <div class="modal-logo" style="background:#fef3c7;color:#d97706;margin:0 auto 12px auto"><i class="fas fa-clock"></i></div>
       <h2 class="modal-title">Request Under Review ⏳</h2>
       <p class="modal-sub">${res.message || 'Your password reset request is currently pending review by Guidance Counselor.'}</p>
       
       <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;margin:16px 0;text-align:left;font-size:12.5px;color:var(--text-2);line-height:1.6">
-        <div><strong>Student Name:</strong> ${res.full_name}</div>
+        <div><strong>Name:</strong> ${res.full_name}</div>
         <div><strong>Email Address:</strong> ${res.email}</div>
-        <div><strong>Student ID / LRN:</strong> <span style="color:var(--maroon);font-weight:700">${res.id_number || '—'}</span></div>
+        <div><strong>ID / LRN:</strong> <span style="color:var(--maroon);font-weight:700">${res.id_number || '—'}</span></div>
         <div><strong>Submitted On:</strong> ${res.created_at_fmt || res.created_at || 'Recently'}</div>
         <div style="margin-top:6px"><strong>Status:</strong> <span style="background:#fef3c7;color:#92400e;padding:3px 8px;border-radius:10px;font-weight:700;font-size:11px">Pending Counselor Action</span></div>
       </div>
 
       <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px;margin-bottom:16px;font-size:12px;color:#1e40af;text-align:left;line-height:1.5">
-        <i class="fas fa-info-circle"></i> <strong>Next Steps:</strong>
-        <ul style="margin:4px 0 0 16px;padding:0">
-          <li>Guidance Counselor Milena Jacob will review your request and issue a new password.</li>
-          <li>Once approved, you can check this status page again to view and copy your new password!</li>
-        </ul>
+        <i class="fas fa-shield-halved" style="color:var(--maroon);margin-right:4px"></i> <strong>Current Password Status:</strong> Your current password was <strong>NOT invalidated</strong>! If you remember your password, you can cancel this request and sign in immediately.
       </div>
 
-      <button class="btn-submit" onclick="closeLoginModal()">Done &nbsp;<i class="fas fa-check"></i></button>
+      <button class="btn-submit" onclick="cancelPendingRequestAndLogin('${safeId}')" style="margin-bottom:8px">
+        <i class="fas fa-key"></i> I Remembered My Password — Cancel Request &amp; Log In
+      </button>
+      <button class="btn-submit" onclick="showStep('step-login')" style="background:var(--bg2);color:var(--text);border:1px solid var(--border)">
+        Back to Login &nbsp;<i class="fas fa-arrow-left"></i>
+      </button>
     `;
     showStep('step-status-result');
     return;
@@ -494,6 +525,9 @@ async function handleForgot() {
 
       if ($('secTestSubtitle')) {
         $('secTestSubtitle').textContent = `Account: ${res.full_name} (${res.email}). Please answer your security test questions to proceed.`;
+      }
+      if ($('secTestAdminNotice')) {
+        $('secTestAdminNotice').style.display = (res.role === 'admin') ? 'block' : 'none';
       }
       hideEl('sec-test-msg');
       showStep('step-security-test');

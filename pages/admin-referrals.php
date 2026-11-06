@@ -39,13 +39,17 @@ $refs = $db->query("SELECT r.*, CONCAT(t.first_name,' ',t.last_name) AS teacher_
 $archivedCount = (int)$db->query("SELECT COUNT(*) FROM referrals WHERE status IN ('resolved','closed')")->fetchColumn();
 $activeCount   = (int)$db->query("SELECT COUNT(*) FROM referrals WHERE status NOT IN ('resolved','closed')")->fetchColumn();
 
-function urgencyBadge(string $u): string {
-    $map=['urgent'=>'priority-high','moderate'=>'priority-medium','low'=>'priority-low'];
-    return "<span class='priority-badge ".($map[$u]??'priority-low')."'><i class='fas fa-circle'></i> ".ucfirst($u)."</span>";
+if (!function_exists('urgencyBadge')) {
+    function urgencyBadge(string $u): string {
+        $map=['urgent'=>'priority-high','moderate'=>'priority-medium','low'=>'priority-low'];
+        return "<span class='priority-badge ".($map[$u]??'priority-low')."'><i class='fas fa-circle'></i> ".ucfirst($u)."</span>";
+    }
 }
-function statusBadge(string $s): string {
-    $map=['pending'=>'status-pending','under_review'=>'status-under_review','ongoing'=>'status-ongoing','resolved'=>'status-resolved','closed'=>'status-resolved'];
-    return "<span class='status-badge ".($map[$s]??'status-pending')."'>".str_replace('_',' ',ucfirst($s))."</span>";
+if (!function_exists('statusBadge')) {
+    function statusBadge(string $s): string {
+        $map=['pending'=>'status-pending','under_review'=>'status-under_review','ongoing'=>'status-ongoing','resolved'=>'status-resolved','closed'=>'status-resolved'];
+        return "<span class='status-badge ".($map[$s]??'status-pending')."'>".str_replace('_',' ',ucfirst($s))."</span>";
+    }
 }
 
 // Build rows — pass full data as JSON to onclick

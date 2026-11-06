@@ -28,7 +28,7 @@ try {
     $db = getDB();
     
     // Verify ownership and status
-    $stmt = $db->prepare("SELECT id, case_number, assigned_to FROM cases WHERE id=? AND student_id=? AND status='resolved'");
+    $stmt = $db->prepare("SELECT id, case_number, assigned_to FROM cases WHERE id=? AND student_id=? AND status IN ('resolved','closed')");
     $stmt->execute([$caseId, $user['id']]);
     $case = $stmt->fetch();
     
@@ -40,10 +40,18 @@ try {
     $update = $db->prepare("UPDATE cases SET is_follow_up=1, follow_up_msg=?, follow_up_date=NOW(), updated_at=NOW() WHERE id=?");
     $update->execute([$message, $caseId]);
     
-    // Notify counselor if assigned
-    if ($case['assigned_to']) {
-        $db->prepare("INSERT INTO notifications (user_id, title, message, type) VALUES (?, ?, ?, 'case_update')")
-           ->execute([$case['assigned_to'], "Case Appealed: {$case['case_number']}", "The student has submitted an appeal/follow-up for this resolved case."]);
+    // Notify counselor if assigned, or all counselors if unassigned
+    $notifTitle = "Case Appealed: {$case['case_number']}";
+    $notifBody  = "The student has submitted an appeal/follow-up for resolved case {$case['case_number']}.";
+    if (!empty($case['assigned_to'])) {
+        $db->prepare("INSERT INTO notifications (user_id, title, message, type) VALUES (?, ?, ?, 'appeal')")
+           ->execute([$case['assigned_to'], $notifTitle, $notifBody]);
+    } else {
+        $admins = $db->query("SELECT id FROM users WHERE role='admin'")->fetchAll();
+        foreach ($admins as $adm) {
+            $db->prepare("INSERT INTO notifications (user_id, title, message, type) VALUES (?, ?, ?, 'appeal')")
+               ->execute([$adm['id'], $notifTitle, $notifBody]);
+        }
     }
     
     jsonOut(['success'=>true]);

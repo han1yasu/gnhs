@@ -44,7 +44,10 @@ $qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" . urle
 <div class="glass-card">
     <i class="fas fa-fingerprint glass-icon"></i>
     <h2>Security Verification</h2>
-    <p>Please enter the 6-digit code from your authenticator app to continue securely.</p>
+    <p style="margin-bottom:8px">Please enter the 6-digit code from your authenticator app to continue securely.</p>
+    <div style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:rgba(255,255,255,0.8);margin-bottom:16px;background:rgba(255,255,255,0.08);padding:4px 12px;border-radius:20px;border:1px solid rgba(255,255,255,0.12)">
+      <i class="fas fa-stopwatch" style="color:#fbbf24"></i> Valid strictly while the authenticator circle timer is active
+    </div>
 
     <div class="error-msg" id="errorMsg" style="background:rgba(255,0,0,0.2); border:1px solid rgba(255,0,0,0.3); color:#fff; display:none;"></div>
 

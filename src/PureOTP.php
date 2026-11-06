@@ -43,9 +43,11 @@ class PureOTP {
     }
 
     /**
-     * Verify a user-provided 6-digit code against secret (with ±3 time slices = 90s tolerance).
+     * Verify a user-provided 6-digit code against secret.
+     * Default $discrepancy = 0 ensures strict verification:
+     * the code is ONLY valid within the active 30-second timer window (circle timer).
      */
-    public static function verifyCode(string $secret, string $code, int $discrepancy = 3): bool {
+    public static function verifyCode(string $secret, string $code, int $discrepancy = 0): bool {
         $code = trim($code);
         if (strlen($code) !== 6 || !ctype_digit($code)) {
             return false;

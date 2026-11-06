@@ -19,11 +19,11 @@ if ($existing > 0) {
 }
 
 $users = [
-  ['Maria',   'Reyes',     'mreyes@gnhs.edu.ph',    'EMP-001',       'Admin@1234',    'admin',   null,               'MR'],
-  ['Ana',     'Santos',    'asantos@gnhs.edu.ph',   'EMP-002',       'Teacher@1234',  'teacher', null,               'AS'],
-  ['Juan',    'Dela Cruz', 'jdelacruz@gnhs.edu.ph', '123456789012',  'Student@1234',  'student', 'Grade 9 - Mabini', 'JD'],
-  ['Anna',    'Lopez',     'alopez@gnhs.edu.ph',    '123456789013',  'Student@1234',  'student', 'Grade 9 - Mabini', 'AL'],
-  ['Rico',    'Mendoza',   'rmendoza@gnhs.edu.ph',  '123456789014',  'Student@1234',  'student', 'Grade 8 - Rizal',  'RM'],
+  ['Maria',   'Reyes',     'mreyes@gnhs.edu.ph',    'EMP-001',       'Admin@1234',    'admin',    null,               'MR'],
+  ['Ana',     'Santos',    'asantos@gnhs.edu.ph',   'EMP-002',       'Teacher@1234',  'teacher',  null,               'AS'],
+  ['Juan',    'Dela Cruz', 'jdelacruz@gnhs.edu.ph', '123456789012',  'Student@1234',  'student',  'Grade 9 - Mabini', 'JD'],
+  ['Anna',    'Lopez',     'alopez@gnhs.edu.ph',    '123456789013',  'Student@1234',  'student',  'Grade 9 - Mabini', 'AL'],
+  ['Rico',    'Mendoza',   'rmendoza@gnhs.edu.ph',  '123456789014',  'Student@1234',  'student',  'Grade 8 - Rizal',  'RM'],
 ];
 
 $stmt = $db->prepare("INSERT INTO users (first_name,last_name,email,id_number,password,role,grade_section,avatar_initials) VALUES (?,?,?,?,?,?,?,?)");
@@ -55,7 +55,7 @@ echo '<!DOCTYPE html><html><head><style>body{font-family:sans-serif;max-width:60
 <p>The following test accounts have been created:</p>
 <table class="table">
 <tr><th>Role</th><th>Email</th><th>Password</th></tr>
-<tr><td>Admin (Counselor)</td><td>mreyes@gnhs.edu.ph</td><td>Admin@1234</td></tr>
+<tr><td>Guidance Counselor</td><td>mreyes@gnhs.edu.ph</td><td>Admin@1234</td></tr>
 <tr><td>Teacher</td><td>asantos@gnhs.edu.ph</td><td>Teacher@1234</td></tr>
 <tr><td>Student</td><td>jdelacruz@gnhs.edu.ph</td><td>Student@1234</td></tr>
 <tr><td>Student</td><td>alopez@gnhs.edu.ph</td><td>Student@1234</td></tr>

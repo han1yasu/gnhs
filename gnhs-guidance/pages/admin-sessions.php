@@ -303,6 +303,10 @@ $content = <<<HTML
         <label>Next Session Remarks / Objectives</label>
         <textarea id="nextSessionRemarks" rows="2" class="form-control" style="width:100%;padding:10px;border-radius:8px;border:1.5px solid var(--border);font-size:13.5px" placeholder="e.g. Follow-up on behavioral contract agreement, progress check-in, or parent conference update..."></textarea>
       </div>
+      <div class="form-group" style="margin-top:14px;margin-bottom:0">
+        <label>Guidance Recommendations for Student <span style="font-size:11px;color:var(--text-3);font-weight:600">(Visible to Student in Session Overview)</span></label>
+        <textarea id="nextSessionGuidanceRec" rows="2" class="form-control" style="width:100%;padding:10px;border-radius:8px;border:1.5px solid var(--border);font-size:13.5px" placeholder="Official guidance recommendations, advice, coping strategies, or next steps for the student..."></textarea>
+      </div>
     </div>
 
     <!-- SUB-FORM: If YES (Case is resolved) -->
@@ -341,6 +345,11 @@ $content = <<<HTML
         </div>
 
         <textarea id="caseSanctionsText" rows="2" class="form-control" style="width:100%;padding:10px;border-radius:8px;border:1.5px solid var(--border);font-size:13.5px" placeholder="Specify any regulated school rules sanctions or corrective actions imposed..."></textarea>
+      </div>
+
+      <div class="form-group" style="margin-top:14px;margin-bottom:0">
+        <label>Guidance Recommendations &amp; Advice for Student <span style="font-size:11px;color:var(--text-3);font-weight:600">(Visible to Student in Session Overview)</span></label>
+        <textarea id="caseGuidanceRecText" rows="2" class="form-control" style="width:100%;padding:10px;border-radius:8px;border:1.5px solid var(--border);font-size:13.5px" placeholder="Official guidance recommendations, advice, coping strategies, or next steps for the student..."></textarea>
       </div>
     </div>
 
@@ -1266,6 +1275,7 @@ async function submitEndSessionDecision() {
     payload.next_session_type     = document.getElementById('nextSessionType').value;
     payload.next_session_location = document.getElementById('nextSessionLocation').value.trim();
     payload.next_session_remarks  = document.getElementById('nextSessionRemarks').value.trim();
+    payload.guidance_recommendations = document.getElementById('nextSessionGuidanceRec')?.value.trim() || '';
   } else {
     const resolution = document.getElementById('caseResolutionText').value.trim();
     if (!resolution) {
@@ -1276,6 +1286,7 @@ async function submitEndSessionDecision() {
     }
     payload.resolution = resolution;
     payload.sanctions  = document.getElementById('caseSanctionsText').value.trim();
+    payload.guidance_recommendations = document.getElementById('caseGuidanceRecText')?.value.trim() || '';
   }
 
   try {

@@ -120,9 +120,9 @@ $content = <<<HTML
 
       <div class="form-group">
         <label>Describe Your Concern <span class="req">*</span></label>
-        <textarea id="description" rows="6" maxlength="4000" placeholder="Please describe your concern in detail (at least 30 characters, max 400 words). Everything you share is confidential."></textarea>
-        <div class="char-count" style="display:flex;justify-content:space-between;align-items:center;font-size:12px;margin-top:4px">
-          <span id="charCountNotice" style="color:var(--text-3)"><i class="fas fa-info-circle"></i> Minimum 30 characters required (<span id="charCount">0</span> chars)</span>
+        <textarea id="description" rows="6" maxlength="4000" placeholder="Please describe your concern in detail (minimum 30 words, max 400 words). Everything you share is confidential."></textarea>
+        <div class="word-count-bar" style="display:flex;justify-content:space-between;align-items:center;font-size:12.5px;margin-top:7px;padding:4px 2px;position:static">
+          <span id="wordCountNotice" style="color:var(--text-3)"><i class="fas fa-info-circle"></i> Minimum 30 words required (<span id="wordCountLive">0</span> / 30 words)</span>
           <span id="wordCountBadge" style="font-weight:700;color:var(--text-2)"><span id="wordCount">0</span> / 400 words</span>
         </div>
       </div>
@@ -254,43 +254,45 @@ function onConcernTypeChange(val) {
 
 document.getElementById('description')?.addEventListener('input', function(){
   const val = this.value;
-  const chars = val.length;
   const words = val.trim().split(/\s+/).filter(w => w.length > 0);
   const wordCount = words.length;
   
-  const charEl = document.getElementById('charCount');
+  const wordLiveEl = document.getElementById('wordCountLive');
   const wordEl = document.getElementById('wordCount');
-  const noticeEl = document.getElementById('charCountNotice');
+  const noticeEl = document.getElementById('wordCountNotice');
   const badgeEl = document.getElementById('wordCountBadge');
   
-  if (charEl) charEl.textContent = chars;
+  if (wordLiveEl) wordLiveEl.textContent = wordCount;
   if (wordEl) wordEl.textContent = wordCount;
   
   if (noticeEl) {
-    if (chars < 30) {
+    if (wordCount < 30) {
       noticeEl.style.color = '#dc2626';
-      noticeEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> Minimum 30 characters required (' + chars + '/30)';
+      noticeEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> Minimum 30 words required (' + wordCount + ' / 30 words)';
+    } else if (wordCount > 400) {
+      noticeEl.style.color = '#dc2626';
+      noticeEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> Word limit exceeded (' + wordCount + ' / 400 words)';
     } else {
       noticeEl.style.color = '#16a34a';
-      noticeEl.innerHTML = '<i class="fas fa-check-circle"></i> Length requirement met (' + chars + ' characters)';
+      noticeEl.innerHTML = '<i class="fas fa-check-circle"></i> Word requirement met (' + wordCount + ' words)';
     }
   }
   
   if (badgeEl) {
-    if (wordCount > 400) {
+    if (wordCount > 400 || wordCount < 30) {
       badgeEl.style.color = '#dc2626';
     } else {
-      badgeEl.style.color = 'var(--text-2)';
+      badgeEl.style.color = '#16a34a';
     }
   }
 });
 
 function validateConcernSpam(text) {
   const clean = (text || '').trim();
-  if (clean.length < 30) {
-    return { valid: false, message: 'Description must be at least 30 characters long to provide sufficient detail (currently ' + clean.length + ' characters).' };
-  }
   const words = clean.split(/\s+/).filter(w => w.length > 0);
+  if (words.length < 30) {
+    return { valid: false, message: 'Description must be at least 30 words long to provide sufficient detail (currently ' + words.length + ' words). Please describe your concern in more detail.' };
+  }
   if (words.length > 400) {
     return { valid: false, message: 'Description exceeds the 400-word ceiling (currently ' + words.length + ' words). Please shorten your description.' };
   }

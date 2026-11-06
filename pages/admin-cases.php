@@ -69,6 +69,8 @@ $cases = $db->query("SELECT c.*,
     s.grade_section
     FROM cases c LEFT JOIN users s ON c.student_id=s.id
     $where ORDER BY
+    (c.status = 'pending' AND c.follow_up_msg IS NOT NULL AND c.follow_up_msg != '' AND COALESCE(c.is_follow_up, 0) = 0) DESC,
+    c.updated_at DESC,
     FIELD(c.priority,'high','medium','low'),
     c.submitted_at DESC")->fetchAll();
 
@@ -85,6 +87,27 @@ if (!function_exists('prioBadge')) {
     }
 }
 
+$highlightCase = trim($_GET['case'] ?? '');
+$isReopenedBanner = !empty($_GET['reopened']);
+$reopenedBannerHtml = '';
+if ($isReopenedBanner) {
+    $hlCaseSafe = htmlspecialchars($highlightCase ?: 'selected');
+    $reopenedBannerHtml = <<<HTML
+<div style="background:#fdf4ff;border:1.5px solid #d8b4fe;border-radius:12px;padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 2px 10px rgba(126,34,206,0.08);animation:fadeIn .3s ease">
+  <div style="display:flex;align-items:center;gap:12px">
+    <div style="width:38px;height:38px;border-radius:10px;background:#fae8ff;color:#7e22ce;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">
+      <i class="fas fa-reply-all"></i>
+    </div>
+    <div>
+      <div style="font-weight:700;font-size:14px;color:#581c87">Case {$hlCaseSafe} Reopened Successfully!</div>
+      <div style="font-size:12.5px;color:#7e22ce">This case has been restored to active status from follow-up appeals and is prioritized below at the top of All Cases.</div>
+    </div>
+  </div>
+  <button type="button" onclick="this.parentElement.remove()" style="background:none;border:none;color:#7e22ce;font-size:16px;cursor:pointer;padding:4px" title="Dismiss"><i class="fas fa-times"></i></button>
+</div>
+HTML;
+}
+
 $rows = '';
 foreach ($cases as $c) {
     $rawType = strtolower($c['concern_type']);
@@ -93,7 +116,11 @@ foreach ($cases as $c) {
     $hasMedia = (!empty($c['evidence_files']) && $c['evidence_files'] !== '[]');
     $hasWitness = !empty($c['witnesses']);
     $isPeer = !empty($c['is_peer_report']);
+    $isReopened = (!empty($c['follow_up_msg']) && empty($c['is_follow_up']) && in_array($c['status'], ['pending', 'under_review', 'ongoing']));
 
+    if ($isReopened) {
+        $mediaBadges .= "<span class='badge-witness' style='background:#fdf4ff;color:#7e22ce;border-color:#e9d5ff' title='Appealed by student and reopened by Guidance'><i class='fas fa-reply-all'></i> Reopened</span>";
+    }
     if ($hasMedia) {
         $evArray = is_string($c['evidence_files']) ? json_decode($c['evidence_files'], true) : $c['evidence_files'];
         $cnt = is_array($evArray) ? count($evArray) : 1;
@@ -138,6 +165,7 @@ foreach ($cases as $c) {
         $c['status'],
         str_replace('_', ' ', $c['status']),
         $c['priority'],
+        $isReopened ? 'reopened appeal follow-up' : '',
         $isPeer ? 'peer peer-report' : '',
         $hasWitness ? 'witness' : '',
         $hasMedia ? 'media evidence' : '',
@@ -146,7 +174,11 @@ foreach ($cases as $c) {
     ];
     $searchData = htmlspecialchars(strtolower(implode(' ', array_filter($searchTokens))), ENT_QUOTES);
 
-    $rows .= "<tr class='case-row' data-search=\"$searchData\">
+    $isHighlighted = ($highlightCase && $c['case_number'] === $highlightCase);
+    $rowClass = 'case-row' . ($isHighlighted ? ' case-row-highlighted' : '');
+    $rowStyle = $isHighlighted ? "style='background:rgba(126,34,206,0.07);border-left:4px solid #7e22ce'" : "";
+
+    $rows .= "<tr class='$rowClass' data-search=\"$searchData\" $rowStyle>
         <td class='cell-case-num'><span class='case-num-text'>{$c['case_number']}</span></td>
         <td class='cell-student'>$studentDisplay</td>
         <td class='cell-grade'>$gradeDisplay</td>
@@ -197,6 +229,7 @@ $currentSectionJs = json_encode($filterSection);
 $totalActive = count($cases);
 
 $content = <<<HTML
+$reopenedBannerHtml
 <div class="content-card">
   <div class="card-header">
     <h3><i class="fas fa-folder-open"></i> Active Cases <span id="activeCasesCount" style="font-size:13px;font-weight:600;color:var(--text-3);margin-left:6px">($totalActive)</span></h3>

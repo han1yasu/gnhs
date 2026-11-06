@@ -18,7 +18,8 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
             ['icon'=>'fa-comments',     'label'=>'Cases Chat',      'href'=>'student-chats.php',     'key'=>'chats'],
             ['icon'=>'fa-archive',      'label'=>'Case Archive',    'href'=>'student-archive.php',   'key'=>'archive'],
             ['icon'=>'fa-history',      'label'=>'Chat Archive',    'href'=>'student-chat-archive.php','key'=>'chat_archive'],
-            ['icon'=>'fa-calendar-alt', 'label'=>'My Sessions',     'href'=>'student-sessions.php',  'key'=>'sessions'],
+            ['icon'=>'fa-calendar-alt',   'label'=>'My Sessions',       'href'=>'student-sessions.php',         'key'=>'sessions'],
+            ['icon'=>'fa-calendar-check', 'label'=>'Sessions Archive',   'href'=>'student-sessions-archive.php', 'key'=>'sessions_archive'],
         ],
         'teacher' => [
             ['icon'=>'fa-home',         'label'=>'Dashboard',       'href'=>'teacher-dashboard.php', 'key'=>'dashboard'],
@@ -48,9 +49,9 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
             ],
             ['icon'=>'fa-calendar-alt', 'label'=>'Sessions',        'href'=>'admin-sessions.php',    'key'=>'sessions'],
             ['icon'=>'fa-chart-bar',    'label'=>'Analytics',       'href'=>'admin-analytics.php',   'key'=>'analytics'],
-            ['icon'=>'fa-users',        'label'=>'Users',           'href'=>'admin-users.php',       'key'=>'users'],
-            ['icon'=>'fa-shield-alt',   'label'=>'2FA Requests',    'href'=>'admin-2fa-requests.php','key'=>'2fa_requests'],
-            ['icon'=>'fa-key',          'label'=>'Reset Requests',  'href'=>'admin-reset-requests.php', 'key'=>'reset_requests'],
+            ['icon'=>'fa-users-cog',    'label'=>'User Accounts',   'href'=>'admin-users.php',          'key'=>'users'],
+            ['icon'=>'fa-key',          'label'=>'Password Resets', 'href'=>'admin-reset-requests.php', 'key'=>'reset_requests'],
+            ['icon'=>'fa-shield-alt',   'label'=>'2FA Requests',    'href'=>'admin-2fa-requests.php',   'key'=>'2fa_requests'],
         ],
     ];
 
@@ -79,11 +80,11 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
             $sublinksHtml = '';
             foreach ($l['children'] as $child) {
                 $cActive = ($child['key'] === $activeNav) ? 'active' : '';
-                $sublinksHtml .= "<a href='{$child['href']}' class='sb-sublink $cActive'><i class='fas {$child['icon']}'></i><span>{$child['label']}</span></a>";
+                $sublinksHtml .= "<a href='{$child['href']}' class='sb-sublink $cActive' id='sb-link-{$child['key']}' data-nav-key='{$child['key']}'><i class='fas {$child['icon']}'></i><span>{$child['label']}</span></a>";
             }
 
             $sidebarLinks .= "
-            <div class='sb-dropdown-group $openClass' id='{$groupId}-wrap'>
+            <div class='sb-dropdown-group $openClass' id='{$groupId}-wrap' data-nav-key='{$l['key']}'>
               <button type='button' class='sb-link sb-dropdown-btn $activeClass $openClass' onclick='toggleSbDropdown(\"{$groupId}\")' aria-expanded='$ariaExpanded' id='{$groupId}-btn'>
                 <i class='fas {$l['icon']}'></i>
                 <span>{$l['label']}</span>
@@ -101,7 +102,7 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
             } elseif ($l['key'] === 'reset_requests' && $pendingResetCount > 0) {
                 $badge = "<span class='badge-notif' style='margin-left:auto;background:#d97706;color:#fff;font-size:10px;font-weight:800;padding:2px 7px;border-radius:50px;min-width:20px;text-align:center'>$pendingResetCount</span>";
             }
-            $sidebarLinks .= "<a href='{$l['href']}' class='sb-link $active'><i class='fas {$l['icon']}'></i><span>{$l['label']}</span>$badge</a>";
+            $sidebarLinks .= "<a href='{$l['href']}' class='sb-link $active' id='sb-link-{$l['key']}' data-nav-key='{$l['key']}'><i class='fas {$l['icon']}'></i><span>{$l['label']}</span>$badge</a>";
         }
     }
 
@@ -133,16 +134,44 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title><?= htmlspecialchars($pageTitle) ?> — GNHS Guidance</title>
-  <link rel="stylesheet" href="/gnhs-guidance/style.css?v=3.3"/>
+  <link rel="stylesheet" href="/gnhs-guidance/style.css?v=<?= @filemtime(__DIR__ . '/../style.css') ?: '4.0' ?>"/>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" rel="stylesheet"/>
+  <style>
+    /* Critical global dark mode safeguards */
+    [data-theme="dark"] .user-card,
+    [data-theme="dark"] .notif-dropdown,
+    [data-theme="dark"] .notif-panel,
+    [data-theme="dark"] .content-card,
+    [data-theme="dark"] .sum-card,
+    [data-theme="dark"] .modal-box {
+      background: var(--bg2) !important;
+      background-color: #1e1e1e !important;
+      border-color: var(--border) !important;
+      color: var(--text) !important;
+    }
+    [data-theme="dark"] .user-card-name,
+    [data-theme="dark"] .notif-header,
+    [data-theme="dark"] .notif-header strong {
+      color: var(--text) !important;
+    }
+    [data-theme="dark"] .notif-item {
+      border-bottom: 1px solid var(--border) !important;
+      color: var(--text) !important;
+    }
+    [data-theme="dark"] .notif-msg {
+      color: var(--text-2) !important;
+    }
+  </style>
   <script>
     (function(){
       var t = localStorage.getItem('theme') || 'light';
       var c = localStorage.getItem('colorTheme') || 'maroon';
       document.documentElement.setAttribute('data-theme', t);
       document.documentElement.setAttribute('data-color', c);
+      window.currentUserRole = <?= json_encode($role) ?>;
+      window.currentUserName = <?= json_encode($fullName) ?>;
     })();
   </script>
 </head>
@@ -185,7 +214,7 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
       <button class="topbar-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">
         <i class="fas fa-bars"></i>
       </button>
-      <div class="topbar-brand">
+      <div class="topbar-brand" id="topbarBrand">
         <img src="/gnhs-guidance/gnhs.jpg" alt="GNHS Logo" class="topbar-logo-img"/>
         <div class="topbar-school-info">
           <span class="topbar-school-name">Guinayang National High School</span>
@@ -194,8 +223,12 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
       </div>
     </div>
     <div class="topbar-right">
-      <div class="theme-container" style="position:relative; display:inline-flex; align-items:center; margin-right:8px;">
-        <button class="nav-link" style="background:none;border:none;cursor:pointer;font-size:16px;color:var(--text-2);padding:8px;border-radius:50%;" onclick="toggleThemeMenu()"><i class="fas fa-palette"></i></button>
+      <button type="button" class="help-tour-btn" id="tourTriggerBtn" onclick="startSystemTour()" title="Walk Me Through the System">
+        <i class="fas fa-compass"></i>
+        <span class="tour-btn-text">Guide Me</span>
+      </button>
+      <div class="theme-container" id="themeContainerBtn" style="position:relative; display:inline-flex; align-items:center; margin-right:8px;">
+        <button class="nav-link" id="themeToggleBtn" style="background:none;border:none;cursor:pointer;font-size:16px;color:var(--text-2);padding:8px;border-radius:50%;" onclick="toggleThemeMenu()" title="Theme & Color Switcher"><i class="fas fa-palette"></i></button>
         <div class="theme-panel" id="themePanel">
           <button class="tp-mode-toggle" id="tpModeToggle" onclick="setTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark')">
             <i class="fas fa-moon"></i> Dark Mode
@@ -209,7 +242,7 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
           </div>
         </div>
       </div>
-      <button class="notif-btn" onclick="toggleNotifs()">
+      <button class="notif-btn" id="topbarNotifBtn" onclick="toggleNotifs()" title="Notifications">
         <i class="fas fa-bell"></i>
         <span class="notif-dot hidden" id="notifDot"></span>
       </button>
@@ -239,6 +272,7 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
           </div>
           <div class="pd-divider"></div>
           <button class="pd-item" onclick="openProfileModal()"><i class="fas fa-user"></i> My Profile</button>
+          <button class="pd-item" onclick="toggleProfileMenu(); startSystemTour();"><i class="fas fa-compass" style="color:var(--maroon)"></i> Walk Me Through</button>
           <button class="pd-item pd-logout" onclick="confirmLogout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
         </div>
       </div>
@@ -489,7 +523,29 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
 <script src="/gnhs-guidance/theme.js?v=1.1"></script>
 <script src="/gnhs-guidance/app.js?v=3.0"></script>
+<script src="/gnhs-guidance/tour.js?v=1.0"></script>
 <script>
+function showToast(msg, type) {
+  type = type || 'success';
+  let c = document.getElementById('toast-container');
+  if (!c) {
+    c = document.createElement('div');
+    c.id = 'toast-container';
+    document.body.appendChild(c);
+  }
+  const t = document.createElement('div');
+  t.className = 'toast toast-' + type;
+  const icons = { success: 'check-circle', error: 'times-circle', info: 'info-circle' };
+  const iconName = icons[type] || 'info-circle';
+  t.innerHTML = '<i class="fas fa-' + iconName + '"></i>' + msg;
+  c.appendChild(t);
+  setTimeout(() => {
+    t.style.opacity = '0';
+    t.style.transition = 'opacity .3s';
+    setTimeout(() => t.remove(), 300);
+  }, 3200);
+}
+
 let currentNotifsList = [];
 
 async function toggleNotifs() {
@@ -516,7 +572,15 @@ async function loadNotifs() {
       let iconBg = 'var(--maroon-tint)';
       let iconColor = 'var(--maroon)';
 
-      if (n.type === 'session' || n.type === 'session_scheduled') {
+      const isAppealItem = (n.type === 'appeal' || n.type === 'follow_up' || n.type === 'followup' || 
+                            (n.title && /appeal|follow.?up/i.test(n.title)) ||
+                            (n.message && /appeal|follow.?up/i.test(n.message)));
+
+      if (isAppealItem) {
+        icon = 'fa-reply-all';
+        iconBg = '#fae8ff';
+        iconColor = '#9333ea';
+      } else if (n.type === 'session' || n.type === 'session_scheduled') {
         icon = 'fa-calendar-check';
         iconBg = '#dbeafe';
         iconColor = '#1d4ed8';
@@ -532,19 +596,16 @@ async function loadNotifs() {
         icon = 'fa-exchange-alt';
         iconBg = '#fef3c7';
         iconColor = '#d97706';
-      } else if (n.type === 'appeal') {
-        icon = 'fa-redo';
-        iconBg = '#fae8ff';
-        iconColor = '#9333ea';
       }
 
       const timeStr = n.formatted_full || formatNotifDate(n.created_at);
+      const appealBadgeHtml = isAppealItem ? ' <span style="font-size:10px;font-weight:700;background:#fdf4ff;color:#7e22ce;padding:1px 6px;border-radius:4px;border:1px solid #e9d5ff;margin-left:4px">Follow-Up</span>' : '';
 
       return '<div class="notif-item' + (n.is_read ? '' : ' unread') + '" onclick="openNotifOverview(' + idx + ')" style="cursor:pointer;transition:background 0.2s" title="Click to view full notification overview">'
         + '<div class="notif-icon" style="background:' + iconBg + ';color:' + iconColor + '"><i class="fas ' + icon + '"></i></div>'
         + '<div style="flex:1;overflow:hidden">'
         + '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:6px">'
-        + '<div class="notif-title" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escapeHtmlNotif(n.title || 'Notification') + '</div>'
+        + '<div class="notif-title" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escapeHtmlNotif(n.title || 'Notification') + appealBadgeHtml + '</div>'
         + (!n.is_read ? '<span style="width:7px;height:7px;border-radius:50%;background:var(--maroon);flex-shrink:0" title="Unread"></span>' : '')
         + '</div>'
         + '<div class="notif-msg" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:4px">' + escapeHtmlNotif(n.message || '') + '</div>'
@@ -607,7 +668,21 @@ function openNotifOverview(index) {
   let actionIcon = 'fa-arrow-right';
 
   const type = n.type || '';
-  if (type === 'session' || type === 'session_scheduled') {
+  const isAppeal = (type === 'appeal' || type === 'follow_up' || type === 'followup' || 
+                    (n.title && /appeal|follow.?up/i.test(n.title)) ||
+                    (n.message && /appeal|follow.?up/i.test(n.message)));
+
+  if (isAppeal) {
+    badgeText = 'Case Appeal / Follow-Up';
+    badgeBg = '#fdf4ff';
+    badgeColor = '#7e22ce';
+    iconHtml = '<i class="fas fa-reply-all"></i>';
+    iconBg = '#fae8ff';
+    iconColor = '#6b21a8';
+    actionUrl = role === 'admin' ? '/gnhs-guidance/pages/admin-followups.php' : '/gnhs-guidance/pages/student-cases.php';
+    actionLabel = 'Go to Follow Ups Tab';
+    actionIcon = 'fa-reply-all';
+  } else if (type === 'session' || type === 'session_scheduled') {
     badgeText = 'Counseling Session';
     badgeBg = '#eff6ff';
     badgeColor = '#1d4ed8';
@@ -647,16 +722,6 @@ function openNotifOverview(index) {
     actionUrl = role === 'admin' ? '/gnhs-guidance/pages/admin-referrals.php' : '/gnhs-guidance/pages/teacher-referrals.php';
     actionLabel = 'View Referrals';
     actionIcon = 'fa-exchange-alt';
-  } else if (type === 'appeal') {
-    badgeText = 'Follow-up';
-    badgeBg = '#fdf4ff';
-    badgeColor = '#7e22ce';
-    iconHtml = '<i class="fas fa-redo"></i>';
-    iconBg = '#fae8ff';
-    iconColor = '#6b21a8';
-    actionUrl = role === 'admin' ? '/gnhs-guidance/pages/admin-followups.php' : '/gnhs-guidance/pages/student-cases.php';
-    actionLabel = 'View Follow-ups';
-    actionIcon = 'fa-redo';
   }
 
   document.getElementById('notifModalTitle').innerText = n.title || 'Notification';

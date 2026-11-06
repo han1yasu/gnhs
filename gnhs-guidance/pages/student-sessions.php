@@ -5,16 +5,51 @@ $user = requireLogin('student');
 $db   = getDB();
 $uid  = $user['id'];
 
+$filterStatus = $_GET['status'] ?? '';
+if ($filterStatus === 'completed') {
+    header('Location: student-sessions-archive.php');
+    exit;
+}
+
+function getStudentGuidanceRecommendations(array $s, PDO $db): string {
+    if (!empty($s['session_recommendations'])) {
+        return trim($s['session_recommendations']);
+    }
+    if (!empty($s['guidance_recommendations'])) {
+        return trim($s['guidance_recommendations']);
+    }
+    if (!empty($s['case_id'])) {
+        $stmt = $db->prepare("SELECT content FROM case_notes WHERE case_id = ? AND is_visible_to_student = 1 ORDER BY id DESC LIMIT 1");
+        $stmt->execute([(int)$s['case_id']]);
+        $visibleNote = $stmt->fetchColumn();
+        if ($visibleNote) {
+            return trim($visibleNote);
+        }
+    }
+    $type = strtolower($s['concern_type'] ?? 'other');
+    $defaultRecs = [
+        'bullying' => "1. Your safety and emotional well-being are the highest priority of the Guidance Office. Continue to communicate openly with your counselor.\n2. Maintain safe boundaries; report any hostile or uncomfortable interactions immediately to guidance staff or your adviser.\n3. Remember you are fully supported by school policy; follow-up check-ins and peer mediation are actively available.",
+        'academic_stress' => "1. Organize your study time into focused 25-minute intervals with structured resting periods.\n2. Reach out to your subject teachers or class adviser for academic consultations and lesson clarifications.\n3. Maintain healthy sleep routines and visit the Guidance Office whenever workload pressure feels overwhelming.",
+        'emotional' => "1. Be gentle with yourself; experiencing emotional distress is valid, and you never have to carry challenges alone.\n2. Engage in grounding exercises, creative hobbies, and adequate rest to restore your energy.\n3. The Guidance Counselor is always available for follow-up listening sessions in a safe, confidential space.",
+        'peer_conflict' => "1. Practice calm, active listening and respectful communication when interacting with peers.\n2. Give tense situations cooling-off time and avoid retaliatory words or online posts.\n3. The Guidance Office is prepared to facilitate peaceful, constructive restorative dialogue whenever needed.",
+        'family' => "1. Focus on what is within your control, balancing home responsibilities with your school commitments.\n2. Stay connected with supportive friends, teachers, and guidance counselors.\n3. The Guidance Office remains an open, confidential space to discuss personal feelings and find coping strategies."
+    ];
+    return $defaultRecs[$type] ?? "1. Continue following your guidance action plan and keep open communication with your counselor.\n2. Utilize school guidance resources whenever you encounter difficulties or need support.\n3. Focus on personal well-being, healthy habits, and positive growth in your school journey.";
+}
+
+// Active and ongoing sessions only (completed sessions belong in Sessions Archive)
 $sessions = $db->query("SELECT cs.*,
     u.first_name AS counselor_first, u.last_name AS counselor_last,
     c.id AS case_id, c.case_number, c.subject AS case_subject, c.description AS case_description,
     c.concern_type, c.priority AS case_priority, c.status AS case_status,
     c.is_peer_report, c.reported_student_name, c.reported_student_grade,
-    c.resolution, c.sanctions
+    c.resolution, c.sanctions, c.guidance_recommendations,
+    cs.recommendations AS session_recommendations
     FROM counseling_sessions cs 
     JOIN users u ON cs.counselor_id=u.id 
     JOIN cases c ON cs.case_id=c.id
-    WHERE cs.student_id=$uid ORDER BY cs.session_date DESC")->fetchAll();
+    WHERE cs.student_id=$uid AND cs.status NOT IN ('completed', 'cancelled')
+    ORDER BY cs.session_date DESC")->fetchAll();
 
 $rows = '';
 foreach ($sessions as $s) {
@@ -23,11 +58,11 @@ foreach ($sessions as $s) {
         'scheduled'   => "<span class='status-badge status-under_review' style='background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;font-weight:700'><i class='fas fa-calendar-check'></i> Scheduled</span>",
         'in_progress' => "<span class='status-badge' style='background:#dcfce7;color:#15803d;border:1px solid #86efac;font-weight:700;display:inline-flex;align-items:center;gap:5px'><span class='live-pulse-dot'></span> Live Now</span>",
         'ongoing'     => "<span class='status-badge status-ongoing' style='background:#fef3c7;color:#92400e;border:1px solid #fde68a;font-weight:700'><i class='fas fa-clock-rotate-left'></i> Ongoing Progress</span>",
-        'completed'   => "<span class='status-badge status-resolved'><i class='fas fa-check-circle'></i> Completed</span>",
-        'cancelled'   => "<span class='status-badge' style='background:#fef2f2;color:#991b1b'>Cancelled</span>",
         'no_show'     => "<span class='status-badge' style='background:#fffbeb;color:#92400e'>No Show</span>",
         default       => "<span class='status-badge status-pending'>".ucfirst($s['status'])."</span>"
     };
+
+    $recommendationsText = getStudentGuidanceRecommendations($s, $db);
 
     $sessionData = [
         'id'                     => (int)$s['id'],
@@ -47,7 +82,7 @@ foreach ($sessions as $s) {
         'location'               => $s['location'] ?? 'Guidance Office',
         'session_type'           => ucfirst($s['session_type'] ?? 'In-person'),
         'status'                 => $s['status'],
-        'notes'                  => $s['notes'] ?? '',
+        'recommendations'        => $recommendationsText,
         'resolution'             => $s['resolution'] ?? '',
         'sanctions'              => $s['sanctions'] ?? ''
     ];
@@ -70,7 +105,7 @@ foreach ($sessions as $s) {
         <td>$statusBadge</td>
     </tr>";
 }
-if (!$rows) $rows = "<tr><td colspan='7' style='text-align:center;color:var(--text-3);padding:40px'>No counseling sessions scheduled yet.</td></tr>";
+if (!$rows) $rows = "<tr><td colspan='7' style='text-align:center;color:var(--text-3);padding:40px'>No active counseling sessions scheduled. Past sessions are stored in your <a href='student-sessions-archive.php' style='color:var(--maroon);font-weight:700'>Sessions Archive &rarr;</a></td></tr>";
 
 $content = <<<HTML
 <style>
@@ -89,9 +124,20 @@ $content = <<<HTML
 }
 </style>
 
+<!-- Top Transition Banner to Sessions Archive -->
+<div style="background:var(--maroon-pale);border:1px solid var(--maroon-tint);border-radius:10px;padding:12px 18px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap">
+  <div style="display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--text)">
+    <i class="fas fa-calendar-check" style="color:var(--maroon);font-size:18px"></i>
+    <span>Completed counseling sessions and past guidance recommendations are preserved in your <strong>Sessions Archive</strong>.</span>
+  </div>
+  <a href="student-sessions-archive.php" class="btn-sm-primary" style="font-size:12px;padding:6px 14px;white-space:nowrap;display:inline-flex;align-items:center;gap:6px">
+    <i class="fas fa-box-archive"></i> Go to Sessions Archive &rarr;
+  </a>
+</div>
+
 <div class="content-card">
   <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-    <h3><i class="fas fa-calendar-alt"></i> My Counseling Sessions</h3>
+    <h3><i class="fas fa-calendar-alt"></i> My Counseling Sessions (Active)</h3>
     <span style="font-size:12.5px;color:var(--text-3);display:inline-flex;align-items:center;gap:6px">
       <i class="fas fa-hand-pointer" style="color:var(--maroon)"></i> Click any session line to view full overview
     </span>
@@ -241,13 +287,13 @@ function openSessionRowOverview(rowEl) {
       </div>
     </div>
 
-    \${d.notes ? `
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:16px">
-        <div style="font-size:12px;font-weight:800;color:var(--maroon);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">
-          <i class="fas fa-comment-medical"></i> Counselor Session Notes / Remarks
-        </div>
-        <div style="font-size:13.5px;color:var(--text);white-space:pre-wrap;background:var(--bg);padding:10px;border-radius:8px;border-left:3px solid var(--maroon)">\${escapeHtml(d.notes)}</div>
-      </div>` : ''}
+    <!-- Official Guidance Office Recommendations & Next Steps Section -->
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px">
+      <div style="font-size:12px;font-weight:800;color:var(--maroon);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;display:flex;align-items:center;gap:6px">
+        <i class="fas fa-lightbulb" style="color:var(--maroon);font-size:14px"></i> Guidance Office Recommendations &amp; Next Steps
+      </div>
+      <div style="font-size:13.5px;color:var(--text);line-height:1.6;white-space:pre-wrap;background:var(--bg);padding:12px 14px;border-radius:8px;border-left:3px solid var(--maroon)">\${escapeHtml(d.recommendations || 'The Guidance Office recommends maintaining regular communication with your counselor, practicing positive self-care, and reporting any concerns immediately to guidance staff.')}</div>
+    </div>
 
     \${d.resolution ? `
       <div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:16px;margin-bottom:16px">

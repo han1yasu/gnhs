@@ -27,7 +27,7 @@ try {
     }
     
     $action = trim($raw['action'] ?? 'reset'); // 'reset' or 'dismiss'
-    $counselorName = $adminUser['first_name'] . ' ' . $adminUser['last_name'];
+    $itAdminName = $adminUser['first_name'] . ' ' . $adminUser['last_name'];
     
     if ($action === 'dismiss') {
         // Just clear the reset request flag without resetting their authenticator
@@ -49,7 +49,7 @@ try {
             $notifStmt->execute([
                 $userId,
                 '2FA Authenticator Reset',
-                "Your Two-Factor Authenticator (2FA) was reset by Guidance Counselor $counselorName. You can scan a new QR code on your next login."
+                "Your Two-Factor Authenticator (2FA) was reset by School IT Administrator $itAdminName. You can scan a new QR code on your next login."
             ]);
         } catch (Exception $e) {}
         

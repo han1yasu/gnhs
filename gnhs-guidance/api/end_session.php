@@ -38,8 +38,9 @@ try {
 
     if ($isResolved) {
         // ── BRANCH: CASE RESOLVED ──────────────────────────────────
-        $resolution = trim($raw['resolution'] ?? '');
-        $sanctions  = trim($raw['sanctions'] ?? '');
+        $resolution  = trim($raw['resolution'] ?? '');
+        $sanctions   = trim($raw['sanctions'] ?? '');
+        $guidanceRec = trim($raw['guidance_recommendations'] ?? '');
 
         if (!$resolution) {
             jsonOut(['success' => false, 'message' => 'Please provide the case resolution summary.'], 400);
@@ -49,14 +50,15 @@ try {
         $updateSessionStmt = $db->prepare("UPDATE counseling_sessions 
             SET status = 'completed', 
                 ended_at = NOW(), 
-                notes = ? 
+                notes = ?,
+                recommendations = ?
             WHERE id = ?");
-        $updateSessionStmt->execute([$endNotes, $sessionId]);
+        $updateSessionStmt->execute([$endNotes, $guidanceRec ?: null, $sessionId]);
 
         $db->prepare("UPDATE counseling_sessions SET status = 'completed' WHERE case_id = ? AND status = 'ongoing'")
            ->execute([$caseId]);
 
-        // Save final session notes into case_notes if provided
+        // Save final session notes into case_notes if provided (internal, not visible to student)
         if ($sessionNotes) {
             $db->prepare("INSERT INTO case_notes (case_id, author_id, note_type, content, is_visible_to_student, created_at) VALUES (?, ?, 'session_notes', ?, 0, NOW())")
                ->execute([$caseId, $user['id'], "Session Notes: " . $sessionNotes]);
@@ -66,17 +68,21 @@ try {
         $db->prepare("UPDATE cases 
             SET status = 'resolved', 
                 resolution = ?, 
+                guidance_recommendations = ?,
                 resolution_process = 'Settled through Counseling Session',
                 sanctions = ?, 
                 resolved_at = NOW(), 
                 updated_at = NOW() 
             WHERE id = ?")
-           ->execute([$resolution, $sanctions ?: null, $caseId]);
+           ->execute([$resolution, $guidanceRec ?: null, $sanctions ?: null, $caseId]);
 
-        // Add resolution record in case_notes
+        // Add resolution record in case_notes (visible to student)
         $noteLog = "Case officially RESOLVED by Counselor {$counselorName}.\n\n• Resolution:\n{$resolution}";
         if ($sanctions) {
             $noteLog .= "\n\n• School Rule Sanction / Action Imposed:\n{$sanctions}";
+        }
+        if ($guidanceRec) {
+            $noteLog .= "\n\n• Guidance Recommendations:\n{$guidanceRec}";
         }
         $db->prepare("INSERT INTO case_notes (case_id, author_id, note_type, content, is_visible_to_student, created_at) VALUES (?, ?, 'resolution', ?, 1, NOW())")
            ->execute([$caseId, $user['id'], $noteLog]);
@@ -115,23 +121,33 @@ try {
             jsonOut(['success' => false, 'message' => 'Next counseling session cannot be scheduled in the past. Please select a present or future date and time.'], 400);
         }
 
+        $guidanceRec = trim($raw['guidance_recommendations'] ?? '');
+
         // Mark current session as ongoing progress (continuous tracking)
         $updateSessionStmt = $db->prepare("UPDATE counseling_sessions 
             SET status = 'ongoing', 
                 ended_at = NOW(), 
-                notes = ? 
+                notes = ?,
+                recommendations = ?
             WHERE id = ?");
-        $updateSessionStmt->execute([$endNotes, $sessionId]);
+        $updateSessionStmt->execute([$endNotes, $guidanceRec ?: null, $sessionId]);
 
-        // Save session notes into case_notes if provided
+        // Save session notes into case_notes if provided (internal, not visible to student)
         if ($sessionNotes) {
             $db->prepare("INSERT INTO case_notes (case_id, author_id, note_type, content, is_visible_to_student, created_at) VALUES (?, ?, 'session_notes', ?, 0, NOW())")
                ->execute([$caseId, $user['id'], "Session Notes: " . $sessionNotes]);
         }
 
-        // Keep case status as ongoing
-        $db->prepare("UPDATE cases SET status = 'ongoing', updated_at = NOW() WHERE id = ?")
-           ->execute([$caseId]);
+        // Keep case status as ongoing, update recommendations if provided
+        if ($guidanceRec) {
+            $db->prepare("UPDATE cases SET status = 'ongoing', guidance_recommendations = ?, updated_at = NOW() WHERE id = ?")
+               ->execute([$guidanceRec, $caseId]);
+            $db->prepare("INSERT INTO case_notes (case_id, author_id, note_type, content, is_visible_to_student, created_at) VALUES (?, ?, 'guidance_recommendation', ?, 1, NOW())")
+               ->execute([$caseId, $user['id'], "Guidance Recommendations: " . $guidanceRec]);
+        } else {
+            $db->prepare("UPDATE cases SET status = 'ongoing', updated_at = NOW() WHERE id = ?")
+               ->execute([$caseId]);
+        }
 
         // Insert new counseling session
         $db->prepare("INSERT INTO counseling_sessions (case_id, student_id, counselor_id, session_date, status, session_type, location, notes, created_at) VALUES (?, ?, ?, ?, 'scheduled', ?, ?, ?, NOW())")

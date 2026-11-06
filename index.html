@@ -282,7 +282,7 @@
           </div>
           <div class="role-card" onclick="selectRole('admin')">
             <div class="role-icon" style="background:#fff0f0;color:#3a0000"><i class="fas fa-user-tie"></i></div>
-            <div><strong>Guidance Admin</strong><small>Manage all cases &amp; analytics</small></div>
+            <div><strong>Guidance Admin</strong><small>Manage cases &amp; counseling</small></div>
           </div>
         </div>
       </div>
@@ -359,7 +359,7 @@
         <div id="paneResetStatus" class="hidden">
           <div class="modal-logo" style="background:var(--maroon-pale);color:var(--maroon)"><i class="fas fa-shield-halved"></i></div>
           <h2 class="modal-title">Check Request Update</h2>
-          <p class="modal-sub">See if Guidance Counselor has changed your password and retrieve your credentials.</p>
+          <p class="modal-sub">See if the School IT Administrator has issued your temporary password.</p>
           <div id="status-check-msg" style="display:none"></div>
           <div class="form-group"><label>Student ID / LRN or Email</label>
             <div class="input-wrap"><i class="fas fa-id-card"></i><input type="text" id="status-email"
@@ -491,10 +491,11 @@
           </div>
         </div>
         <div class="form-group" id="reg-lrn-field">
-          <label id="reg-lrn-label">LRN <span class="req">*</span></label>
+          <label id="reg-lrn-label">LRN (12 Digits) <span class="req">*</span></label>
           <div class="input-wrap"><i class="fas fa-id-card"></i>
-            <input type="text" id="reg-lrn-input" placeholder="Enter your 12-digit LRN" required />
+            <input type="text" id="reg-lrn-input" inputmode="numeric" maxlength="12" pattern="[0-9]{12}" placeholder="Enter 12-digit LRN (Numbers only)" required />
           </div>
+          <small id="reg-lrn-help" style="font-size:11px;color:var(--text-3);margin-top:4px;display:block;">Must be strictly 12 numeric digits.</small>
         </div>
         <div id="reg-grade-field">
           <div class="form-row">
@@ -526,8 +527,22 @@
         </div>
         <div class="form-group"><label>Password <span class="req">*</span></label>
           <div class="input-wrap"><i class="fas fa-lock"></i><input type="password" id="reg-pass"
-              placeholder="Minimum 8 characters" required /><button class="toggle-pass" type="button"
+              placeholder="Minimum 8 characters" required oninput="checkRegPassStrength()" /><button class="toggle-pass" type="button"
               onclick="togglePass('reg-pass')"><i class="fas fa-eye"></i></button></div>
+          <div id="regPassRules" style="margin-top:7px;padding:8px 12px;background:rgba(0,0,0,0.03);border-radius:8px;border:1px solid var(--border);font-size:11.5px;display:flex;flex-direction:column;gap:3px">
+            <div id="reg-rule-len" style="color:var(--text-3);display:flex;align-items:center;gap:6px">
+              <i class="fas fa-circle-xmark" style="font-size:11px"></i> Minimum 8 characters
+            </div>
+            <div id="reg-rule-upper" style="color:var(--text-3);display:flex;align-items:center;gap:6px">
+              <i class="fas fa-circle-xmark" style="font-size:11px"></i> At least 1 uppercase letter (Caps Lock)
+            </div>
+            <div id="reg-rule-num" style="color:var(--text-3);display:flex;align-items:center;gap:6px">
+              <i class="fas fa-circle-xmark" style="font-size:11px"></i> At least 1 number (0-9)
+            </div>
+            <div id="reg-rule-sym" style="color:var(--text-3);display:flex;align-items:center;gap:6px">
+              <i class="fas fa-circle-xmark" style="font-size:11px"></i> At least 1 special character (e.g. !@#$%^&*)
+            </div>
+          </div>
         </div>
         <div class="form-group"><label>Confirm Password <span class="req">*</span></label>
           <div class="input-wrap"><i class="fas fa-lock"></i><input type="password" id="reg-confirm"

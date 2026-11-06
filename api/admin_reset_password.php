@@ -38,7 +38,7 @@ try {
         jsonOut(['success' => false, 'message' => 'Target user account not found.']);
     }
 
-    $counselorName = trim(($adminUser['first_name'] ?? '') . ' ' . ($adminUser['last_name'] ?? '')) ?: 'Guidance Counselor';
+    $itAdminName   = trim(($adminUser['first_name'] ?? '') . ' ' . ($adminUser['last_name'] ?? '')) ?: 'School IT Administrator';
     $targetRole    = $targetUser['role'] ?: 'student';
     $fullName      = trim($targetUser['first_name'] . ' ' . ($targetUser['last_name'] ?? ''));
 
@@ -77,8 +77,8 @@ try {
 
     // Synchronize with password_reset_requests so the student can track their status
     $adminNotes = $resetQuestions
-        ? "Password and startup security recovery questions reset by Counselor {$counselorName} via User Management (In-Person Backup)."
-        : "Password reset by Counselor {$counselorName} via User Management.";
+        ? "Password and startup security recovery questions reset by IT Administrator {$itAdminName} via User Management (In-Person Helpdesk)."
+        : "Password reset by IT Administrator {$itAdminName} via User Management.";
 
     try {
         // First check if there is an existing pending request
@@ -134,9 +134,9 @@ try {
 
     // Add in-app notification for the user
     try {
-        $notifMsg = "Your account password was updated by Guidance Counselor {$counselorName}." .
+        $notifMsg = "Your account password was updated by School IT Administrator {$itAdminName}." .
             ($resetQuestions ? " Your startup security recovery questions were also reset. You can set fresh recovery questions when you next sign in." : "");
-        $db->prepare("INSERT INTO notifications (user_id, title, message, type, is_read, created_at) VALUES (?, 'Password Reset by Guidance Office', ?, 'system', 0, NOW())")
+        $db->prepare("INSERT INTO notifications (user_id, title, message, type, is_read, created_at) VALUES (?, 'Password Reset by School IT', ?, 'system', 0, NOW())")
            ->execute([$userId, $notifMsg]);
     } catch (Exception $e) {}
 

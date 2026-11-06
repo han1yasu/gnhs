@@ -37,8 +37,8 @@ try {
             $notif = $db->prepare("INSERT INTO notifications (user_id, title, message, type, is_read) VALUES (?, ?, ?, 'system', 0)");
             $notif->execute([
                 $id,
-                'Password Reset by Guidance Office',
-                'Your account password was updated by Guidance Counselor ' . htmlspecialchars($adminUser['first_name'] . ' ' . $adminUser['last_name']) . '.'
+                'Password Reset by School IT',
+                'Your account password was updated by School IT Administrator ' . htmlspecialchars($adminUser['first_name'] . ' ' . $adminUser['last_name']) . '.'
             ]);
         } catch (Exception $e) {}
         jsonOut(['success'=>true, 'message'=>'Password reset successfully.']);

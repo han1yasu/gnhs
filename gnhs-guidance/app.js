@@ -97,13 +97,22 @@ function selectRole(role) {
   // Update LRN / Employee Number label based on role
   const lrnLabel = document.getElementById('reg-lrn-label');
   const lrnInput = document.getElementById('reg-lrn-input');
+  const lrnHelp  = document.getElementById('reg-lrn-help');
   if (lrnLabel && lrnInput) {
     if (role === 'student') {
-      lrnLabel.innerHTML = 'LRN <span class="req">*</span>';
-      lrnInput.placeholder = 'Enter your 12-digit LRN';
+      lrnLabel.innerHTML = 'LRN (12 Digits) <span class="req">*</span>';
+      lrnInput.placeholder = 'Enter 12-digit LRN (Numbers only)';
+      lrnInput.setAttribute('maxlength', '12');
+      lrnInput.setAttribute('inputmode', 'numeric');
+      lrnInput.setAttribute('pattern', '[0-9]{12}');
+      if (lrnHelp) { lrnHelp.style.display = 'block'; lrnHelp.textContent = 'Must be strictly 12 numeric digits.'; }
     } else {
       lrnLabel.innerHTML = 'Employee Number <span class="req">*</span>';
       lrnInput.placeholder = 'Enter your Employee Number';
+      lrnInput.removeAttribute('maxlength');
+      lrnInput.removeAttribute('inputmode');
+      lrnInput.removeAttribute('pattern');
+      if (lrnHelp) { lrnHelp.style.display = 'none'; }
     }
   }
 
@@ -113,13 +122,13 @@ function selectRole(role) {
   if (loginLabel && loginInput) {
     if (role === 'student') {
       loginLabel.textContent = 'Email Address / LRN';
-      loginInput.placeholder = 'Enter your email or LRN';
+      loginInput.placeholder = 'Enter your email or 12-digit LRN';
     } else if (role === 'teacher') {
       loginLabel.textContent = 'Email Address / Employee Number';
       loginInput.placeholder = 'Enter your email or Employee Number';
     } else {
       loginLabel.textContent = 'Email Address';
-      loginInput.placeholder = 'Enter your email address';
+      loginInput.placeholder = 'Enter Counselor email address';
     }
   }
 
@@ -596,6 +605,73 @@ async function submitSecurityTest() {
   }
 }
 
+function checkRegPassStrength() {
+  const p = $('reg-pass')?.value || '';
+  const rLen = $('reg-rule-len');
+  const rUpper = $('reg-rule-upper');
+  const rNum = $('reg-rule-num');
+  const rSym = $('reg-rule-sym');
+  const container = $('regPassRules');
+
+  const lenOk = p.length >= 8;
+  const upperOk = /[A-Z]/.test(p);
+  const numOk = /[0-9]/.test(p);
+  const symOk = /[^A-Za-z0-9]/.test(p);
+
+  const updateRule = (el, valid, text) => {
+    if (!el) return;
+    if (valid) {
+      el.style.color = '#047857';
+      el.style.fontWeight = '700';
+      el.style.background = 'rgba(16, 185, 129, 0.12)';
+      el.style.padding = '4px 8px';
+      el.style.borderRadius = '6px';
+      el.style.border = '1px solid rgba(16, 185, 129, 0.3)';
+      el.style.transition = 'all 0.25s ease';
+      el.innerHTML = `<i class="fas fa-circle-check" style="font-size:12px;color:#10b981;filter:drop-shadow(0 0 5px rgba(16,185,129,0.85))"></i> ${text}`;
+    } else {
+      el.style.color = 'var(--text-3)';
+      el.style.fontWeight = 'normal';
+      el.style.background = 'transparent';
+      el.style.padding = '3px 0';
+      el.style.borderRadius = '0';
+      el.style.border = 'none';
+      el.innerHTML = `<i class="fas fa-circle-xmark" style="font-size:11px"></i> ${text}`;
+    }
+  };
+
+  updateRule(rLen, lenOk, 'Minimum 8 characters');
+  updateRule(rUpper, upperOk, 'At least 1 uppercase letter (Caps Lock)');
+  updateRule(rNum, numOk, 'At least 1 number (0-9)');
+  updateRule(rSym, symOk, 'At least 1 special character (e.g. !@#$%^&*)');
+
+  const allPassed = lenOk && upperOk && numOk && symOk;
+  let successEl = $('reg-rules-success');
+
+  if (container) {
+    if (allPassed) {
+      container.style.borderColor = '#10b981';
+      container.style.background = 'rgba(16, 185, 129, 0.08)';
+      container.style.boxShadow = '0 0 14px rgba(16, 185, 129, 0.35)';
+      container.style.transition = 'all 0.3s ease';
+      if (!successEl) {
+        successEl = document.createElement('div');
+        successEl.id = 'reg-rules-success';
+        successEl.style.cssText = 'margin-top:5px;padding:6px 10px;background:#10b981;color:#fff;border-radius:6px;font-weight:700;font-size:11px;display:flex;align-items:center;gap:6px;box-shadow:0 2px 8px rgba(16,185,129,0.4);animation:fadeIn 0.3s ease';
+        successEl.innerHTML = '<i class="fas fa-shield-check" style="font-size:13px"></i> Password meets all security requirements!';
+        container.appendChild(successEl);
+      }
+    } else {
+      container.style.borderColor = 'var(--border)';
+      container.style.background = 'rgba(0,0,0,0.03)';
+      container.style.boxShadow = 'none';
+      if (successEl) {
+        successEl.remove();
+      }
+    }
+  }
+}
+
 // ——— Register submit —————————————————————————————————————————————
 async function handleRegister() {
   const firstName = $('reg-fname')?.value.trim();
@@ -615,11 +691,20 @@ async function handleRegister() {
   if (!firstName||!lastName||!lrn||!email||!pass||!confirm) {
     showMsg('reg-msg','Please fill in all required fields.'); return;
   }
+  if (_role==='student') {
+    if (!/^\d{12}$/.test(lrn)) {
+      showMsg('reg-msg','Learner Reference Number (LRN) must be strictly 12 numeric digits.');
+      return;
+    }
+  }
   if (_role==='student' && !grade) {
     showMsg('reg-msg','Please select your grade and section.'); return;
   }
   if (pass!==confirm) { showMsg('reg-msg','Passwords do not match.'); return; }
-  if (pass.length<8)  { showMsg('reg-msg','Password must be at least 8 characters.'); return; }
+  if (pass.length<8)  { showMsg('reg-msg','Password must be at least 8 characters long.'); return; }
+  if (!/[A-Z]/.test(pass)) { showMsg('reg-msg','Password must contain at least 1 uppercase letter (Caps Lock).'); return; }
+  if (!/[0-9]/.test(pass)) { showMsg('reg-msg','Password must contain at least 1 number (0-9).'); return; }
+  if (!/[^A-Za-z0-9]/.test(pass)) { showMsg('reg-msg','Password must contain at least 1 special character (e.g. !@#$%^&*).'); return; }
 
   const btn = document.querySelector('#step-register .btn-submit');
   setLoading(btn, true); hideEl('reg-msg');
@@ -633,9 +718,8 @@ async function handleRegister() {
       showMsg('reg-msg','Account created! You may now log in.','success');
       setTimeout(() => { _action='login'; selectRole(_role); }, 2000);
     } else { showMsg('reg-msg', res.message||'Registration failed.'); }
-  } catch {
-    showMsg('reg-msg','Account created! Please log in.','success');
-    setTimeout(() => { _action='login'; selectRole(_role); }, 2000);
+  } catch (err) {
+    showMsg('reg-msg','Unable to complete registration. Please check your connection and try again.');
   }
   setLoading(btn, false);
 }
@@ -962,27 +1046,34 @@ function openEvidenceLightbox(src, title, type = 'image') {
     };
     modal.innerHTML = `
       <div class="evidence-lightbox-content">
-        <button type="button" class="evidence-lightbox-close" onclick="closeEvidenceLightbox()">&times;</button>
+        <button type="button" class="evidence-lightbox-close" onclick="closeEvidenceLightbox()" title="Close Viewer">&times;</button>
         <div id="evidenceLightboxMediaWrap" style="max-width:88vw;max-height:80vh;display:flex;align-items:center;justify-content:center"></div>
         <div class="evidence-lightbox-bar">
           <span id="evidenceLightboxTitle" style="font-weight:700;font-size:13px"></span>
           <a id="evidenceLightboxDownload" href="" download="" class="egc-btn" style="background:#fff;color:var(--maroon);padding:5px 14px;border-radius:20px;font-weight:800"><i class="fas fa-download"></i> Download</a>
         </div>
       </div>`;
-    document.body.appendChild(modal);
   }
+
+  // Ensure lightbox is always appended to document.body so it is completely immune to any parent stacking contexts
+  document.body.appendChild(modal);
+  modal.style.zIndex = '999999';
 
   const wrap = document.getElementById('evidenceLightboxMediaWrap');
   if (type === 'video') {
-    wrap.innerHTML = `<video id="evidenceLightboxPlayer" src="${src}" controls autoplay style="max-width:88vw;max-height:78vh;border-radius:8px;box-shadow:0 10px 40px rgba(0,0,0,0.6);background:#000"></video>`;
+    wrap.innerHTML = `<video id="evidenceLightboxPlayer" src="${src}" controls autoplay playsinline style="max-width:88vw;max-height:78vh;border-radius:8px;box-shadow:0 10px 40px rgba(0,0,0,0.8);background:#000"></video>`;
   } else {
-    wrap.innerHTML = `<img id="evidenceLightboxImg" src="${src}" alt="${escapeHtml(title)}" style="max-width:88vw;max-height:78vh;object-fit:contain;border-radius:8px;box-shadow:0 10px 40px rgba(0,0,0,0.6)"/>`;
+    wrap.innerHTML = `<img id="evidenceLightboxImg" src="${src}" alt="${escapeHtml(title)}" style="max-width:88vw;max-height:78vh;object-fit:contain;border-radius:8px;box-shadow:0 10px 40px rgba(0,0,0,0.8)"/>`;
   }
 
   document.getElementById('evidenceLightboxTitle').textContent = title || 'Evidence View';
-  document.getElementById('evidenceLightboxDownload').href = src;
-  document.getElementById('evidenceLightboxDownload').download = title || 'evidence_file';
+  const dlBtn = document.getElementById('evidenceLightboxDownload');
+  if (dlBtn) {
+    dlBtn.href = src;
+    dlBtn.download = title || 'evidence_file';
+  }
   modal.classList.remove('hidden');
+  modal.style.display = 'flex';
 }
 
 function closeEvidenceLightbox() {
@@ -993,7 +1084,21 @@ function closeEvidenceLightbox() {
       try { player.pause(); player.src = ''; } catch(e){}
     }
     modal.classList.add('hidden');
+    modal.style.display = 'none';
   }
+}
+
+// Global escape key handler for lightbox
+if (!window._evidenceLightboxEscBound) {
+  window._evidenceLightboxEscBound = true;
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      const lb = document.getElementById('evidenceLightboxModal');
+      if (lb && !lb.classList.contains('hidden') && lb.style.display !== 'none') {
+        closeEvidenceLightbox();
+      }
+    }
+  });
 }
 
 function triggerCaseEvidenceUpload(caseId, caseNum) {
@@ -1085,6 +1190,20 @@ function buildReviewModal(c, notes, session) {
       </div>
     </div>` : '';
 
+  const followUpCard = (c.follow_up_msg) ? `
+    <div style="background:#fdf4ff;border:1.5px solid #d8b4fe;border-radius:8px;padding:12px 16px;margin-bottom:18px;display:flex;align-items:flex-start;gap:12px">
+      <div style="width:36px;height:36px;border-radius:50%;background:#a855f7;color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0"><i class="fas fa-reply-all"></i></div>
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:11px;font-weight:700;background:#7e22ce;color:#fff;padding:2px 8px;border-radius:12px;text-transform:uppercase;letter-spacing:0.5px">Student Appeal / Follow-Up</span>
+          <span style="font-size:12px;color:#7e22ce;font-weight:600">Case re-evaluated upon student appeal</span>
+        </div>
+        <div style="margin-top:6px;font-size:13.5px;color:#581c87;background:rgba(255,255,255,0.7);padding:10px 12px;border-radius:6px;border:1px solid #f3e8ff;line-height:1.5">
+          <strong>Student's Explanation:</strong> "${escapeHtml(c.follow_up_msg)}"
+        </div>
+      </div>
+    </div>` : '';
+
   body.innerHTML = `
   <div class="review-header-strip" style="display:flex;flex-wrap:wrap;gap:15px;background:var(--bg2);padding:15px;border-radius:8px;margin-bottom:20px;border:1px solid var(--border)">
       <div style="flex:1;min-width:120px"><label style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Case ID</label><strong style="color:var(--maroon);font-size:16px">#${escapeHtml(c.case_number)}</strong></div>
@@ -1094,6 +1213,7 @@ function buildReviewModal(c, notes, session) {
       <div style="flex:1.5;min-width:130px"><label style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Submitted</label><span style="font-size:13px;color:var(--text-2)">${escapeHtml(c.submitted_at||'—')}</span></div>
     </div>
     ${peerReportCard}
+    ${followUpCard}
     <div class="review-grid" style="grid-template-columns: 1.2fr 1fr; gap:25px; align-items:start">
     <div>
       ${c.ai_summary ? `<div class="ai-box" style="margin-bottom:20px;border-left:4px solid var(--blue);background:rgba(37,99,235,0.05)"><div class="ai-box-label" style="color:var(--blue);font-size:14px;margin-bottom:8px"><i class="fas fa-magic"></i> AI Summary</div><div class="ai-box-text" style="font-size:15px;line-height:1.6">${c.ai_summary}</div></div>` : ''}
@@ -1398,10 +1518,18 @@ function ensureCaseResolutionModal() {
         <textarea id="crResolutionSummary" rows="3" class="form-control" style="width:100%;padding:12px;border-radius:8px;border:1.5px solid var(--border);font-size:13.5px;line-height:1.5;background:var(--bg)" placeholder="Detail how the case was resolved (e.g. mutual agreement reached, guidance counseling concluded, restorative conference completed, student commitments established)..."></textarea>
       </div>
 
-      <!-- Step 3: School Rule Sanctions -->
+      <!-- Step 3: Guidance Recommendations for Student -->
+      <div style="margin-bottom:18px">
+        <label style="font-size:13.5px;font-weight:800;color:var(--text);display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <span>3. Guidance Recommendations for Student <span style="font-size:11px;color:var(--text-3);font-weight:600">(Visible to Student)</span></span>
+        </label>
+        <textarea id="crGuidanceRecommendations" rows="2" class="form-control" style="width:100%;padding:10px;border-radius:8px;border:1.5px solid var(--border);font-size:13px;line-height:1.4;background:var(--bg)" placeholder="Official guidance recommendations, coping advice, or next steps that the student can view..."></textarea>
+      </div>
+
+      <!-- Step 4: School Rule Sanctions -->
       <div style="margin-bottom:20px">
         <label style="font-size:13.5px;font-weight:800;color:var(--text);display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-          <span>3. Regulated School Rule Sanction / Disciplinary Action</span>
+          <span>4. Regulated School Rule Sanction / Disciplinary Action</span>
           <span style="font-size:11px;color:var(--text-3);font-weight:600">(if regulated school rules are affected)</span>
         </label>
         <p style="font-size:12px;color:var(--text-3);margin:0 0 8px 0">Click common school rule measures below or type custom sanctions according to GNHS student handbook:</p>
@@ -1446,6 +1574,7 @@ function openCaseResolutionModal() {
 
   $('crCaseBadge').textContent = '#' + (c.case_number || _activeCaseId || 'CASE');
   $('crResolutionSummary').value = c.resolution || '';
+  $('crGuidanceRecommendations').value = c.guidance_recommendations || '';
   $('crSanctionsText').value = c.sanctions || '';
 
   // Pre-select process
@@ -1535,6 +1664,7 @@ async function submitCaseResolution() {
   }
 
   const sanctions = $('crSanctionsText')?.value.trim() || '';
+  const guidanceRecommendations = $('crGuidanceRecommendations')?.value.trim() || '';
   const completeSessions = $('crCompleteSessionsChk')?.checked ?? true;
   const priority = document.querySelector('.prio-opt.selected')?.dataset.prio || (_currentReviewCase?.priority || 'medium');
 
@@ -1554,6 +1684,7 @@ async function submitCaseResolution() {
       status: 'resolved',
       priority: priority,
       resolution: summary,
+      guidance_recommendations: guidanceRecommendations,
       resolution_process: proc,
       sanctions: sanctions,
       complete_sessions: completeSessions
@@ -1743,8 +1874,27 @@ function buildPrioBadge(p) {
 // ══════════════════════════════════════════════════════════════════════
 // USER MANAGEMENT (admin)
 // ══════════════════════════════════════════════════════════════════════
-function openAddUserModal() { $('addUserModal')?.classList.remove('hidden'); }
-function closeAddUser(e)    { if(!e||e.target.id==='addUserModal') $('addUserModal')?.classList.add('hidden'); }
+function openAddUserModal() {
+  const m = $('addUserModal');
+  if (m) {
+    if (m.parentElement !== document.body) document.body.appendChild(m);
+    m.classList.remove('hidden');
+    m.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    const box = m.querySelector('.modal-box');
+    if (box) box.scrollTop = 0;
+  }
+}
+function closeAddUser(e) {
+  if (!e || e.target.id === 'addUserModal' || e.target.closest('.modal-close') || (e.target.tagName === 'BUTTON' && e.target.innerText.trim() === 'Cancel')) {
+    const m = $('addUserModal');
+    if (m) {
+      m.classList.add('hidden');
+      m.style.display = 'none';
+      document.body.style.overflow = '';
+    }
+  }
+}
 
 async function saveNewUser() {
   const first  = $('nu-first')?.value.trim();
@@ -1758,31 +1908,78 @@ async function saveNewUser() {
   const grade  = (glevel && gsect) ? 'Grade ' + glevel + ' - ' + gsect : '';
 
   if(!first||!last||!email||!pass||!role||!idnum){showMsg('nuMsg','Please fill all required fields.');return;}
+  if(role==='student') {
+    if (!/^\d{12}$/.test(idnum)) {
+      showMsg('nuMsg', 'Student LRN must be strictly 12 numeric digits.');
+      return;
+    }
+  }
   if(role==='student' && !grade){showMsg('nuMsg','Please select a grade and section for the student.');return;}
+  if (pass.length<8) { showMsg('nuMsg','Password must be at least 8 characters long.'); return; }
+  if (!/[A-Z]/.test(pass)) { showMsg('nuMsg','Password must contain at least 1 uppercase letter (Caps Lock).'); return; }
+  if (!/[0-9]/.test(pass)) { showMsg('nuMsg','Password must contain at least 1 number (0-9).'); return; }
+  if (!/[^A-Za-z0-9]/.test(pass)) { showMsg('nuMsg','Password must contain at least 1 special character (e.g. !@#$%^&*).'); return; }
 
   const btn=$('saveUserBtn'); setLoading(btn,true); hideEl('nuMsg');
   try{
     const res=await apiPost('/gnhs-guidance/api/register.php',{first_name:first,last_name:last,email,password:pass,confirm:pass,role,id_number:idnum,grade_section:grade});
     if(res.success){showToast('User added!','success');$('addUserModal').classList.add('hidden');setTimeout(()=>location.reload(),1200);}
     else{showMsg('nuMsg',res.message||'Failed.');}
-  }catch{showToast('User added (demo)','success');$('addUserModal')?.classList.add('hidden');}
+  }catch{showMsg('nuMsg','Network or server error. Please try again.');}
   setLoading(btn,false);
 }
 
-async function deleteUser(userId, name) {
-  if(!confirm(`Are you sure you want to deactivate the account of ${name}?`)) return;
+async function deleteUser(userId, name, email) {
+  if (typeof window.openDeactivateConfirmModal === 'function') {
+    window.openDeactivateConfirmModal(userId, name, email);
+    return;
+  }
+  const modal = document.getElementById('deactivateConfirmModal');
+  if (modal) {
+    _targetDeactivateUserId = userId;
+    const nameEl = document.getElementById('deactivateUserName');
+    const emailEl = document.getElementById('deactivateUserEmail');
+    const descEl = document.getElementById('deactivateConfirmText');
+    const avatarEl = document.getElementById('deactivateUserAvatar');
+    if (nameEl) nameEl.textContent = name;
+    if (emailEl) emailEl.textContent = email || '';
+    if (descEl) descEl.innerHTML = `Are you sure you want to deactivate the account of <strong>${name}</strong>? They will be barred from signing into the system until reactivated.`;
+    if (avatarEl) avatarEl.textContent = name ? name[0].toUpperCase() : 'U';
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+    return;
+  }
   try{
     const r=await fetch('/gnhs-guidance/api/update_user.php?action=deactivate&id='+userId);
     const d=await r.json();
     if(d.success){showToast('User deactivated.','info');setTimeout(()=>location.reload(),1200);}
     else showToast(d.message||'Failed.','error');
-  }catch{showToast('Done (demo).','info');document.querySelector(`[data-user-id="${userId}"]`)?.closest('.user-card')?.remove();}
+  }catch{showToast('Network error while deactivating.','error');}
 }
 
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // DOM READY
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 document.addEventListener('DOMContentLoaded', () => {
+  // Real-time numeric enforcement for 12-digit student LRN inputs
+  const regLrn = $('reg-lrn-input');
+  if (regLrn) {
+    regLrn.addEventListener('input', function() {
+      if (_role === 'student') {
+        this.value = this.value.replace(/[^0-9]/g, '').slice(0, 12);
+      }
+    });
+  }
+  const nuIdnum = $('nu-idnum');
+  if (nuIdnum) {
+    nuIdnum.addEventListener('input', function() {
+      const role = $('nu-role')?.value;
+      if (role === 'student') {
+        this.value = this.value.replace(/[^0-9]/g, '').slice(0, 12);
+      }
+    });
+  }
+
   // Active sidebar link
   const page = location.pathname.split('/').pop();
   $$('.sb-link, .sb-sublink').forEach(l => {

@@ -37,8 +37,8 @@ try {
 
     $secret = $user['totp_secret'];
 
-    // Verify the TOTP code
-    if (PureOTP::verifyCode($secret, $code, 3)) { // 3 slices = +/- 90 seconds tolerance
+    // Strictly verify the TOTP code within the active 30-second timer window (circle timer)
+    if (PureOTP::verifyCode($secret, $code, 0)) {
         // Code is correct, promote pending_user to full user session
         
         if (empty($user['totp_enabled'])) {
@@ -55,9 +55,9 @@ try {
         
         $role = $_SESSION['user']['role'];
         $redirectMap = [
-            'student' => '/gnhs-guidance/pages/student-dashboard.php',
-            'teacher' => '/gnhs-guidance/pages/teacher-dashboard.php',
-            'admin'   => '/gnhs-guidance/pages/admin-dashboard.php',
+            'student'  => '/gnhs-guidance/pages/student-dashboard.php',
+            'teacher'  => '/gnhs-guidance/pages/teacher-dashboard.php',
+            'admin'    => '/gnhs-guidance/pages/admin-dashboard.php',
         ];
         
         $redirectUrl = $redirectMap[$role] ?? '/gnhs-guidance/index.html';
@@ -67,7 +67,12 @@ try {
         
         jsonOut(['success'=>true, 'redirect'=>$redirectUrl]);
     } else {
-        jsonOut(['success'=>false, 'message'=>'Incorrect code. Please try again.']);
+        // Check if the user entered an expired code that was active in the previous 30s cycle
+        $wasPreviousCode = hash_equals(PureOTP::getCode($secret, time() - 30), $code);
+        if ($wasPreviousCode) {
+            jsonOut(['success' => false, 'message' => 'That code has expired! Verification is strictly timed to the active circle timer. Please enter the new code currently showing in your authenticator app.']);
+        }
+        jsonOut(['success'=>false, 'message'=>'Incorrect verification code. Please check your authenticator app and try again.']);
     }
 
 } catch (Exception $e) {

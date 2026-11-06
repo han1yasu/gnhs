@@ -45,6 +45,18 @@ function getDB(): PDO {
         try { $pdo->exec("ALTER TABLE cases ADD COLUMN IF NOT EXISTS is_against_adviser TINYINT(1) DEFAULT 0"); } catch(Exception $e){}
         try { $pdo->exec("ALTER TABLE cases ADD COLUMN IF NOT EXISTS reported_teacher_name VARCHAR(255) DEFAULT NULL"); } catch(Exception $e){}
         try {
+            $hasIdx = $pdo->query("SHOW INDEX FROM users WHERE Key_name = 'uq_id_number'")->fetch();
+            if (!$hasIdx) {
+                $pdo->exec("ALTER TABLE users ADD UNIQUE KEY uq_id_number (id_number)");
+            }
+        } catch(Exception $e){}
+        try {
+            $hasEmailIdx = $pdo->query("SHOW INDEX FROM users WHERE Key_name = 'uq_email'")->fetch();
+            if (!$hasEmailIdx) {
+                $pdo->exec("ALTER TABLE users ADD UNIQUE KEY uq_email (email)");
+            }
+        } catch(Exception $e){}
+        try {
             $pdo->exec("CREATE TABLE IF NOT EXISTS password_reset_requests (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 user_id INT NOT NULL,
@@ -96,15 +108,40 @@ function checkSessionTimeout(): void {
     }
 }
 
-function requireLogin(string $role = ''): array {
+function requireLogin($role = ''): array {
     startSession();
     checkSessionTimeout();
     if (empty($_SESSION['user'])) {
-        header('Location: /gnhs-guidance/index.html'); exit;
+        $isJson = (!empty($_SERVER['HTTP_ACCEPT']) && str_contains($_SERVER['HTTP_ACCEPT'], 'application/json'))
+               || (!empty($_SERVER['PHP_SELF']) && str_contains($_SERVER['PHP_SELF'], '/api/'));
+        if ($isJson) {
+            jsonOut(['success' => false, 'message' => 'Unauthorized. Please log in.'], 401);
+        } else {
+            header('Location: /gnhs-guidance/index.html'); exit;
+        }
     }
     $u = $_SESSION['user'];
-    if ($role && $u['role'] !== $role && !($role === 'staff' && in_array($u['role'], ['admin','teacher']))) {
-        header('Location: /gnhs-guidance/index.html'); exit;
+    if (!empty($role)) {
+        $allowed = is_array($role) ? $role : array_map('trim', explode(',', $role));
+        if ($role === 'staff') {
+            $allowed = ['admin', 'teacher'];
+        }
+        if (!in_array($u['role'], $allowed)) {
+            $isJson = (!empty($_SERVER['HTTP_ACCEPT']) && str_contains($_SERVER['HTTP_ACCEPT'], 'application/json'))
+                   || (!empty($_SERVER['PHP_SELF']) && str_contains($_SERVER['PHP_SELF'], '/api/'));
+            if ($isJson) {
+                jsonOut(['success' => false, 'message' => 'Access restricted for your account role.'], 403);
+            } else {
+                $homeMap = [
+                    'student'  => '/gnhs-guidance/pages/student-dashboard.php',
+                    'teacher'  => '/gnhs-guidance/pages/teacher-dashboard.php',
+                    'admin'    => '/gnhs-guidance/pages/admin-dashboard.php',
+                ];
+                $dest = $homeMap[$u['role']] ?? '/gnhs-guidance/index.html';
+                header("Location: $dest");
+                exit;
+            }
+        }
     }
 
     if ($u['role'] === 'student' && empty($u['is_setup_complete']) && basename($_SERVER['PHP_SELF']) !== 'student-setup.php' && strpos($_SERVER['PHP_SELF'], '/api/') === false) {
@@ -231,7 +268,7 @@ function containsProfanity(string $text): bool {
  * 3. Detection and rejection of spam, random letters, gibberish, repeated characters, and meaningless text
  * 4. Allows valid short reports in English and Filipino
  */
-function validateContentQuality(string $text, int $minChars = 30, int $maxWords = 400): array {
+function validateContentQuality(string $text, int $minChars = 30, int $maxWords = 400, int $minWords = 0): array {
     $clean = trim($text);
     $charCount = mb_strlen($clean);
 
@@ -244,6 +281,14 @@ function validateContentQuality(string $text, int $minChars = 30, int $maxWords 
 
     $words = preg_split('/\s+/u', $clean, -1, PREG_SPLIT_NO_EMPTY);
     $wordCount = count($words);
+
+    if ($minWords > 0 && $wordCount < $minWords) {
+        return [
+            'valid'   => false,
+            'message' => "Description must be at least {$minWords} words long (currently {$wordCount} words). Please elaborate on your concern."
+        ];
+    }
+
     if ($wordCount > $maxWords) {
         return [
             'valid'   => false,

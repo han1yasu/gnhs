@@ -6,8 +6,14 @@ $db   = getDB();
 $uid  = $user['id'];
 
 $filterStatus = $_GET['status'] ?? '';
-$where = "WHERE student_id=$uid";
-if ($filterStatus) $where .= " AND status='".addslashes($filterStatus)."'";
+if ($filterStatus === 'resolved') {
+    header('Location: student-archive.php');
+    exit;
+}
+
+// Active cases only (not resolved/closed) — resolved concerns belong in Case Archive
+$where = "WHERE student_id=$uid AND status NOT IN ('resolved','closed')";
+if ($filterStatus) $where = "WHERE student_id=$uid AND status='".addslashes($filterStatus)."'";
 
 $cases = $db->query("SELECT * FROM cases $where ORDER BY submitted_at DESC")->fetchAll();
 
@@ -53,24 +59,33 @@ foreach ($cases as $c) {
         <td class='cell-actions'><button type='button' class='btn-row-action' onclick='openCaseModal({$c['id']})'><i class='fas fa-eye'></i> View</button></td>
     </tr>";
 }
-if (!$rows) $rows = "<tr><td colspan='7' style='text-align:center;color:var(--text-3);padding:40px'>No cases found. <a href='student-submit.php' style='color:var(--maroon);font-weight:700'>Submit a concern →</a></td></tr>";
+if (!$rows) $rows = "<tr><td colspan='7' style='text-align:center;color:var(--text-3);padding:40px'>No active cases found. <a href='student-submit.php' style='color:var(--maroon);font-weight:700'>Submit a concern →</a></td></tr>";
 
 $selPending    = $filterStatus==='pending'      ? 'selected' : '';
 $selReview     = $filterStatus==='under_review' ? 'selected' : '';
 $selOngoing    = $filterStatus==='ongoing'      ? 'selected' : '';
-$selResolved   = $filterStatus==='resolved'     ? 'selected' : '';
 
 $content = <<<HTML
+<div style="background:var(--maroon-pale);border:1px solid var(--maroon-tint);border-radius:10px;padding:12px 18px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap">
+  <div style="display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--text)">
+    <i class="fas fa-archive" style="color:var(--maroon);font-size:18px"></i>
+    <span>Completed and resolved cases are kept in your <strong>Case Archive</strong>. You can review past resolutions or file an appeal at any time.</span>
+  </div>
+  <a href="student-archive.php" class="btn-sm-primary" style="font-size:12px;padding:6px 14px;white-space:nowrap;display:inline-flex;align-items:center;gap:6px">
+    <i class="fas fa-box-archive"></i> Go to Case Archive &rarr;
+  </a>
+</div>
+
 <div class="content-card">
   <div class="card-header">
     <h3><i class="fas fa-folder-open"></i> My Cases</h3>
     <div style="display:flex;gap:10px;align-items:center">
-      <select class="status-select" onchange="window.location='student-cases.php?status='+this.value">
-        <option value="">All Statuses</option>
+      <select class="status-select" onchange="if(this.value==='resolved'){window.location='student-archive.php';}else{window.location='student-cases.php'+(this.value?'?status='+this.value:'');}">
+        <option value="">All Active Cases</option>
         <option value="pending" $selPending>Pending</option>
         <option value="under_review" $selReview>Under Review</option>
         <option value="ongoing" $selOngoing>Ongoing</option>
-        <option value="resolved" $selResolved>Resolved</option>
+        <option value="resolved">Resolved (Go to Archive)</option>
       </select>
       <a href="student-submit.php" class="btn-sm-primary"><i class="fas fa-plus"></i> New Concern</a>
     </div>

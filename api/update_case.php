@@ -49,9 +49,11 @@ try {
             $resolutionProcess = !empty($caseData['resolution_process']) ? $caseData['resolution_process'] : 'Settled through Counseling Session';
         }
 
+        $guidanceRec = trim($raw['guidance_recommendations'] ?? '');
+
         // Update cases table
-        $updates = ['status=?', 'resolution=?', 'resolution_process=?', 'sanctions=?', 'resolved_at=NOW()', 'updated_at=NOW()'];
-        $params  = ['resolved', $resolution, $resolutionProcess, $sanctions ?: null];
+        $updates = ['status=?', 'resolution=?', 'guidance_recommendations=?', 'resolution_process=?', 'sanctions=?', 'resolved_at=NOW()', 'updated_at=NOW()'];
+        $params  = ['resolved', $resolution, $guidanceRec ?: null, $resolutionProcess, $sanctions ?: null];
         if ($priority) {
             $updates[] = 'priority=?';
             $params[]  = $priority;
@@ -65,15 +67,19 @@ try {
             $db->prepare("UPDATE counseling_sessions 
                 SET status = 'completed', 
                     ended_at = NOW(), 
+                    recommendations = CASE WHEN recommendations IS NULL OR recommendations = '' THEN ? ELSE recommendations END,
                     notes = CASE WHEN notes IS NULL OR notes = '' THEN ? ELSE CONCAT(notes, '\n\n', ?) END 
                 WHERE case_id = ? AND status IN ('scheduled', 'in_progress', 'ongoing')")
-               ->execute([$completionNote, $completionNote, $caseId]);
+               ->execute([$guidanceRec ?: null, $completionNote, $completionNote, $caseId]);
         }
 
         // Add resolution record in case_notes
         $noteLog = "Case officially RESOLVED by Counselor {$counselorName}.\n\n• Guidance Settlement Process: {$resolutionProcess}\n• Resolution Summary:\n{$resolution}";
         if ($sanctions) {
             $noteLog .= "\n\n• Regulated School Rule Sanction / Action Imposed:\n{$sanctions}";
+        }
+        if ($guidanceRec) {
+            $noteLog .= "\n\n• Guidance Recommendations:\n{$guidanceRec}";
         }
         $db->prepare("INSERT INTO case_notes (case_id, author_id, note_type, content, is_visible_to_student, created_at) VALUES (?, ?, 'resolution', ?, 1, NOW())")
            ->execute([$caseId, $user['id'], $noteLog]);

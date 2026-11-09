@@ -1,0 +1,8 @@
+# Local environment credentials & keys
+includes/env.php
+gnhs-guidance/includes/env.php
+.env
+
+# Scratch scripts & temporary test runs
+scratch/
+.vscode/

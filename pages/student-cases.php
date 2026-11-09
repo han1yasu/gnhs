@@ -66,7 +66,7 @@ $selReview     = $filterStatus==='under_review' ? 'selected' : '';
 $selOngoing    = $filterStatus==='ongoing'      ? 'selected' : '';
 
 $content = <<<HTML
-<div style="background:var(--maroon-pale);border:1px solid var(--maroon-tint);border-radius:10px;padding:12px 18px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap">
+<div class="page-info-banner" style="background:var(--maroon-pale);border:1px solid var(--maroon-tint);border-radius:10px;padding:12px 18px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap">
   <div style="display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--text)">
     <i class="fas fa-archive" style="color:var(--maroon);font-size:18px"></i>
     <span>Completed and resolved cases are kept in your <strong>Case Archive</strong>. You can review past resolutions or file an appeal at any time.</span>
@@ -79,7 +79,7 @@ $content = <<<HTML
 <div class="content-card">
   <div class="card-header">
     <h3><i class="fas fa-folder-open"></i> My Cases</h3>
-    <div style="display:flex;gap:10px;align-items:center">
+    <div class="card-header-actions">
       <select class="status-select" onchange="if(this.value==='resolved'){window.location='student-archive.php';}else{window.location='student-cases.php'+(this.value?'?status='+this.value:'');}">
         <option value="">All Active Cases</option>
         <option value="pending" $selPending>Pending</option>

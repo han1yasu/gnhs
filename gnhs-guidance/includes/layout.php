@@ -524,9 +524,9 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
-<script src="/gnhs-guidance/theme.js?v=1.1"></script>
-<script src="/gnhs-guidance/app.js?v=3.0"></script>
-<script src="/gnhs-guidance/tour.js?v=1.0"></script>
+<script src="/gnhs-guidance/theme.js?v=<?= @filemtime(__DIR__ . '/../theme.js') ?: '1.2' ?>"></script>
+<script src="/gnhs-guidance/app.js?v=<?= @filemtime(__DIR__ . '/../app.js') ?: '3.1' ?>"></script>
+<script src="/gnhs-guidance/tour.js?v=<?= @filemtime(__DIR__ . '/../tour.js') ?: '2.0' ?>"></script>
 <script>
 function toggleSidebar(forceState) {
   const sb = document.getElementById('sidebar');

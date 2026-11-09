@@ -1,0 +1,1 @@
+ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_reset_requested TINYINT(1) DEFAULT 0;

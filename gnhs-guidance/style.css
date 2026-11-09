@@ -323,9 +323,10 @@ img{max-width:100%}
 .sum-num{font-size:30px;font-weight:900;display:block;line-height:1}
 .sum-label{font-size:12px;color:var(--text-3);font-weight:600}
 .content-card{background:#fff;border-radius:var(--radius);padding:22px;box-shadow:var(--shadow-sm);border:1px solid var(--border)}
-.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;gap:10px;flex-wrap:wrap}
 .card-header h3{font-size:15px;font-weight:800;display:flex;align-items:center;gap:8px}
 .card-header h3 i{color:var(--maroon)}
+.card-header-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .view-all{font-size:13px;color:var(--maroon);font-weight:700;display:flex;align-items:center;gap:6px;text-decoration:none}
 .view-all:hover{text-decoration:underline}
 .content-grid{display:grid;grid-template-columns:1fr 340px;gap:22px;margin-bottom:22px}
@@ -3152,10 +3153,26 @@ html, body {
     text-overflow: ellipsis !important;
   }
 
+  /* Page Typography on Phone */
+  .header-card {
+    margin-bottom: 12px !important;
+  }
+  .header-card h2,
+  .page-heading {
+    font-size: 16px !important;
+    font-weight: 800 !important;
+    line-height: 1.25 !important;
+  }
+  .header-card p,
+  .page-subheading {
+    font-size: 11px !important;
+    line-height: 1.4 !important;
+  }
+
   /* Cards & Content layout */
   .content-card, .card {
-    padding: 14px 12px !important;
-    border-radius: 12px !important;
+    padding: 12px 10px !important;
+    border-radius: 11px !important;
     width: 100% !important;
     box-sizing: border-box !important;
   }
@@ -3163,43 +3180,122 @@ html, body {
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
     margin-bottom: 10px !important;
   }
   .card-header h3 {
-    font-size: 14px !important;
+    font-size: 13px !important;
     font-weight: 800 !important;
+    margin: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
   }
-  .btn-sm-primary {
-    padding: 4px 9px !important;
+  .card-header-actions,
+  .card-header > div:not(h3) {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    flex-wrap: wrap !important;
+  }
+  .card-header select.status-select,
+  .card-header select {
     font-size: 11px !important;
-    border-radius: 7px !important;
+    padding: 3px 6px !important;
+    height: 30px !important;
+    border-radius: 6px !important;
+    background: var(--bg2) !important;
+    color: var(--text) !important;
+    border: 1px solid var(--border) !important;
+  }
+  .btn-sm-primary,
+  .card-header .btn-sm-primary,
+  .card-header a.btn-sm-primary {
+    padding: 4px 8px !important;
+    font-size: 10.5px !important;
+    border-radius: 6px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 4px !important;
+    white-space: nowrap !important;
+  }
+  .btn-sm-outline,
+  .card-header .btn-sm-outline,
+  .card-header a.btn-sm-outline {
+    padding: 4px 8px !important;
+    font-size: 10.5px !important;
+    border-radius: 6px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 4px !important;
+    white-space: nowrap !important;
+  }
+
+  /* Info Banners on Phone */
+  .page-info-banner {
+    padding: 9px 11px !important;
+    gap: 8px !important;
+    border-radius: 8px !important;
+    margin-bottom: 10px !important;
+  }
+  .page-info-banner > div {
+    font-size: 11px !important;
+    line-height: 1.4 !important;
+  }
+  .page-info-banner i {
+    font-size: 14px !important;
+  }
+  .page-info-banner a {
+    font-size: 10.5px !important;
+    padding: 4px 8px !important;
   }
 
   /* Compact Data Table on Phone */
-  .table-wrap {
+  .table-wrap,
+  .table-responsive {
     border-radius: 8px !important;
     margin-bottom: 4px !important;
+    width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
   }
   .data-table {
-    min-width: 520px !important;
-    font-size: 12px !important;
+    min-width: 480px !important;
+    font-size: 11px !important;
   }
   .data-table th {
-    padding: 7px 8px !important;
-    font-size: 10px !important;
+    padding: 6px 7px !important;
+    font-size: 9px !important;
+    letter-spacing: 0.2px !important;
   }
   .data-table td {
-    padding: 8px 8px !important;
-    font-size: 11.5px !important;
+    padding: 6px 7px !important;
+    font-size: 11px !important;
   }
-  .badge-evidence, .badge-witness {
+  .cell-case-num,
+  .case-num-text {
+    font-size: 11px !important;
+    font-weight: 700 !important;
+  }
+  .status-badge {
     font-size: 9.5px !important;
     padding: 1.5px 5px !important;
-    gap: 3px !important;
-    margin-top: 2px !important;
   }
-  .badge-evidence i, .badge-witness i {
+  .priority-badge {
+    font-size: 9.5px !important;
+    padding: 1.5px 5px !important;
+  }
+  .badge-evidence, .badge-witness, .badge-anon {
     font-size: 8.5px !important;
+    padding: 1px 4px !important;
+    gap: 2px !important;
+    margin-top: 1px !important;
+  }
+  .badge-evidence i, .badge-witness i, .badge-anon i {
+    font-size: 8px !important;
   }
   .case-type-wrap {
     display: flex !important;
@@ -3208,9 +3304,9 @@ html, body {
     align-items: center !important;
   }
   .btn-row-action {
-    padding: 3px 8px !important;
-    font-size: 11px !important;
-    border-radius: 6px !important;
+    padding: 2.5px 6px !important;
+    font-size: 10px !important;
+    border-radius: 5px !important;
   }
 
   /* Upcoming Session Card on Phone */
@@ -3361,6 +3457,111 @@ html, body {
   .evidence-gallery-card .egc-btn {
     padding: 3px 6px !important;
     font-size: 10px !important;
+  }
+
+  /* Prevent header buttons and title overlapping on narrow phones */
+  .card-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+  }
+  .card-header h3 {
+    width: 100% !important;
+    font-size: 13px !important;
+  }
+  .card-header-actions,
+  .card-header > div:not(h3) {
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 6px !important;
+  }
+  .card-header select.status-select,
+  .card-header select {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    height: 30px !important;
+    font-size: 11px !important;
+    padding: 3px 6px !important;
+  }
+  .card-header .btn-sm-primary,
+  .card-header a.btn-sm-primary,
+  .card-header .btn-sm-outline,
+  .card-header a.btn-sm-outline {
+    flex: 0 0 auto !important;
+    height: 30px !important;
+    font-size: 10.5px !important;
+    padding: 0 8px !important;
+    white-space: nowrap !important;
+  }
+  .page-info-banner {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .page-info-banner a {
+    width: 100% !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+}
+
+/* Chat container responsiveness on tablets and mobile phones */
+@media (max-width: 768px) {
+  .chat-page-container {
+    flex-direction: column !important;
+    height: calc(100vh - 120px) !important;
+    min-height: 480px !important;
+  }
+  .chat-page-sidebar {
+    width: 100% !important;
+    max-height: 190px !important;
+    flex: 0 0 auto !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--border) !important;
+  }
+  .chat-page-sidebar > div:first-child {
+    padding: 10px 14px !important;
+  }
+  .chat-page-sidebar h3 {
+    font-size: 14px !important;
+  }
+  .chat-page-main {
+    width: 100% !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+  }
+  #pageChatHeader {
+    padding: 8px 12px !important;
+    gap: 10px !important;
+  }
+  #pageChatHeader > div:first-child {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 14px !important;
+  }
+  #pageChatTitle {
+    font-size: 14px !important;
+  }
+  #pageChatSub {
+    font-size: 10.5px !important;
+  }
+  #pageChatMessages {
+    padding: 10px 12px !important;
+    gap: 8px !important;
+  }
+  #pageChatMessages > div > div:nth-child(2) {
+    font-size: 12.5px !important;
+    padding: 8px 12px !important;
+    max-width: 88% !important;
+  }
+  #pageChatInput {
+    font-size: 12px !important;
+    padding: 8px 10px !important;
+  }
+  #pageChatSendBtn {
+    padding: 8px 14px !important;
+    font-size: 12px !important;
   }
 }
 

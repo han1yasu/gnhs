@@ -261,6 +261,16 @@
           <div class="action-card" onclick="goToRoleSelect('register')"><i class="fas fa-user-plus"></i><strong>Create
               Account</strong><small>I'm new here</small></div>
         </div>
+
+        <div style="display:flex;align-items:center;margin:16px 0 10px;gap:10px;">
+          <div style="flex:1;height:1px;background:var(--border);"></div>
+          <span style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:0.5px;">OR FAST LOGIN</span>
+          <div style="flex:1;height:1px;background:var(--border);"></div>
+        </div>
+
+        <button type="button" class="btn-ghost" onclick="openEmailOtpFlow()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;font-size:13.5px;border:1.5px solid var(--border);border-radius:10px;padding:11px 14px;background:var(--bg2);color:var(--text);font-weight:700;cursor:pointer;transition:.2s;">
+          <i class="fas fa-envelope-open-text" style="color:var(--maroon);font-size:15px;"></i> Sign in with Email Code (Gmail / DepEd)
+        </button>
       </div>
       <div class="modal-step hidden" id="step-role">
         <div class="modal-top-nav">
@@ -339,6 +349,16 @@
         <div class="modal-logo" style="background:var(--maroon-pale);color:var(--maroon)"><i class="fas fa-envelope-circle-check"></i></div>
         <h2 class="modal-title">Sign in with Email Code</h2>
         <p class="modal-sub" id="email-otp-sub">Personal Gmail for Students &bull; DepEd / Gmail for Teachers</p>
+
+        <!-- Role Selector Tab for Email Login -->
+        <div style="display:flex;background:var(--bg2);padding:4px;border-radius:10px;border:1px solid var(--border);margin-bottom:14px;gap:6px;">
+          <button type="button" id="otpRoleTabStudent" onclick="setOtpRole('student')" style="flex:1;border:none;border-radius:8px;padding:8px 10px;font-size:12.5px;font-weight:700;cursor:pointer;transition:.2s;background:var(--maroon);color:#fff;">
+            <i class="fas fa-user-graduate"></i> Student
+          </button>
+          <button type="button" id="otpRoleTabTeacher" onclick="setOtpRole('teacher')" style="flex:1;border:none;border-radius:8px;padding:8px 10px;font-size:12.5px;font-weight:700;cursor:pointer;transition:.2s;background:transparent;color:var(--text-2);">
+            <i class="fas fa-chalkboard-teacher"></i> Teacher
+          </button>
+        </div>
 
         <div id="email-otp-msg" style="display:none"></div>
 
@@ -675,7 +695,7 @@
   </div>
 
   <script src="theme.js?v=1.1"></script>
-  <script src="app.js"></script>
+  <script src="app.js?v=20261110_02"></script>
   <script>
     const GNHS_GRADE_SECTIONS = {
       '7':  ['Bonifacio', 'Burgos', 'Del Pilar', 'Diego Silang', 'Luna', 'Mabini', 'Malvar', 'Rizal'],
@@ -691,7 +711,349 @@
         ? '<option value="">Select Section</option>' + secs.map(s => '<option value="' + s + '">' + s + '</option>').join('')
         : '<option value="">Select Grade First</option>';
     }
-    // LRN/Employee label handled in app.js selectRole()
+
+    // ── INLINE EMAIL OTP LOGIN & REGISTRATION LOGIC (ZERO-DEPENDENCY FALLBACK) ──
+    window._apiPost = async function(url, data) {
+      const r = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      return r.json();
+    };
+
+    let _otpEmail = '';
+    let _otpPendingRole = 'student';
+
+    window.setOtpRole = function(role) {
+      _otpPendingRole = role;
+      const tabStudent = document.getElementById('otpRoleTabStudent');
+      const tabTeacher = document.getElementById('otpRoleTabTeacher');
+      const sub = document.getElementById('email-otp-sub');
+
+      if (role === 'teacher') {
+        if (tabStudent) { tabStudent.style.background = 'transparent'; tabStudent.style.color = 'var(--text-2)'; }
+        if (tabTeacher) { tabTeacher.style.background = 'var(--maroon)'; tabTeacher.style.color = '#fff'; }
+        if (sub) sub.innerHTML = 'Enter your DepEd or personal Gmail to receive a 6-digit login code.';
+      } else {
+        if (tabStudent) { tabStudent.style.background = 'var(--maroon)'; tabStudent.style.color = '#fff'; }
+        if (tabTeacher) { tabTeacher.style.background = 'transparent'; tabTeacher.style.color = 'var(--text-2)'; }
+        if (sub) sub.innerHTML = 'Enter your personal Gmail to receive a 6-digit login code.';
+      }
+    };
+
+    window.openEmailOtpFlow = function() {
+      const lm = document.getElementById('login-msg'); if (lm) lm.style.display = 'none';
+      const em = document.getElementById('email-otp-msg'); if (em) em.style.display = 'none';
+      _otpEmail = '';
+
+      const currentRole = (typeof _role !== 'undefined' && _role) ? _role : 'student';
+      setOtpRole(currentRole === 'teacher' ? 'teacher' : 'student');
+
+      const stage1 = document.getElementById('email-otp-stage-1');
+      const stage2 = document.getElementById('email-otp-stage-2');
+      if (stage1) stage1.style.display = 'block';
+      if (stage2) stage2.style.display = 'none';
+
+      const emailInput = document.getElementById('otp-email-input');
+      if (emailInput) {
+        const existing = document.querySelector('#step-login input[type="text"]')?.value?.trim();
+        if (existing && existing.includes('@')) {
+          emailInput.value = existing;
+          if (existing.endsWith('deped.gov.ph')) setOtpRole('teacher');
+        }
+        setTimeout(() => emailInput.focus(), 150);
+      }
+
+      if (typeof showStep === 'function') {
+        showStep('step-email-otp');
+      } else {
+        document.querySelectorAll('.modal-step').forEach(s => s.classList.add('hidden'));
+        document.getElementById('step-email-otp')?.classList.remove('hidden');
+      }
+    };
+
+    window.editOtpEmail = function() {
+      const stage1 = document.getElementById('email-otp-stage-1');
+      const stage2 = document.getElementById('email-otp-stage-2');
+      if (stage1) stage1.style.display = 'block';
+      if (stage2) stage2.style.display = 'none';
+      const em = document.getElementById('email-otp-msg'); if (em) em.style.display = 'none';
+      const emailInput = document.getElementById('otp-email-input');
+      if (emailInput) emailInput.focus();
+    };
+
+    window.requestEmailCode = async function(isResend = false) {
+      const emailInput = document.getElementById('otp-email-input');
+      const email = emailInput?.value.trim().toLowerCase();
+      const msgEl = document.getElementById('email-otp-msg');
+
+      if (!email || !email.includes('@')) {
+        if (msgEl) {
+          msgEl.textContent = 'Please enter a valid email address.';
+          msgEl.className = 'error-msg';
+          msgEl.style.display = 'block';
+        }
+        return;
+      }
+      _otpEmail = email;
+
+      if (_otpEmail.endsWith('deped.gov.ph')) {
+        setOtpRole('teacher');
+      }
+
+      const btn = isResend ? document.getElementById('btnResendOtp') : document.getElementById('btnSendOtp');
+      if (btn) {
+        btn.disabled = true;
+        btn.dataset.orig = btn.innerHTML;
+        btn.innerHTML = '<span class="spinner"></span>&nbsp;Sending code…';
+      }
+      if (msgEl) msgEl.style.display = 'none';
+
+      try {
+        const caller = typeof apiPost === 'function' ? apiPost : window._apiPost;
+        const res = await caller('/gnhs-guidance/api/send_email_code.php', {
+          email: _otpEmail,
+          role: _otpPendingRole
+        });
+
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = btn.dataset.orig || btn.innerHTML;
+        }
+
+        if (res && res.success) {
+          const stage1 = document.getElementById('email-otp-stage-1');
+          const stage2 = document.getElementById('email-otp-stage-2');
+          if (stage1) stage1.style.display = 'none';
+          if (stage2) stage2.style.display = 'block';
+
+          const targetLabel = document.getElementById('otp-target-email-label');
+          if (targetLabel) targetLabel.textContent = _otpEmail;
+
+          let msg = res.message;
+          if (res.code_hint) {
+            msg += ' [Testing Helper: Code is ' + res.code_hint + ']';
+          }
+          if (msgEl) {
+            msgEl.textContent = msg;
+            msgEl.className = 'success-msg';
+            msgEl.style.display = 'block';
+          }
+
+          const codeInput = document.getElementById('otp-code-input');
+          if (codeInput) {
+            codeInput.value = '';
+            setTimeout(() => codeInput.focus(), 150);
+          }
+        } else {
+          if (msgEl) {
+            msgEl.textContent = (res && res.message) || 'Failed to send verification code.';
+            msgEl.className = 'error-msg';
+            msgEl.style.display = 'block';
+          }
+        }
+      } catch (err) {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = btn.dataset.orig || btn.innerHTML;
+        }
+        if (msgEl) {
+          msgEl.textContent = 'Network error. Please try again.';
+          msgEl.className = 'error-msg';
+          msgEl.style.display = 'block';
+        }
+      }
+    };
+
+    window.verifyEmailCode = async function() {
+      const codeInput = document.getElementById('otp-code-input');
+      const code = codeInput?.value.trim();
+      const msgEl = document.getElementById('email-otp-msg');
+
+      if (!code || code.length < 6) {
+        if (msgEl) {
+          msgEl.textContent = 'Please enter the complete 6-digit verification code.';
+          msgEl.className = 'error-msg';
+          msgEl.style.display = 'block';
+        }
+        return;
+      }
+
+      const btn = document.getElementById('btnVerifyOtp');
+      if (btn) {
+        btn.disabled = true;
+        btn.dataset.orig = btn.innerHTML;
+        btn.innerHTML = '<span class="spinner"></span>&nbsp;Verifying…';
+      }
+      if (msgEl) msgEl.style.display = 'none';
+
+      try {
+        const caller = typeof apiPost === 'function' ? apiPost : window._apiPost;
+        const res = await caller('/gnhs-guidance/api/verify_email_code.php', {
+          email: _otpEmail,
+          code: code,
+          role: _otpPendingRole
+        });
+
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = btn.dataset.orig || btn.innerHTML;
+        }
+
+        if (res && res.success) {
+          if (!res.is_new) {
+            if (msgEl) {
+              msgEl.textContent = res.message || 'Verification successful! Logging you in...';
+              msgEl.className = 'success-msg';
+              msgEl.style.display = 'block';
+            }
+            document.body.classList.add('page-exiting');
+            setTimeout(() => {
+              window.location.href = res.redirect;
+            }, 350);
+          } else {
+            _otpPendingRole = res.role || _otpPendingRole;
+            openOtpCompleteProfile(res.email, _otpPendingRole);
+          }
+        } else {
+          if (msgEl) {
+            msgEl.textContent = (res && res.message) || 'Invalid or expired code. Please try again.';
+            msgEl.className = 'error-msg';
+            msgEl.style.display = 'block';
+          }
+        }
+      } catch (err) {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = btn.dataset.orig || btn.innerHTML;
+        }
+        if (msgEl) {
+          msgEl.textContent = 'Verification failed. Please check connection and try again.';
+          msgEl.className = 'error-msg';
+          msgEl.style.display = 'block';
+        }
+      }
+    };
+
+    window.openOtpCompleteProfile = function(email, role) {
+      if (typeof showStep === 'function') {
+        showStep('step-email-complete');
+      } else {
+        document.querySelectorAll('.modal-step').forEach(s => s.classList.add('hidden'));
+        document.getElementById('step-email-complete')?.classList.remove('hidden');
+      }
+
+      const cm = document.getElementById('email-complete-msg'); if (cm) cm.style.display = 'none';
+      const gradeGroup = document.getElementById('otp-complete-grade-group');
+      const idLabel = document.getElementById('otp-complete-id-label');
+
+      if (role === 'teacher') {
+        if (gradeGroup) gradeGroup.style.display = 'none';
+        if (idLabel) idLabel.textContent = 'Employee ID (Optional)';
+      } else {
+        if (gradeGroup) gradeGroup.style.display = 'block';
+        if (idLabel) idLabel.textContent = 'Student ID / LRN (Optional)';
+        otpUpdateSections();
+      }
+
+      const fnInput = document.getElementById('otp-complete-first-name');
+      if (fnInput) setTimeout(() => fnInput.focus(), 150);
+    };
+
+    window.otpUpdateSections = function() {
+      const grade = document.getElementById('otp-complete-grade')?.value;
+      const sel = document.getElementById('otp-complete-section');
+      if (!sel) return;
+      const secs = (typeof GNHS_GRADE_SECTIONS !== 'undefined' ? GNHS_GRADE_SECTIONS[grade] : []) || [];
+      sel.innerHTML = secs.length
+        ? '<option value="">Select Section</option>' + secs.map(s => '<option value="' + s + '">' + s + '</option>').join('')
+        : '<option value="">Select Grade First</option>';
+    };
+
+    window.finishOtpSignup = async function() {
+      const firstName = document.getElementById('otp-complete-first-name')?.value.trim();
+      const lastName  = document.getElementById('otp-complete-last-name')?.value.trim();
+      const idNumber  = document.getElementById('otp-complete-id-number')?.value.trim();
+      const msgEl = document.getElementById('email-complete-msg');
+
+      let gradeSection = '';
+      if (_otpPendingRole === 'student') {
+        const grade = document.getElementById('otp-complete-grade')?.value;
+        const sec   = document.getElementById('otp-complete-section')?.value;
+        if (!grade || !sec) {
+          if (msgEl) {
+            msgEl.textContent = 'Please select both your Grade Level and Section.';
+            msgEl.className = 'error-msg';
+            msgEl.style.display = 'block';
+          }
+          return;
+        }
+        gradeSection = 'Grade ' + grade + ' - ' + sec;
+      }
+
+      if (!firstName || !lastName) {
+        if (msgEl) {
+          msgEl.textContent = 'Please enter both your First Name and Last Name.';
+          msgEl.className = 'error-msg';
+          msgEl.style.display = 'block';
+        }
+        return;
+      }
+
+      const btn = document.getElementById('btnFinishOtpSignup');
+      if (btn) {
+        btn.disabled = true;
+        btn.dataset.orig = btn.innerHTML;
+        btn.innerHTML = '<span class="spinner"></span>&nbsp;Creating account…';
+      }
+      if (msgEl) msgEl.style.display = 'none';
+
+      try {
+        const caller = typeof apiPost === 'function' ? apiPost : window._apiPost;
+        const res = await caller('/gnhs-guidance/api/complete_email_signup.php', {
+          email: _otpEmail,
+          first_name: firstName,
+          last_name: lastName,
+          role: _otpPendingRole,
+          grade_section: gradeSection,
+          id_number: idNumber
+        });
+
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = btn.dataset.orig || btn.innerHTML;
+        }
+
+        if (res && res.success) {
+          if (msgEl) {
+            msgEl.textContent = res.message || 'Profile created! Redirecting...';
+            msgEl.className = 'success-msg';
+            msgEl.style.display = 'block';
+          }
+          document.body.classList.add('page-exiting');
+          setTimeout(() => {
+            window.location.href = res.redirect;
+          }, 350);
+        } else {
+          if (msgEl) {
+            msgEl.textContent = (res && res.message) || 'Failed to complete registration.';
+            msgEl.className = 'error-msg';
+            msgEl.style.display = 'block';
+          }
+        }
+      } catch (err) {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = btn.dataset.orig || btn.innerHTML;
+        }
+        if (msgEl) {
+          msgEl.textContent = 'Server error. Please try again.';
+          msgEl.className = 'error-msg';
+          msgEl.style.display = 'block';
+        }
+      }
+    };
 
     // Handle 15-minute inactivity session timeout notification
     window.addEventListener('DOMContentLoaded', () => {

@@ -119,3 +119,4 @@ try {
 } catch (Exception $e) {
     jsonOut(['success'=>false, 'message'=>'Registration failed: ' . $e->getMessage()]);
 }
+

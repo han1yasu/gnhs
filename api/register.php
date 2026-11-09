@@ -73,6 +73,7 @@ try {
 
     $stmt = $db->prepare("INSERT INTO users (first_name,last_name,email,id_number,password,role,grade_section,avatar_initials,middle_name,suffix) VALUES (?,?,?,?,?,?,?,?,?,?)");
     $stmt->execute([$firstName,$lastName,$email,$idNumber,$hash,$role,$grade,$initials,$middleName,$suffix]);
+    $newUserId = (int)$db->lastInsertId();
 
     if (session_status() === PHP_SESSION_ACTIVE) {
         unset($_SESSION['verified_email_signup']);
@@ -80,10 +81,33 @@ try {
 
     $fullName = trim($firstName . ' ' . ($middleName ? $middleName . ' ' : '') . $lastName . ($suffix ? ' ' . $suffix : ''));
 
+    // Automatically initialize 2FA secret and set up pending session for instant 2FA onboarding
+    require_once __DIR__ . '/../src/PureOTP.php';
+    $totpSecret = PureOTP::generateSecret();
+    $db->prepare("UPDATE users SET totp_secret = ? WHERE id = ?")->execute([$totpSecret, $newUserId]);
+
+    $_SESSION['pending_user'] = [
+        'id'              => $newUserId,
+        'email'           => $email,
+        'first_name'      => $firstName,
+        'last_name'       => $lastName,
+        'id_number'       => $idNumber,
+        'role'            => $role,
+        'grade_section'   => $grade,
+        'department'      => null,
+        'avatar_initials' => $initials,
+        'avatar_photo'    => null,
+        'advisory_class'  => null,
+        'is_setup_complete' => 0,
+        'age'             => null,
+    ];
+
     jsonOut([
-        'success' => true,
-        'message' => 'Account created successfully! You may now sign in with Google.',
-        'user' => [
+        'success'     => true,
+        'require_2fa' => true,
+        'redirect'    => '/gnhs-guidance/pages/totp_verify.php',
+        'message'     => 'Account created successfully! Proceeding directly to Two-Factor Authentication (2FA)...',
+        'user'        => [
             'email'    => $email,
             'name'     => $fullName,
             'role'     => $role,

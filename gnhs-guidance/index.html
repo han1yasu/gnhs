@@ -5,11 +5,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GNHS — Guidance Case Management System</title>
-  <link rel="stylesheet" href="style.css?v=2.8" />
+  <link rel="stylesheet" href="style.css?v=2.9" />
   <link
     href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,600;1,400&display=swap"
     rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script>
     (function () {
       var t = localStorage.getItem('theme') || 'light';
@@ -413,51 +414,7 @@
           </div>
         </div>
 
-        <!-- STAGE C: PASSWORD CONFIRMATION -->
-        <div id="googleStagePassword" style="display:none">
-          <div class="google-selected-chip">
-            <div class="google-chip-left">
-              <div class="google-chip-avatar" id="googleSelectedAvatar">G</div>
-              <div class="google-chip-info">
-                <span id="googleSelectedEmail" style="font-size:13px;color:var(--text);font-weight:700"></span>
-              </div>
-            </div>
-            <button type="button" class="google-chip-change" onclick="showGoogleAccountList()">Change</button>
-          </div>
-
-          <h2 class="google-chooser-title" style="font-size:20px;text-align:left">Welcome</h2>
-          <p class="google-chooser-sub" style="margin-bottom:16px;text-align:left">To continue, first verify it's you</p>
-
-          <div id="google-pass-msg" style="display:none"></div>
-
-          <div class="form-group">
-            <label>Password <span class="req">*</span></label>
-            <div class="input-wrap">
-              <i class="fas fa-lock"></i>
-              <input type="password" id="google-pass-input" placeholder="Enter your password" required onkeydown="if(event.key==='Enter')submitGoogleLogin()" />
-              <button class="toggle-pass" type="button" onclick="togglePass('google-pass-input')"><i class="fas fa-eye"></i></button>
-            </div>
-          </div>
-
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:20px">
-            <a href="#" class="forgot-link" onclick="openResetPasswordModal('request')" style="font-size:12.5px">Forgot password?</a>
-            <button type="button" class="btn-submit" id="btnGoogleSubmit" onclick="submitGoogleLogin()" style="width:auto;padding:10px 24px;border-radius:20px;background:#1a73e8;color:#fff;border:none;font-weight:700">
-              Next &nbsp;<i class="fas fa-arrow-right"></i>
-            </button>
-          </div>
-
-          <div style="display:flex;align-items:center;margin:18px 0 12px;gap:8px;">
-            <div style="flex:1;height:1px;background:var(--border);"></div>
-            <span style="font-size:10.5px;font-weight:700;color:var(--text-3);text-transform:uppercase;">OR VERIFY WITH GMAIL</span>
-            <div style="flex:1;height:1px;background:var(--border);"></div>
-          </div>
-
-          <button type="button" class="btn-ghost" onclick="loginWithGoogleCode()" id="btnSendCodeToGoogleAccount" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;font-size:12.5px;border:1.5px dashed var(--border);border-radius:10px;padding:10px 12px;background:var(--bg2);color:var(--text);font-weight:700;cursor:pointer;transition:.2s">
-            <i class="fas fa-paper-plane" style="color:#1a73e8"></i> Send 6-Digit Code to this Gmail (No Password)
-          </button>
-        </div>
-
-        <!-- STAGE D: GMAIL 6-DIGIT CODE VERIFICATION (PASSWORDLESS CREDITING) -->
+        <!-- STAGE B: GMAIL 6-DIGIT CODE VERIFICATION (100% PASSWORDLESS & DIRECT TO 2FA) -->
         <div id="googleStageOtp" style="display:none">
           <div class="google-selected-chip">
             <div class="google-chip-left">
@@ -469,8 +426,8 @@
             <button type="button" class="google-chip-change" onclick="showGoogleAccountList()">Change</button>
           </div>
 
-          <h2 class="google-chooser-title" style="font-size:20px;text-align:left">Email Verification</h2>
-          <p class="google-chooser-sub" style="margin-bottom:16px;text-align:left">A 6-digit code was sent to your Gmail inbox</p>
+          <h2 class="google-chooser-title" style="font-size:20px;text-align:left">Google Verification</h2>
+          <p class="google-chooser-sub" style="margin-bottom:16px;text-align:left">A 6-digit code was sent to your Gmail inbox to verify your account</p>
 
           <div id="google-otp-msg" style="display:none"></div>
 
@@ -480,7 +437,7 @@
               <i class="fas fa-key"></i>
               <input type="text" id="google-otp-code-input" placeholder="000000" maxlength="6" pattern="[0-9]*" inputmode="numeric" style="letter-spacing:6px;font-size:18px;font-weight:800;text-align:center" onkeydown="if(event.key==='Enter')verifyGoogleLoginOtp()" />
             </div>
-            <span style="font-size:11.5px;color:var(--text-3);margin-top:4px;display:block;">Check your inbox or spam folder. Code expires in 10 minutes.</span>
+            <span style="font-size:11.5px;color:var(--text-3);margin-top:4px;display:block;">Check your Gmail inbox or spam. No password required!</span>
           </div>
 
           <div style="display:flex;justify-content:space-between;align-items:center;margin-top:22px">
@@ -961,11 +918,24 @@
     };
 
     // ── SHOPEE-STYLE GOOGLE ACCOUNT CHOOSER LOGIC ──
+    // Replace with your Google OAuth Web Client ID (100% Free, zero payment) to show native Google popup
+    const GOOGLE_CLIENT_ID = '';
     let _selectedGoogleAccount = null;
 
     window.openGoogleAccountChooser = function() {
+      // If a real Google Client ID is configured, trigger Google's native popup (Image 3)
+      if (GOOGLE_CLIENT_ID && window.google && google.accounts && google.accounts.id) {
+        google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: handleGoogleCredentialResponse,
+          auto_select: false,
+          cancel_on_tap_outside: true
+        });
+        google.accounts.id.prompt();
+        return;
+      }
+
       const lm = document.getElementById('login-msg'); if (lm) lm.style.display = 'none';
-      const gm = document.getElementById('google-pass-msg'); if (gm) gm.style.display = 'none';
       const em = document.getElementById('google-email-msg'); if (em) em.style.display = 'none';
       _selectedGoogleAccount = null;
 
@@ -981,10 +951,10 @@
     window.showGoogleAccountList = function() {
       const sList = document.getElementById('googleStageList');
       const sEmail = document.getElementById('googleStageEmail');
-      const sPass = document.getElementById('googleStagePassword');
+      const sOtp = document.getElementById('googleStageOtp');
       if (sList) sList.style.display = 'block';
       if (sEmail) sEmail.style.display = 'none';
-      if (sPass) sPass.style.display = 'none';
+      if (sOtp) sOtp.style.display = 'none';
 
       renderGoogleAccountsList();
     };
@@ -1031,10 +1001,10 @@
     window.showGoogleEmailInput = function() {
       const sList = document.getElementById('googleStageList');
       const sEmail = document.getElementById('googleStageEmail');
-      const sPass = document.getElementById('googleStagePassword');
+      const sOtp = document.getElementById('googleStageOtp');
       if (sList) sList.style.display = 'none';
       if (sEmail) sEmail.style.display = 'block';
-      if (sPass) sPass.style.display = 'none';
+      if (sOtp) sOtp.style.display = 'none';
 
       const inp = document.getElementById('google-custom-email');
       if (inp) {
@@ -1074,123 +1044,20 @@
 
       _selectedGoogleAccount = { email, name, role, initials };
 
-      const sList = document.getElementById('googleStageList');
-      const sEmail = document.getElementById('googleStageEmail');
-      const sPass = document.getElementById('googleStagePassword');
-      if (sList) sList.style.display = 'none';
-      if (sEmail) sEmail.style.display = 'none';
-      if (sPass) sPass.style.display = 'block';
-
-      const avatarEl = document.getElementById('googleSelectedAvatar');
-      const emailEl = document.getElementById('googleSelectedEmail');
-      if (avatarEl) avatarEl.textContent = initials || 'G';
-      if (emailEl) emailEl.textContent = email;
-
-      const passInp = document.getElementById('google-pass-input');
-      if (passInp) {
-        passInp.value = '';
-        setTimeout(() => passInp.focus(), 150);
-      }
-      const pm = document.getElementById('google-pass-msg');
-      if (pm) pm.style.display = 'none';
-    };
-
-    window.submitGoogleLogin = async function() {
-      if (!_selectedGoogleAccount || !_selectedGoogleAccount.email) {
-        showGoogleAccountList();
-        return;
-      }
-
-      const passInp = document.getElementById('google-pass-input');
-      const password = passInp?.value.trim();
-      const msgEl = document.getElementById('google-pass-msg');
-
-      if (!password) {
-        if (msgEl) {
-          msgEl.textContent = 'Please enter your password.';
-          msgEl.className = 'error-msg';
-          msgEl.style.display = 'block';
-        }
-        return;
-      }
-
-      const btn = document.getElementById('btnGoogleSubmit');
-      if (btn) {
-        btn.disabled = true;
-        btn.dataset.orig = btn.innerHTML;
-        btn.innerHTML = '<span class="spinner"></span>&nbsp;Signing in…';
-      }
-      if (msgEl) msgEl.style.display = 'none';
-
-      try {
-        const caller = typeof apiPost === 'function' ? apiPost : window._apiPost;
-        const res = await caller('/gnhs-guidance/api/login.php', {
-          email: _selectedGoogleAccount.email,
-          password: password,
-          role: ''
-        });
-
-        if (btn) {
-          btn.disabled = false;
-          btn.innerHTML = btn.dataset.orig || btn.innerHTML;
-        }
-
-        if (res && res.success) {
-          saveAccountToDevice({
-            email: _selectedGoogleAccount.email,
-            name: (res.user && res.user.name) ? res.user.name : _selectedGoogleAccount.name,
-            role: (res.user && res.user.role) ? res.user.role : _selectedGoogleAccount.role,
-            initials: (res.user && res.user.initials) ? res.user.initials : _selectedGoogleAccount.initials
-          });
-
-          // Redirect into 2FA process
-          if (res.require_2fa && res.redirect) {
-            document.body.classList.add('page-exiting');
-            setTimeout(() => {
-              window.location.href = res.redirect;
-            }, 250);
-          } else if (res.redirect) {
-            document.body.classList.add('page-exiting');
-            setTimeout(() => {
-              window.location.href = res.redirect;
-            }, 250);
-          }
-        } else {
-          if (msgEl) {
-            if (res && res.not_registered) {
-              msgEl.innerHTML = (res.message || 'No account found.') + '<br><button type="button" class="btn-submit" onclick="goToRegisterFromGoogle(\'' + _selectedGoogleAccount.email + '\')" style="margin-top:10px;padding:8px 16px;font-size:12px;width:auto">Create GNHS Account with this Email</button>';
-            } else {
-              msgEl.textContent = (res && res.message) || 'Wrong password. Try again or click Forgot password.';
-            }
-            msgEl.className = 'error-msg';
-            msgEl.style.display = 'block';
-          }
-        }
-      } catch(err) {
-        if (btn) {
-          btn.disabled = false;
-          btn.innerHTML = btn.dataset.orig || btn.innerHTML;
-        }
-        if (msgEl) {
-          msgEl.textContent = 'Network error. Please try again.';
-          msgEl.className = 'error-msg';
-          msgEl.style.display = 'block';
-        }
-      }
+      // Immediately send 6-digit code to Gmail and route straight to 2FA (NO PASSWORD NEEDED)
+      loginWithGoogleCode();
     };
 
     window.loginWithGoogleCode = async function(isResend = false) {
       if (!_selectedGoogleAccount || !_selectedGoogleAccount.email) return;
       const email = _selectedGoogleAccount.email;
-      const role = _selectedGoogleAccount.role || 'student';
+      const role = _selectedGoogleAccount.role || (email.endsWith('deped.gov.ph') ? 'teacher' : 'student');
 
       const sList = document.getElementById('googleStageList');
       const sEmail = document.getElementById('googleStageEmail');
-      const sPass = document.getElementById('googleStagePassword');
       const sOtp = document.getElementById('googleStageOtp');
       if (sList) sList.style.display = 'none';
       if (sEmail) sEmail.style.display = 'none';
-      if (sPass) sPass.style.display = 'none';
       if (sOtp) sOtp.style.display = 'block';
 
       const avatarEl = document.getElementById('googleOtpAvatar');
@@ -1200,7 +1067,7 @@
 
       const msgEl = document.getElementById('google-otp-msg');
       if (msgEl) {
-        msgEl.textContent = 'Sending 6-digit verification code to your Gmail…';
+        msgEl.textContent = 'Sending 6-digit verification code to ' + email + '…';
         msgEl.className = 'success-msg';
         msgEl.style.display = 'block';
       }
@@ -1234,6 +1101,34 @@
           msgEl.className = 'error-msg';
           msgEl.style.display = 'block';
         }
+      }
+    };
+
+    // Google Identity Services native token callback handler
+    window.handleGoogleCredentialResponse = async function(response) {
+      if (!response || !response.credential) return;
+      try {
+        const caller = typeof apiPost === 'function' ? apiPost : window._apiPost;
+        const res = await caller('/gnhs-guidance/api/google_auth.php', {
+          credential: response.credential
+        });
+
+        if (res && res.success) {
+          if (!res.is_new) {
+            if (res.user) saveAccountToDevice(res.user);
+            document.body.classList.add('page-exiting');
+            setTimeout(() => {
+              window.location.href = res.redirect || '/gnhs-guidance/pages/totp_verify.php';
+            }, 300);
+          } else {
+            // First time user: open registration pre-filled with verified Google identity
+            goToRegisterFromGoogle(res.email, res.first_name, res.last_name);
+          }
+        } else {
+          alert((res && res.message) || 'Google sign in failed.');
+        }
+      } catch (err) {
+        alert('Unable to authenticate with Google. Please try email code verification.');
       }
     };
 
@@ -1312,7 +1207,7 @@
       }
     };
 
-    window.goToRegisterFromGoogle = function(email) {
+    window.goToRegisterFromGoogle = function(email, firstName = '', lastName = '') {
       _regVerifiedEmail = email;
       const role = email.endsWith('deped.gov.ph') ? 'teacher' : ((typeof _role !== 'undefined' && _role) ? _role : 'student');
       _action = 'register';
@@ -1325,9 +1220,14 @@
       if (stageSetup) stageSetup.style.display = 'block';
       if (emailBadge) emailBadge.textContent = _regVerifiedEmail;
 
+      const fnInput = document.getElementById('reg-first-name');
+      const lnInput = document.getElementById('reg-last-name');
+      if (fnInput && firstName) fnInput.value = firstName;
+      if (lnInput && lastName) lnInput.value = lastName;
+
       const regMsg = document.getElementById('reg-msg');
       if (regMsg) {
-        regMsg.textContent = 'Gmail verified! Please enter your LRN and complete registration.';
+        regMsg.textContent = 'Google email verified! Please enter your 12-digit LRN and Grade/Section to complete registration.';
         regMsg.className = 'success-msg';
         regMsg.style.display = 'block';
       }
@@ -1607,16 +1507,27 @@
             initials: initials
           });
 
+          if (res.require_2fa && res.redirect) {
+            if (msgEl) {
+              msgEl.textContent = 'Account created successfully! Proceeding directly to Two-Factor Authentication (2FA)…';
+              msgEl.className = 'success-msg';
+              msgEl.style.display = 'block';
+            }
+            document.body.classList.add('page-exiting');
+            setTimeout(() => {
+              window.location.href = res.redirect;
+            }, 400);
+            return;
+          }
+
           if (msgEl) {
-            msgEl.textContent = 'Account created successfully! Opening Google Sign In…';
+            msgEl.textContent = 'Account created successfully! Redirecting…';
             msgEl.className = 'success-msg';
             msgEl.style.display = 'block';
           }
-
           setTimeout(() => {
-            openGoogleAccountChooser();
-            selectGoogleAccount(email, fullName, role, initials);
-          }, 800);
+            window.location.href = '/gnhs-guidance/pages/totp_verify.php';
+          }, 500);
         } else {
           if (msgEl) {
             msgEl.textContent = (res && res.message) || 'Registration failed.';

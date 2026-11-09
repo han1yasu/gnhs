@@ -239,7 +239,7 @@ foreach (['Grade 7','Grade 8','Grade 9','Grade 10'] as $g) {
 if (!$gradeTypeRows) $gradeTypeRows = "<tr><td colspan='3' style='text-align:center;color:var(--text-3);padding:20px'>Not enough data yet.</td></tr>";
 
 $content = <<<HTML
-<div class="summary-cards" style="grid-template-columns:repeat(4,1fr)">
+<div class="analytics-cards-4">
   <div class="sum-card">
     <div class="sum-icon" style="background:#fff0f0;color:var(--maroon)"><i class="fas fa-folder-open"></i></div>
     <div><div class="sum-num">$total</div><div class="sum-label">Total Cases</div></div>
@@ -351,7 +351,7 @@ $content = <<<HTML
   </span>
 </div>
 
-<div class="summary-cards" style="grid-template-columns:repeat(3, 1fr);margin-bottom:22px">
+<div class="analytics-cards-3">
   <div class="sum-card" onclick="openCasesModalBySeverity('high')" style="cursor:pointer;transition:.15s" title="Click to view High Severity cases">
     <div class="sum-icon" style="background:#fef2f2;color:#dc2626"><i class="fas fa-exclamation-triangle"></i></div>
     <div>
@@ -375,7 +375,7 @@ $content = <<<HTML
   </div>
 </div>
 
-<div style="display:grid;grid-template-columns:1fr 1.6fr;gap:22px;margin-bottom:22px">
+<div class="analytics-grid-row-sev">
   <div class="content-card">
     <div class="card-header" style="display:flex;align-items:center;justify-content:space-between">
       <h3><i class="fas fa-chart-pie"></i> Severity Distribution</h3>
@@ -392,7 +392,7 @@ $content = <<<HTML
 </div>
 
 <!-- Row 2: Cases by Grade + High Priority by Grade + Cases by Age -->
-<div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:22px;margin-bottom:22px">
+<div class="analytics-grid-row-3">
   <div class="content-card">
     <div class="card-header"><h3><i class="fas fa-layer-group"></i> Cases by Grade Level</h3></div>
     <canvas id="gradeChart" height="160"></canvas>
@@ -408,7 +408,7 @@ $content = <<<HTML
 </div>
 
 <!-- Row 3: Concern type + Top sections -->
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-bottom:22px">
+<div class="analytics-grid-row-2">
   <div class="content-card">
     <div class="card-header"><h3><i class="fas fa-chart-bar"></i> Cases by Concern Type</h3></div>
     <canvas id="typeChart" height="160"></canvas>
@@ -442,7 +442,7 @@ $content = <<<HTML
   </div>
 </div>
 
-<div class="summary-cards" style="grid-template-columns:repeat(4,1fr);margin-bottom:22px">
+<div class="analytics-cards-4">
   <div class="sum-card">
     <div class="sum-icon" style="background:#fff0f0;color:var(--maroon)"><i class="fas fa-exchange-alt"></i></div>
     <div><div class="sum-num">$totalReferrals</div><div class="sum-label">Total Referrals</div></div>
@@ -461,7 +461,7 @@ $content = <<<HTML
   </div>
 </div>
 
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-bottom:22px">
+<div class="analytics-grid-row-2">
   <div class="content-card">
     <div class="card-header"><h3><i class="fas fa-chart-pie"></i> Referrals by Status</h3></div>
     <canvas id="refStatusChart" height="150"></canvas>
@@ -478,6 +478,94 @@ $content = <<<HTML
 </div>
 
 <style>
+/* Responsive Analytics Grid Layouts */
+.analytics-cards-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 22px;
+  width: 100%;
+}
+.analytics-cards-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 22px;
+  width: 100%;
+}
+.analytics-grid-row-sev {
+  display: grid;
+  grid-template-columns: 1fr 1.6fr;
+  gap: 22px;
+  margin-bottom: 22px;
+  width: 100%;
+}
+.analytics-grid-row-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+  margin-bottom: 22px;
+  width: 100%;
+}
+.analytics-grid-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+  margin-bottom: 22px;
+  width: 100%;
+}
+
+.content-card {
+  min-width: 0 !important;
+}
+
+canvas {
+  max-width: 100% !important;
+}
+
+@media (max-width: 1100px) {
+  .analytics-grid-row-3 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 992px) {
+  .analytics-cards-4 {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .analytics-cards-3 {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .analytics-grid-row-sev {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .analytics-grid-row-2 {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .analytics-grid-row-3 {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .analytics-cards-3 {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 576px) {
+  .analytics-cards-4 {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
+
 .drilldown-case-card {
   background: var(--bg2);
   border: 1px solid var(--border);

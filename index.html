@@ -318,6 +318,123 @@
           </a>
         </div>
         <button class="btn-submit" onclick="handleLogin()">Login &nbsp;<i class="fas fa-arrow-right"></i></button>
+
+        <div style="display:flex;align-items:center;margin:18px 0 12px;gap:10px;">
+          <div style="flex:1;height:1px;background:var(--border);"></div>
+          <span style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:0.5px;">OR</span>
+          <div style="flex:1;height:1px;background:var(--border);"></div>
+        </div>
+
+        <button type="button" class="btn-ghost" onclick="openEmailOtpFlow()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;font-size:13.5px;border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;background:var(--bg2);color:var(--text);font-weight:700;cursor:pointer;transition:.2s;">
+          <i class="fas fa-envelope-open-text" style="color:var(--maroon);font-size:15px;"></i> Sign in with Email Code (Gmail / DepEd)
+        </button>
+      </div>
+
+      <!-- EMAIL CODE (OTP) LOGIN STEP -->
+      <div class="modal-step hidden" id="step-email-otp">
+        <div class="modal-top-nav">
+          <button type="button" class="modal-back" onclick="goBack('step-login')"><i class="fas fa-arrow-left"></i> Back</button>
+          <button type="button" class="modal-close" onclick="closeLoginModal()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-logo" style="background:var(--maroon-pale);color:var(--maroon)"><i class="fas fa-envelope-circle-check"></i></div>
+        <h2 class="modal-title">Sign in with Email Code</h2>
+        <p class="modal-sub" id="email-otp-sub">Personal Gmail for Students &bull; DepEd / Gmail for Teachers</p>
+
+        <div id="email-otp-msg" style="display:none"></div>
+
+        <!-- Stage 1: Enter Email -->
+        <div id="email-otp-stage-1">
+          <div class="form-group">
+            <label>Email Address <span class="req">*</span></label>
+            <div class="input-wrap">
+              <i class="fas fa-envelope"></i>
+              <input type="email" id="otp-email-input" placeholder="e.g. name@gmail.com or name@deped.gov.ph" required autocomplete="email" onkeydown="if(event.key==='Enter')requestEmailCode()" />
+            </div>
+            <span style="font-size:11.5px;color:var(--text-3);margin-top:4px;display:block;">We will send a secure 6-digit verification code to this inbox.</span>
+          </div>
+          <button type="button" class="btn-submit" id="btnSendOtp" onclick="requestEmailCode()">
+            <i class="fas fa-paper-plane"></i> Send 6-Digit Code
+          </button>
+        </div>
+
+        <!-- Stage 2: Enter Code -->
+        <div id="email-otp-stage-2" style="display:none">
+          <div style="background:var(--bg2);padding:12px 14px;border-radius:10px;border:1px solid var(--border);margin-bottom:16px;font-size:13px;display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <span style="color:var(--text-3);font-size:11px;display:block;">Code sent to:</span>
+              <strong id="otp-target-email-label" style="color:var(--maroon)"></strong>
+            </div>
+            <button type="button" onclick="editOtpEmail()" style="background:none;border:none;color:var(--maroon);font-weight:700;font-size:12px;cursor:pointer">Change</button>
+          </div>
+
+          <div class="form-group">
+            <label>Enter 6-Digit Verification Code <span class="req">*</span></label>
+            <div class="input-wrap">
+              <i class="fas fa-key"></i>
+              <input type="text" id="otp-code-input" placeholder="000000" maxlength="6" pattern="[0-9]*" inputmode="numeric" style="letter-spacing:6px;font-size:20px;font-weight:800;text-align:center" onkeydown="if(event.key==='Enter')verifyEmailCode()" />
+            </div>
+            <span style="font-size:11.5px;color:var(--text-3);margin-top:4px;display:block;">Please check your inbox or spam folder. Code expires in 10 minutes.</span>
+          </div>
+
+          <button type="button" class="btn-submit" id="btnVerifyOtp" onclick="verifyEmailCode()">
+            <i class="fas fa-check-circle"></i> Verify & Sign In
+          </button>
+
+          <div style="text-align:center;margin-top:14px">
+            <button type="button" id="btnResendOtp" onclick="requestEmailCode(true)" style="background:none;border:none;color:var(--text-3);font-size:12px;font-weight:700;cursor:pointer">
+              Didn't receive code? Resend Code
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- EMAIL SIGNUP COMPLETION STEP (for new users signing in for the first time via email) -->
+      <div class="modal-step hidden" id="step-email-complete">
+        <div class="modal-top-nav">
+          <button type="button" class="modal-back" onclick="showStep('step-email-otp')"><i class="fas fa-arrow-left"></i> Back</button>
+          <button type="button" class="modal-close" onclick="closeLoginModal()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-logo" style="background:var(--maroon-pale);color:var(--maroon)"><i class="fas fa-user-plus"></i></div>
+        <h2 class="modal-title">Complete Your Profile</h2>
+        <p class="modal-sub">Welcome! Please fill in your basic info to enter GNHS Guidance.</p>
+
+        <div id="email-complete-msg" style="display:none"></div>
+
+        <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div class="form-group">
+            <label>First Name <span class="req">*</span></label>
+            <input type="text" id="otp-complete-first-name" placeholder="First name" required />
+          </div>
+          <div class="form-group">
+            <label>Last Name <span class="req">*</span></label>
+            <input type="text" id="otp-complete-last-name" placeholder="Last name" required />
+          </div>
+        </div>
+
+        <div class="form-group" id="otp-complete-grade-group">
+          <label id="otp-complete-grade-label">Grade Level & Section <span class="req">*</span></label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px" id="otp-complete-grade-row">
+            <select id="otp-complete-grade" onchange="otpUpdateSections()" style="padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;background:var(--card-bg);color:var(--text)">
+              <option value="">Select Grade</option>
+              <option value="7">Grade 7</option>
+              <option value="8">Grade 8</option>
+              <option value="9">Grade 9</option>
+              <option value="10">Grade 10</option>
+            </select>
+            <select id="otp-complete-section" style="padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;background:var(--card-bg);color:var(--text)">
+              <option value="">Select Section</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label id="otp-complete-id-label">Student ID / LRN (Optional)</label>
+          <input type="text" id="otp-complete-id-number" placeholder="Enter ID number (or leave blank for auto-generate)" />
+        </div>
+
+        <button type="button" class="btn-submit" id="btnFinishOtpSignup" onclick="finishOtpSignup()">
+          <i class="fas fa-arrow-right"></i> Finish & Enter System
+        </button>
       </div>
 
       <!-- RESET PASSWORD REQUEST / STATUS STEP -->

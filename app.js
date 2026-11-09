@@ -166,6 +166,220 @@ async function handleLogin() {
   }
 }
 
+// ── EMAIL OTP LOGIN & SIGNUP FLOW ──
+let _otpEmail = '';
+let _otpPendingRole = 'student';
+
+function openEmailOtpFlow() {
+  hideEl('login-msg');
+  hideEl('email-otp-msg');
+  _otpEmail = '';
+  _otpPendingRole = _role || 'student';
+
+  const sub = $('email-otp-sub');
+  if (sub) {
+    if (_otpPendingRole === 'teacher') {
+      sub.innerHTML = 'Enter your DepEd or personal Gmail to receive a 6-digit login code.';
+    } else {
+      sub.innerHTML = 'Enter your personal Gmail to receive a 6-digit login code.';
+    }
+  }
+
+  const stage1 = $('email-otp-stage-1');
+  const stage2 = $('email-otp-stage-2');
+  if (stage1) stage1.style.display = 'block';
+  if (stage2) stage2.style.display = 'none';
+
+  const emailInput = $('otp-email-input');
+  if (emailInput) {
+    const existing = document.querySelector('#step-login input[type="text"]')?.value.trim();
+    if (existing && existing.includes('@')) {
+      emailInput.value = existing;
+    }
+    setTimeout(() => emailInput.focus(), 200);
+  }
+
+  showStep('step-email-otp');
+}
+
+function editOtpEmail() {
+  const stage1 = $('email-otp-stage-1');
+  const stage2 = $('email-otp-stage-2');
+  if (stage1) stage1.style.display = 'block';
+  if (stage2) stage2.style.display = 'none';
+  hideEl('email-otp-msg');
+  const emailInput = $('otp-email-input');
+  if (emailInput) emailInput.focus();
+}
+
+async function requestEmailCode(isResend = false) {
+  const email = $('otp-email-input')?.value.trim().toLowerCase();
+  if (!email || !email.includes('@')) {
+    showMsg('email-otp-msg', 'Please enter a valid email address.');
+    return;
+  }
+  _otpEmail = email;
+
+  const btn = isResend ? $('btnResendOtp') : $('btnSendOtp');
+  setLoading(btn, true);
+  hideEl('email-otp-msg');
+
+  try {
+    const res = await apiPost('/gnhs-guidance/api/send_email_code.php', {
+      email: _otpEmail,
+      role: _otpPendingRole
+    });
+
+    setLoading(btn, false);
+    if (res.success) {
+      const stage1 = $('email-otp-stage-1');
+      const stage2 = $('email-otp-stage-2');
+      if (stage1) stage1.style.display = 'none';
+      if (stage2) stage2.style.display = 'block';
+
+      const targetLabel = $('otp-target-email-label');
+      if (targetLabel) targetLabel.textContent = _otpEmail;
+
+      let msg = res.message;
+      if (res.code_hint) {
+        msg += ' [Testing Helper: Code is ' + res.code_hint + ']';
+      }
+      showMsg('email-otp-msg', msg, 'success');
+
+      const codeInput = $('otp-code-input');
+      if (codeInput) {
+        codeInput.value = '';
+        setTimeout(() => codeInput.focus(), 150);
+      }
+    } else {
+      showMsg('email-otp-msg', res.message || 'Failed to send verification code.');
+    }
+  } catch (err) {
+    setLoading(btn, false);
+    showMsg('email-otp-msg', 'Network error. Please try again.');
+  }
+}
+
+async function verifyEmailCode() {
+  const code = $('otp-code-input')?.value.trim();
+  if (!code || code.length < 6) {
+    showMsg('email-otp-msg', 'Please enter the complete 6-digit verification code.');
+    return;
+  }
+
+  const btn = $('btnVerifyOtp');
+  setLoading(btn, true);
+  hideEl('email-otp-msg');
+
+  try {
+    const res = await apiPost('/gnhs-guidance/api/verify_email_code.php', {
+      email: _otpEmail,
+      code: code,
+      role: _otpPendingRole
+    });
+
+    setLoading(btn, false);
+    if (res.success) {
+      if (!res.is_new) {
+        showMsg('email-otp-msg', res.message || 'Verification successful! Logging you in...', 'success');
+        document.body.classList.add('page-exiting');
+        setTimeout(() => {
+          window.location.href = res.redirect;
+        }, 350);
+      } else {
+        _otpPendingRole = res.role || _otpPendingRole;
+        openOtpCompleteProfile(res.email, _otpPendingRole);
+      }
+    } else {
+      showMsg('email-otp-msg', res.message || 'Invalid or expired code. Please try again.');
+    }
+  } catch (err) {
+    setLoading(btn, false);
+    showMsg('email-otp-msg', 'Verification failed. Please check your connection and try again.');
+  }
+}
+
+function openOtpCompleteProfile(email, role) {
+  showStep('step-email-complete');
+  hideEl('email-complete-msg');
+
+  const gradeGroup = $('otp-complete-grade-group');
+  const idLabel = $('otp-complete-id-label');
+  
+  if (role === 'teacher') {
+    if (gradeGroup) gradeGroup.style.display = 'none';
+    if (idLabel) idLabel.textContent = 'Employee ID (Optional)';
+  } else {
+    if (gradeGroup) gradeGroup.style.display = 'block';
+    if (idLabel) idLabel.textContent = 'Student ID / LRN (Optional)';
+    otpUpdateSections();
+  }
+
+  const fnInput = $('otp-complete-first-name');
+  if (fnInput) setTimeout(() => fnInput.focus(), 150);
+}
+
+function otpUpdateSections() {
+  const grade = $('otp-complete-grade')?.value;
+  const sel = $('otp-complete-section');
+  if (!sel) return;
+  const secs = (typeof GNHS_GRADE_SECTIONS !== 'undefined' ? GNHS_GRADE_SECTIONS[grade] : []) || [];
+  sel.innerHTML = secs.length
+    ? '<option value="">Select Section</option>' + secs.map(s => '<option value="' + s + '">' + s + '</option>').join('')
+    : '<option value="">Select Grade First</option>';
+}
+
+async function finishOtpSignup() {
+  const firstName = $('otp-complete-first-name')?.value.trim();
+  const lastName  = $('otp-complete-last-name')?.value.trim();
+  const idNumber  = $('otp-complete-id-number')?.value.trim();
+
+  let gradeSection = '';
+  if (_otpPendingRole === 'student') {
+    const grade = $('otp-complete-grade')?.value;
+    const sec   = $('otp-complete-section')?.value;
+    if (!grade || !sec) {
+      showMsg('email-complete-msg', 'Please select both your Grade Level and Section.');
+      return;
+    }
+    gradeSection = 'Grade ' + grade + ' - ' + sec;
+  }
+
+  if (!firstName || !lastName) {
+    showMsg('email-complete-msg', 'Please enter both your First Name and Last Name.');
+    return;
+  }
+
+  const btn = $('btnFinishOtpSignup');
+  setLoading(btn, true);
+  hideEl('email-complete-msg');
+
+  try {
+    const res = await apiPost('/gnhs-guidance/api/complete_email_signup.php', {
+      email: _otpEmail,
+      first_name: firstName,
+      last_name: lastName,
+      role: _otpPendingRole,
+      grade_section: gradeSection,
+      id_number: idNumber
+    });
+
+    setLoading(btn, false);
+    if (res.success) {
+      showMsg('email-complete-msg', res.message || 'Profile created! Redirecting...', 'success');
+      document.body.classList.add('page-exiting');
+      setTimeout(() => {
+        window.location.href = res.redirect;
+      }, 350);
+    } else {
+      showMsg('email-complete-msg', res.message || 'Failed to complete registration.');
+    }
+  } catch (err) {
+    setLoading(btn, false);
+    showMsg('email-complete-msg', 'Server error. Please try again.');
+  }
+}
+
 // ── Student / User Counselor-Assisted Reset Password ──
 let _resetUserData = null;
 let _pendingStatusCheckData = null;

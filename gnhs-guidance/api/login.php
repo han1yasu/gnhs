@@ -59,7 +59,7 @@ try {
                 $db->prepare("UPDATE users SET failed_attempts = ? WHERE id = ?")->execute([$attempts, $user['id']]);
                 jsonOut([
                     'success' => false,
-                    'message' => "Invalid credentials. {$remaining} attempt" . ($remaining > 1 ? 's' : '') . " remaining before temporary account lockout."
+                    'message' => "Incorrect GNHS password. {$remaining} attempt" . ($remaining > 1 ? 's' : '') . " remaining before temporary account lockout. (Note: Please enter your GNHS Guidance password, not your private Google password)."
                 ]);
             }
         }
@@ -77,7 +77,11 @@ try {
                ->execute([$user['id']]);
         } catch (Exception $e) {}
     } else {
-        jsonOut(['success'=>false,'message'=>'Invalid credentials. Please try again.']);
+        jsonOut([
+            'success' => false,
+            'not_registered' => true,
+            'message' => 'No GNHS Guidance account found for "' . htmlspecialchars($email) . '". Please click Create Account to register with your LRN and Grade.'
+        ]);
     }
 
     // Role check

@@ -62,28 +62,38 @@ try {
     $user = $userStmt->fetch();
 
     if ($user) {
-        // User exists! Log them in immediately.
-        $_SESSION['user_id']     = $user['id'];
-        $_SESSION['user_email']  = $user['email'];
-        $_SESSION['user_name']   = trim($user['first_name'] . ' ' . $user['last_name']);
-        $_SESSION['user_role']   = $user['role'];
-        $_SESSION['user_avatar'] = $user['avatar_photo'] ?? null;
-        $_SESSION['last_activity'] = time();
+        // User exists! Setup pending user for 2FA process
+        $secret = $user['totp_secret'] ?? '';
+        if (empty($secret)) {
+            require_once __DIR__ . '/../src/PureOTP.php';
+            $secret = PureOTP::generateSecret();
+            $db->prepare("UPDATE users SET totp_secret = ? WHERE id = ?")->execute([$secret, $user['id']]);
+        }
 
-        $map = [
-            'student' => 'pages/student-dashboard.php',
-            'teacher' => 'pages/teacher-dashboard.php',
-            'admin'   => 'pages/admin-dashboard.php'
+        $_SESSION['pending_user'] = [
+            'id'              => $user['id'],
+            'email'           => $user['email'],
+            'first_name'      => $user['first_name'],
+            'last_name'       => $user['last_name'],
+            'id_number'       => $user['id_number'],
+            'role'            => $user['role'],
+            'grade_section'   => $user['grade_section'],
+            'department'      => $user['department'] ?? null,
+            'avatar_initials' => $user['avatar_initials'] ?? strtoupper($user['first_name'][0].($user['last_name'][0]??'')),
+            'avatar_photo'    => $user['avatar_photo'] ?? null,
+            'advisory_class'  => $user['advisory_class'] ?? null,
+            'is_setup_complete' => $user['is_setup_complete'] ?? 0,
+            'age'             => $user['age'] ?? null,
         ];
-        $redirect = $map[$user['role']] ?? 'pages/student-dashboard.php';
 
         jsonOut([
-            'success'   => true,
-            'is_new'    => false,
-            'user_name' => $_SESSION['user_name'],
-            'role'      => $user['role'],
-            'redirect'  => $redirect,
-            'message'   => 'Welcome back, ' . htmlspecialchars($_SESSION['user_name']) . '!'
+            'success'     => true,
+            'is_new'      => false,
+            'require_2fa' => true,
+            'redirect'    => '/gnhs-guidance/pages/totp_verify.php',
+            'user_name'   => trim($user['first_name'] . ' ' . $user['last_name']),
+            'role'        => $user['role'],
+            'message'     => 'Email verified! Redirecting to Two-Factor Authentication...'
         ]);
     } else {
         // New user! They need to complete their profile (name, grade/section or dept)

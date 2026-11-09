@@ -1,0 +1,13 @@
+# GNHS Guidance System — Production Apache Configuration
+<IfModule mod_rewrite.c>
+RewriteEngine On
+
+# Redirect domain root visits directly to /gnhs-guidance/
+RewriteRule ^$ /gnhs-guidance/ [L,R=301]
+</IfModule>
+
+# Protect sensitive files
+<FilesMatch "^(env\.php|\.env|.*\.sql)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>

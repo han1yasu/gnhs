@@ -1,6 +1,12 @@
 <?php
 // ── GNHS Guidance System — Config & DB ────────────────────────
 date_default_timezone_set('Asia/Manila');
+
+// Load environment configuration file if present (for Hostinger or production)
+if (file_exists(__DIR__ . '/env.php')) {
+    require_once __DIR__ . '/env.php';
+}
+
 define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
 define('DB_USER', getenv('DB_USER') ?: 'root');
 define('DB_PASS', getenv('DB_PASS') ?: '');

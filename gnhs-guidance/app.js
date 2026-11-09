@@ -2202,6 +2202,26 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Enter key progression for Login modal (PC/Laptop)
+  const loginEmailInp = $('login-email-input');
+  const loginPassInp = $('login-pass');
+  if (loginEmailInp) {
+    loginEmailInp.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        loginPassInp?.focus();
+      }
+    });
+  }
+  if (loginPassInp) {
+    loginPassInp.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (typeof handleLogin === 'function') handleLogin();
+      }
+    });
+  }
+
   // Active sidebar link
   const page = location.pathname.split('/').pop();
   $$('.sb-link, .sb-sublink').forEach(l => {

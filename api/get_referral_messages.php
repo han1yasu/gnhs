@@ -34,8 +34,12 @@ try {
         jsonOut(['success' => false, 'message' => 'Unauthorized'], 403);
     }
 
+    // Mark messages from others as read and record seen timestamp
+    $updateStmt = $db->prepare("UPDATE referral_messages SET is_read = 1, read_at = COALESCE(read_at, NOW()) WHERE referral_id = ? AND user_id != ? AND (is_read = 0 OR is_read IS NULL)");
+    $updateStmt->execute([$refId, $user['id']]);
+
     $stmt = $db->prepare("
-        SELECT m.id, m.message, m.created_at, u.first_name, u.last_name, u.role, u.avatar_photo, u.avatar_initials, m.user_id 
+        SELECT m.id, m.message, m.created_at, m.is_read, m.read_at, u.first_name, u.last_name, u.role, u.avatar_photo, u.avatar_initials, m.user_id 
         FROM referral_messages m 
         JOIN users u ON m.user_id = u.id 
         WHERE m.referral_id = ? 
@@ -43,10 +47,6 @@ try {
     ");
     $stmt->execute([$refId]);
     $messages = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    // Mark messages from others as read
-    $updateStmt = $db->prepare("UPDATE referral_messages SET is_read = 1 WHERE referral_id = ? AND user_id != ?");
-    $updateStmt->execute([$refId, $user['id']]);
 
     jsonOut([
         'success' => true, 

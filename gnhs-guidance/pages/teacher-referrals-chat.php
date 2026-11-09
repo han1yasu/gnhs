@@ -387,8 +387,42 @@ $content = <<<'HTML'
   .msg-timestamp {
     font-size: 10.5px;
     color: var(--text-3);
+  }
+  .msg-status-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     margin-top: 3px;
     padding: 0 6px;
+  }
+  .msg-row.sent .msg-status-wrap {
+    justify-content: flex-end;
+  }
+  .msg-seen-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--maroon);
+    background: var(--maroon-pale);
+    border: 1px solid var(--maroon-tint);
+    padding: 1px 7px;
+    border-radius: 10px;
+    letter-spacing: 0.2px;
+  }
+  .msg-sent-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-3);
+  }
+  [data-theme="dark"] .msg-seen-tag {
+    background: rgba(85,0,0,0.3);
+    color: #ff9999;
+    border-color: rgba(255,153,153,0.25);
   }
 
   /* Input Footer */
@@ -966,6 +1000,30 @@ function renderMessagesThread(messages, currentUserId) {
     return;
   }
 
+  // Find the last sent message that has been seen, and the latest sent message overall
+  let lastSeenSentId = null;
+  let lastSeenSentTime = null;
+  let latestSentId = null;
+
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const m = messages[i];
+    const isSent = (m.user_id == currentUserId);
+    if (isSent) {
+      if (latestSentId === null) {
+        latestSentId = m.id;
+      }
+      if (lastSeenSentId === null && (m.is_read == 1 || m.is_read === true || m.is_read === '1')) {
+        lastSeenSentId = m.id;
+        if (m.read_at) {
+          const rd = new Date(m.read_at);
+          if (!isNaN(rd.getTime())) {
+            lastSeenSentTime = rd.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+          }
+        }
+      }
+    }
+  }
+
   let html = '';
   let lastDate = '';
 
@@ -988,6 +1046,16 @@ function renderMessagesThread(messages, currentUserId) {
          <div class="msg-avatar-fallback msg-bubble-avatar" style="display:none;font-size:11px;">${senderInitials}</div>`
       : `<div class="msg-avatar-fallback msg-bubble-avatar" style="font-size:11px;">${senderInitials}</div>`;
 
+    // Seen / Sent status indicator (Messenger style)
+    let statusIndicator = '';
+    if (isSent) {
+      if (m.id == lastSeenSentId) {
+        statusIndicator = `<span class="msg-seen-tag" title="Seen by counselor"><i class="fas fa-check-double"></i> Seen ${lastSeenSentTime ? lastSeenSentTime : ''}</span>`;
+      } else if (m.id == latestSentId && m.id != lastSeenSentId) {
+        statusIndicator = `<span class="msg-sent-tag" title="Delivered"><i class="fas fa-check"></i> Sent</span>`;
+      }
+    }
+
     html += `
       <div class="msg-row ${isSent ? 'sent' : 'received'}">
         ${!isSent ? avatarHtml : ''}
@@ -996,7 +1064,10 @@ function renderMessagesThread(messages, currentUserId) {
           <div class="msg-bubble">
             ${escapeHtml(m.message)}
           </div>
-          <span class="msg-timestamp">${timeFormatted}</span>
+          <div class="msg-status-wrap">
+            <span class="msg-timestamp">${timeFormatted}</span>
+            ${statusIndicator}
+          </div>
         </div>
       </div>
     `;
@@ -1028,7 +1099,10 @@ async function pageSendMessage() {
           <div class="msg-bubble" style="opacity:0.8;">
             ${escapeHtml(msg)}
           </div>
-          <span class="msg-timestamp">${timeStr} <i class="fas fa-check" style="font-size:9px"></i></span>
+          <div class="msg-status-wrap">
+            <span class="msg-timestamp">${timeStr}</span>
+            <span class="msg-sent-tag"><i class="fas fa-check"></i> Sent</span>
+          </div>
         </div>
       </div>`;
     thread.scrollTop = thread.scrollHeight;

@@ -59,7 +59,7 @@ foreach ($cases as $c) {
         <td class='cell-actions'><button type='button' class='btn-row-action' onclick='openCaseModal({$c['id']})'><i class='fas fa-eye'></i> View</button></td>
     </tr>";
 }
-if (!$rows) $rows = "<tr><td colspan='7' style='text-align:center;color:var(--text-3);padding:40px'>No active cases found. <a href='student-submit.php' style='color:var(--maroon);font-weight:700'>Submit a concern →</a></td></tr>";
+if (!$rows) $rows = "<tr><td colspan='7' class='empty-table-cell'>No active cases found. <a href='student-submit.php' class='empty-table-link'>Submit a concern &rarr;</a></td></tr>";
 
 $selPending    = $filterStatus==='pending'      ? 'selected' : '';
 $selReview     = $filterStatus==='under_review' ? 'selected' : '';

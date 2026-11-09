@@ -39,9 +39,13 @@ try {
     $caseInfo = $caseStmt->fetch(PDO::FETCH_ASSOC);
     $isCaseAnon = !empty($caseInfo['is_anonymous']);
 
-    // Get messages
+    // Mark messages from others as read and record seen timestamp
+    $db->prepare("UPDATE case_messages SET is_read=1, read_at=COALESCE(read_at, NOW()) WHERE case_id=? AND sender_id != ? AND (is_read=0 OR is_read IS NULL)")
+       ->execute([$caseId, $user['id']]);
+
+    // Get messages with is_read and read_at tracking for seen indicator
     $stmt = $db->prepare("
-        SELECT m.id, m.sender_id, m.message, m.created_at, 
+        SELECT m.id, m.sender_id, m.message, m.created_at, m.is_read, m.read_at,
                CONCAT(u.first_name, ' ', u.last_name) as sender_name, 
                u.role as sender_role,
                u.avatar_photo as sender_avatar
@@ -63,10 +67,6 @@ try {
         }
         unset($m);
     }
-
-    // Mark as read
-    $db->prepare("UPDATE case_messages SET is_read=1 WHERE case_id=? AND sender_id != ?")
-       ->execute([$caseId, $user['id']]);
 
     jsonOut([
         'success' => true,

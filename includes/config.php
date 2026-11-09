@@ -60,6 +60,8 @@ function getDB(): PDO {
         try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS security_answer_2 VARCHAR(255) DEFAULT NULL"); } catch(Exception $e){}
         try { $pdo->exec("ALTER TABLE cases ADD COLUMN IF NOT EXISTS is_against_adviser TINYINT(1) DEFAULT 0"); } catch(Exception $e){}
         try { $pdo->exec("ALTER TABLE cases ADD COLUMN IF NOT EXISTS reported_teacher_name VARCHAR(255) DEFAULT NULL"); } catch(Exception $e){}
+        try { $pdo->exec("ALTER TABLE case_messages ADD COLUMN IF NOT EXISTS read_at DATETIME DEFAULT NULL"); } catch(Exception $e){}
+        try { $pdo->exec("ALTER TABLE referral_messages ADD COLUMN IF NOT EXISTS read_at DATETIME DEFAULT NULL"); } catch(Exception $e){}
         try {
             $hasIdx = $pdo->query("SHOW INDEX FROM users WHERE Key_name = 'uq_id_number'")->fetch();
             if (!$hasIdx) {

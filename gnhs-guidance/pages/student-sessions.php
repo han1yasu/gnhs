@@ -105,7 +105,7 @@ foreach ($sessions as $s) {
         <td>$statusBadge</td>
     </tr>";
 }
-if (!$rows) $rows = "<tr><td colspan='7' style='text-align:center;color:var(--text-3);padding:40px'>No active counseling sessions scheduled. Past sessions are stored in your <a href='student-sessions-archive.php' style='color:var(--maroon);font-weight:700'>Sessions Archive &rarr;</a></td></tr>";
+if (!$rows) $rows = "<tr><td colspan='7' class='empty-table-cell'>No active counseling sessions scheduled. Past sessions are stored in your <a href='student-sessions-archive.php' class='empty-table-link'>Sessions Archive &rarr;</a></td></tr>";
 
 $content = <<<HTML
 <style>

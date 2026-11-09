@@ -53,7 +53,7 @@ foreach ($recentCases as $c) {
         <td class='cell-actions'><button type='button' class='btn-row-action' onclick='openCaseModal({$c['id']})'><i class='fas fa-eye'></i> View</button></td>
     </tr>";
 }
-if (!$caseRows) $caseRows = "<tr><td colspan='6' style='text-align:center;color:var(--text-3);padding:32px'>No cases submitted yet. <a href='student-submit.php' style='color:var(--maroon);font-weight:700'>Submit your first concern</a></td></tr>";
+if (!$caseRows) $caseRows = "<tr><td colspan='6' class='empty-table-cell'>No cases submitted yet. <a href='student-submit.php' class='empty-table-link'>Submit your first concern</a></td></tr>";
 
 $sessionHtml = '';
 if ($session) {

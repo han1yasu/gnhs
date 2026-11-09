@@ -98,6 +98,7 @@ try {
         'advisory_class'  => null,
         'is_setup_complete' => 0,
         'age'             => null,
+        'totp_secret'     => $totpSecret,
     ];
 
     jsonOut([

@@ -13,7 +13,7 @@ $db = getDB();
 $stmt = $db->prepare("SELECT totp_secret, totp_enabled, totp_reset_requested FROM users WHERE id = ? LIMIT 1");
 $stmt->execute([$pendingUser['id']]);
 $u = $stmt->fetch();
-$secret = trim($u['totp_secret'] ?? '');
+$secret = trim($u['totp_secret'] ?? ($pendingUser['totp_secret'] ?? ''));
 $isTotpEnabled = !empty($u['totp_enabled']);
 $isResetRequested = !empty($u['totp_reset_requested']);
 
@@ -22,11 +22,12 @@ if (empty($secret)) {
     $secret = PureOTP::generateSecret(16);
     $db->prepare("UPDATE users SET totp_secret = ? WHERE id = ?")->execute([$secret, $pendingUser['id']]);
 }
+$_SESSION['pending_user']['totp_secret'] = $secret;
 
 $email = urlencode($pendingUser['email']);
 $issuer = urlencode('GNHS Guidance System');
 $otpauth = "otpauth://totp/$issuer:$email?secret=$secret&issuer=$issuer";
-$qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" . urlencode($otpauth);
+$qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" . urlencode($otpauth) . "&t=" . time();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -34,9 +35,10 @@ $qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" . urle
   <meta charset="UTF-8">
   <title>Two-Factor Authentication - GNHS Guidance</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="../style.css?v=2.3">
+  <link rel="stylesheet" href="../style.css?v=3.0">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script>
     (function(){
       var t = localStorage.getItem('theme') || 'light';
@@ -69,7 +71,8 @@ $qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" . urle
     <div class="glass-setup-box" id="setupSection" style="display:block; margin-top:14px;">
         <p style="font-size: 13px; margin-bottom: 12px; color:rgba(255,255,255,0.9)">Scan this QR code with Google Authenticator, Microsoft Authenticator, or Authy:</p>
         <div style="background:#fff; padding:10px; border-radius:12px; display:inline-block; margin-bottom:12px; box-shadow: 0 4px 16px rgba(0,0,0,0.3);">
-            <img src="<?= htmlspecialchars($qrUrl) ?>" alt="QR Code" style="width: 160px; height: 160px; display:block; border-radius:8px;">
+            <div id="qrcodeJs" style="display:none; width:160px; height:160px;"></div>
+            <img id="qrFallbackImg" src="<?= htmlspecialchars($qrUrl) ?>" alt="QR Code" style="width: 160px; height: 160px; display:block; border-radius:8px;">
         </div>
         
         <div style="margin-top:10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.18); border-radius: 10px; padding: 12px 14px; text-align: center;">
@@ -280,6 +283,28 @@ function fallbackCopy(key) {
     }
     document.body.removeChild(ta);
 }
+
+// Render vector QR code instantly with zero latency
+(function initQrCode() {
+    try {
+        if (typeof QRCode !== 'undefined') {
+            const qrBox = document.getElementById('qrcodeJs');
+            const imgFallback = document.getElementById('qrFallbackImg');
+            if (qrBox) {
+                new QRCode(qrBox, {
+                    text: <?= json_encode($otpauth) ?>,
+                    width: 160,
+                    height: 160,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+                qrBox.style.display = 'block';
+                if (imgFallback) imgFallback.style.display = 'none';
+            }
+        }
+    } catch(e) {}
+})();
 
 window.addEventListener('load', () => input.focus());
 </script>

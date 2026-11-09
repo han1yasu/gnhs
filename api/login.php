@@ -112,6 +112,7 @@ try {
         'advisory_class' => $user['advisory_class'] ?? null,
         'is_setup_complete' => $user['is_setup_complete'] ?? 0,
         'age'            => $user['age'] ?? null,
+        'totp_secret'    => $secret,
     ];
     
     jsonOut([
@@ -141,6 +142,7 @@ try {
         'advisory_class' => $user['advisory_class'] ?? null,
         'is_setup_complete' => $user['is_setup_complete'] ?? 0,
         'age'            => $user['age'] ?? null,
+        'totp_secret'    => $secret,
     ];
 
     $redirectMap = [

@@ -8,6 +8,7 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
     $idNumber = htmlspecialchars($user['id_number'] ?? '');
     $grade    = htmlspecialchars($user['grade_section'] ?? '');
     $avatarPhoto = $user['avatar_photo'] ?? null;
+    $avatarOnError = "onerror=\"if(!this.dataset.t){this.dataset.t='1';this.src=this.src.includes('/gnhs-guidance/uploads/')?this.src.replace('/gnhs-guidance/uploads/','/uploads/'):this.src.replace('/uploads/','/gnhs-guidance/uploads/');}else{this.style.display='none';var fb=this.parentElement.querySelector('.avatar-fallback');if(fb)fb.style.display='flex';}\"";
 
     // Sidebar links per role
     $navLinks = [
@@ -190,9 +191,10 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
     <?= $sidebarLinks ?>
   </nav>
   <div class="sb-user" id="sidebarUserBtn" onclick="openProfileModal()" style="cursor:pointer" title="View Profile / Change Password">
-    <div style="width:36px;height:36px;min-width:36px;min-height:36px;border-radius:10px;overflow:hidden;flex-shrink:0;border:2px solid rgba(255,255,255,.25);">
+    <div style="width:36px;height:36px;min-width:36px;min-height:36px;border-radius:10px;overflow:hidden;flex-shrink:0;border:2px solid rgba(255,255,255,.25);position:relative;">
       <?php if ($avatarPhoto): ?>
-        <img src="<?= htmlspecialchars($avatarPhoto) ?>" alt="Avatar" style="width:36px;height:36px;object-fit:cover;object-position:center top;display:block;"/>
+        <img src="<?= htmlspecialchars($avatarPhoto) ?>" alt="Avatar" <?= $avatarOnError ?> style="width:36px;height:36px;object-fit:cover;object-position:center top;display:block;"/>
+        <div class="sb-avatar avatar-fallback" style="display:none;"><?= $initials ?></div>
       <?php else: ?>
         <div class="sb-avatar"><?= $initials ?></div>
       <?php endif; ?>
@@ -250,9 +252,10 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
         <span class="notif-dot hidden" id="notifDot"></span>
       </button>
       <div class="topbar-user" id="topbarUserBtn" onclick="toggleProfileMenu(event)" style="cursor:pointer;position:relative">
-        <div style="width:32px;height:32px;min-width:32px;min-height:32px;border-radius:8px;overflow:hidden;flex-shrink:0;">
+        <div style="width:32px;height:32px;min-width:32px;min-height:32px;border-radius:8px;overflow:hidden;flex-shrink:0;position:relative;">
           <?php if ($avatarPhoto): ?>
-            <img src="<?= htmlspecialchars($avatarPhoto) ?>" alt="Avatar" style="width:32px;height:32px;object-fit:cover;object-position:center top;display:block;"/>
+            <img src="<?= htmlspecialchars($avatarPhoto) ?>" alt="Avatar" <?= $avatarOnError ?> style="width:32px;height:32px;object-fit:cover;object-position:center top;display:block;"/>
+            <div class="tb-avatar avatar-fallback" style="display:none;"><?= $initials ?></div>
           <?php else: ?>
             <div class="tb-avatar"><?= $initials ?></div>
           <?php endif; ?>
@@ -261,9 +264,10 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
         <i class="fas fa-chevron-down" style="font-size:11px;color:var(--text-3);margin-left:4px"></i>
         <div class="profile-dropdown hidden" id="profileDropdown">
           <div class="pd-header">
-            <div style="width:40px;height:40px;min-width:40px;min-height:40px;border-radius:10px;overflow:hidden;flex-shrink:0;border:2px solid rgba(255,255,255,.3);">
+            <div style="width:40px;height:40px;min-width:40px;min-height:40px;border-radius:10px;overflow:hidden;flex-shrink:0;border:2px solid rgba(255,255,255,.3);position:relative;">
               <?php if ($avatarPhoto): ?>
-                <img src="<?= htmlspecialchars($avatarPhoto) ?>" alt="Avatar" style="width:40px;height:40px;object-fit:cover;object-position:center top;display:block;"/>
+                <img src="<?= htmlspecialchars($avatarPhoto) ?>" alt="Avatar" <?= $avatarOnError ?> style="width:40px;height:40px;object-fit:cover;object-position:center top;display:block;"/>
+                <div class="pd-avatar avatar-fallback" style="display:none;"><?= $initials ?></div>
               <?php else: ?>
                 <div class="pd-avatar"><?= $initials ?></div>
               <?php endif; ?>
@@ -373,7 +377,8 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
           <!-- Avatar circle — click overlay to change -->
           <div class="profile-avatar-wrap" onclick="document.getElementById('avatarFileInput').click()" title="Click to change photo">
             <?php if ($avatarPhoto): ?>
-              <img src="<?= htmlspecialchars($avatarPhoto) ?>" alt="Avatar" class="profile-big-avatar-img" id="profileAvatarPreview"/>
+              <img src="<?= htmlspecialchars($avatarPhoto) ?>" alt="Avatar" <?= $avatarOnError ?> class="profile-big-avatar-img" id="profileAvatarPreview"/>
+              <div class="profile-big-avatar avatar-fallback" id="profileAvatarPreviewFallback" style="display:none;"><?= $initials ?></div>
             <?php else: ?>
               <div class="profile-big-avatar" id="profileAvatarPreview"><?= $initials ?></div>
             <?php endif; ?>

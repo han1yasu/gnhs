@@ -4,6 +4,15 @@ RewriteEngine On
 
 # Redirect domain root visits directly to /gnhs-guidance/
 RewriteRule ^$ /gnhs-guidance/ [L,R=301]
+
+# Uploads fallback rewrites
+RewriteCond %{REQUEST_URI} ^/gnhs-guidance/uploads/(.*)$
+RewriteCond %{DOCUMENT_ROOT}/uploads/%1 -f
+RewriteRule ^gnhs-guidance/uploads/(.*)$ /uploads/$1 [L]
+
+RewriteCond %{REQUEST_URI} ^/uploads/(.*)$
+RewriteCond %{DOCUMENT_ROOT}/gnhs-guidance/uploads/%1 -f
+RewriteRule ^uploads/(.*)$ /gnhs-guidance/uploads/$1 [L]
 </IfModule>
 
 # Protect sensitive files

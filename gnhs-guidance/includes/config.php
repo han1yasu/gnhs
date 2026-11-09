@@ -206,13 +206,18 @@ function requireLogin($role = ''): array {
             $db->exec("ALTER TABLE referral_messages ADD COLUMN IF NOT EXISTS is_read TINYINT(1) DEFAULT 0");
         } catch(Exception $e) {}
 
-        $fresh = $db->prepare("SELECT avatar_photo, advisory_class, avatar_initials FROM users WHERE id=? LIMIT 1");
+        $fresh = $db->prepare("SELECT avatar_photo, advisory_class, avatar_initials, first_name, last_name, grade_section FROM users WHERE id=? LIMIT 1");
         $fresh->execute([$u['id']]);
         $row = $fresh->fetch();
         if ($row) {
-            $_SESSION['user']['avatar_photo']   = $row['avatar_photo']   ?? null;
-            $_SESSION['user']['advisory_class'] = $row['advisory_class'] ?? null;
-            $_SESSION['user']['avatar_initials']= $row['avatar_initials'] ?? $u['avatar_initials'] ?? '';
+            $_SESSION['user']['avatar_photo']    = $row['avatar_photo']   ?? null;
+            $_SESSION['user']['advisory_class']  = $row['advisory_class'] ?? null;
+            $_SESSION['user']['avatar_initials'] = $row['avatar_initials'] ?: strtoupper($row['first_name'][0].($row['last_name'][0]??''));
+            $_SESSION['user']['first_name']      = $row['first_name'];
+            $_SESSION['user']['last_name']       = $row['last_name'];
+            if (!empty($row['grade_section'])) {
+                $_SESSION['user']['grade_section'] = $row['grade_section'];
+            }
             $u = $_SESSION['user'];
         }
     } catch(Exception $e) {

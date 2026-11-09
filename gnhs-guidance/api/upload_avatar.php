@@ -25,24 +25,49 @@ if ($file['size'] > 5 * 1024 * 1024) {
     jsonOut(['success'=>false,'message'=>'Image must be under 5MB.']);
 }
 
-// Create folder
-$uploadDir = __DIR__ . '/../uploads/avatars/';
-if (!is_dir($uploadDir)) {
-    if (!mkdir($uploadDir, 0755, true)) {
-        jsonOut(['success'=>false,'message'=>'Cannot create uploads folder. Check permissions.']);
-    }
+// Resolve all potential uploads directories across root and mirror subdirectories
+$dirs = [];
+$primaryDir = str_replace('\\', '/', __DIR__ . '/../uploads/avatars/');
+$dirs[] = $primaryDir;
+
+if (strpos(__DIR__, 'gnhs-guidance') !== false) {
+    $dirs[] = str_replace('\\', '/', dirname(__DIR__, 2) . '/uploads/avatars/');
+} else {
+    $dirs[] = str_replace('\\', '/', dirname(__DIR__) . '/gnhs-guidance/uploads/avatars/');
 }
+
+if (!empty($_SERVER['DOCUMENT_ROOT'])) {
+    $docRoot = rtrim(str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT']), '/');
+    $dirs[] = $docRoot . '/uploads/avatars/';
+    $dirs[] = $docRoot . '/gnhs-guidance/uploads/avatars/';
+}
+
+$dirs = array_unique(array_map(function($d) {
+    return rtrim(str_replace('\\', '/', $d), '/') . '/';
+}, $dirs));
+
+foreach ($dirs as $d) {
+    if (!is_dir($d)) {
+        @mkdir($d, 0777, true);
+    }
+    @chmod($d, 0777);
+}
+
+$uploadDir = $primaryDir;
 
 // Ensure DB column exists
 $db = getDB();
 try { $db->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_photo VARCHAR(255) DEFAULT NULL"); } catch(Exception $e){}
 
-// Delete old avatar file
+// Delete old avatar file from all directories
 try {
     $oldRow = $db->query("SELECT avatar_photo FROM users WHERE id={$user['id']}")->fetch();
     if ($oldRow && $oldRow['avatar_photo']) {
-        $oldFile = __DIR__ . '/../uploads/avatars/' . basename($oldRow['avatar_photo']);
-        if (file_exists($oldFile)) @unlink($oldFile);
+        $oldBase = basename($oldRow['avatar_photo']);
+        foreach ($dirs as $d) {
+            $oldFile = $d . $oldBase;
+            if (file_exists($oldFile)) @unlink($oldFile);
+        }
     }
 } catch(Exception $e){}
 
@@ -74,7 +99,6 @@ if ($gdAvailable) {
         $cropY    = 0;
 
         $out = imagecreatetruecolor($SIZE, $SIZE);
-        // White background for transparency
         $white = imagecolorallocate($out, 255, 255, 255);
         imagefill($out, 0, 0, $white);
 
@@ -89,7 +113,6 @@ if ($gdAvailable) {
 // ── Fallback: save original file as-is if GD unavailable ────
 if (!$saved) {
     $saved = move_uploaded_file($file['tmp_name'], $destPath);
-    // Use original extension if GD not available
     if ($saved && $mime !== 'image/jpeg') {
         $ext = match($mime) {
             'image/png'  => 'png',
@@ -101,12 +124,24 @@ if (!$saved) {
         $newPath     = $uploadDir . $newFilename;
         rename($destPath, $newPath);
         $destPath = $newPath;
+        $filename = $newFilename;
         $webPath  = '/gnhs-guidance/uploads/avatars/' . $newFilename;
     }
 }
 
 if (!$saved) {
-    jsonOut(['success'=>false,'message'=>'Failed to save image. Check folder permissions at: '.$uploadDir]);
+    jsonOut(['success'=>false,'message'=>'Failed to save image. Check folder permissions.']);
+}
+
+@chmod($destPath, 0666);
+
+// Sync avatar file to all avatar directories
+foreach ($dirs as $d) {
+    $targetFile = $d . $filename;
+    if ($targetFile !== $destPath) {
+        @copy($destPath, $targetFile);
+        @chmod($targetFile, 0666);
+    }
 }
 
 // Save to DB + session
@@ -117,6 +152,3 @@ try {
 } catch(Exception $e) {
     jsonOut(['success'=>false,'message'=>'DB error: '.$e->getMessage()], 500);
 }
-
-
-

@@ -8,7 +8,10 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $raw = json_decode(file_get_contents('php://input'), true);
-$email = strtolower(trim($raw['email'] ?? ''));
+$rawEmail = strtolower(trim($raw['email'] ?? ''));
+// Aggressive sanitization to prevent any header injection or multiple addresses
+$email = filter_var($rawEmail, FILTER_SANITIZE_EMAIL);
+$email = preg_replace('/[\r\n\t,; ]+/', '', $email);
 $role  = strtolower(trim($raw['role']  ?? 'student')); // 'student' or 'teacher'
 
 if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -91,11 +94,16 @@ $messageHtml = '
       <p style="margin:0;color:#666;font-size:13px;">Login / Account Verification</p>
     </div>
     <p style="font-size:14px;line-height:1.5;">Hello,</p>
-    <p style="font-size:14px;line-height:1.5;">You requested to sign in to the <strong>GNHS Guidance Case Management System</strong> using your email (<strong>' . htmlspecialchars($email) . '</strong>).</p>
+    <p style="font-size:14px;line-height:1.5;">You requested to sign in to the <strong>GNHS Guidance Case Management System</strong> using your email:</p>
+    
+    <div style="background:#fef2f2;border:1px solid #fecaca;padding:10px 14px;border-radius:8px;font-size:13px;color:#991b1b;margin:12px 0;">
+      <strong>Sole Recipient:</strong> <span style="font-weight:700;color:#550000;">' . htmlspecialchars($email) . '</span>
+    </div>
+
     <div class="code-box">' . $code . '</div>
     <p style="font-size:13px;color:#555;line-height:1.5;">This verification code will expire in <strong>10 minutes</strong>. If you did not request this login code, you can safely ignore this email.</p>
     <div class="footer">
-      Guidance Office &bull; Gerona National High School<br>
+      Guidance Office &bull; Guinayang National High School<br>
       Confidential school guidance communications.
     </div>
   </div>
@@ -106,11 +114,14 @@ $headers  = "MIME-Version: 1.0\r\n";
 $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
 $headers .= "From: GNHS Guidance Office <no-reply@gnhsguidance.com>\r\n";
 $headers .= "Reply-To: no-reply@gnhsguidance.com\r\n";
+$headers .= "To: <" . $email . ">\r\n";
+$headers .= "X-Entity-Recipient: " . $email . "\r\n";
 $headers .= "X-Mailer: PHP/" . phpversion() . "\r\n";
 
 $mailSent = false;
 try {
-    $mailSent = @mail($email, $subject, $messageHtml, $headers);
+    // Pass -f to explicitly force the envelope sender and prevent MTA broadcast / duplicate envelope delivery
+    $mailSent = @mail($email, $subject, $messageHtml, $headers, "-f no-reply@gnhsguidance.com");
 } catch (Exception $e) {
     $mailSent = false;
 }

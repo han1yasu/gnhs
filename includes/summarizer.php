@@ -38,8 +38,8 @@ function generateReferralSummary(string $concernType, string $studentName, strin
  */
 function callGeminiApiForCase(string $concernType, string $subject, string $description): string {
     $apiKey = getenv('GEMINI_API_KEY') ?: (defined('GEMINI_API_KEY') ? GEMINI_API_KEY : '');
-    // Ignore invalid placeholder keys
-    if (empty($apiKey) || strpos($apiKey, 'AQ.') === 0 || !function_exists('curl_init')) {
+    // Ignore empty keys
+    if (empty($apiKey) || !function_exists('curl_init')) {
         return '';
     }
 
@@ -56,7 +56,7 @@ function callGeminiApiForCase(string $concernType, string $subject, string $desc
 
 function callGeminiApiForReferral(string $concernType, string $studentName, string $observations): string {
     $apiKey = getenv('GEMINI_API_KEY') ?: (defined('GEMINI_API_KEY') ? GEMINI_API_KEY : '');
-    if (empty($apiKey) || strpos($apiKey, 'AQ.') === 0 || !function_exists('curl_init')) {
+    if (empty($apiKey) || !function_exists('curl_init')) {
         return '';
     }
 
@@ -76,25 +76,32 @@ function executeGeminiPrompt(string $apiKey, string $prompt): string {
         'generationConfig' => ['maxOutputTokens' => 300, 'temperature' => 0.3]
     ]);
 
-    $ch = curl_init('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' . urlencode($apiKey));
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_POST           => true,
-        CURLOPT_POSTFIELDS     => $payload,
-        CURLOPT_TIMEOUT        => 8,
-        CURLOPT_SSL_VERIFYPEER => false,
-        CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
-    ]);
+    // Support current Gemini flash models with automatic fallback
+    $models = ['gemini-2.5-flash', 'gemini-3.8-flash', 'gemini-flash-latest', 'gemini-1.5-flash'];
+    foreach ($models as $model) {
+        $ch = curl_init("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key=" . urlencode($apiKey));
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => $payload,
+            CURLOPT_TIMEOUT        => 8,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+        ]);
 
-    $response = curl_exec($ch);
-    $err      = curl_error($ch);
-    curl_close($ch);
+        $response = curl_exec($ch);
+        $err      = curl_error($ch);
+        curl_close($ch);
 
-    if ($err || !$response) return '';
-    $data = json_decode($response, true);
-    if (!is_array($data) || isset($data['error'])) return '';
+        if (!$err && $response) {
+            $data = json_decode($response, true);
+            if (isset($data['candidates'][0]['content']['parts'][0]['text'])) {
+                return trim($data['candidates'][0]['content']['parts'][0]['text']);
+            }
+        }
+    }
 
-    return trim($data['candidates'][0]['content']['parts'][0]['text'] ?? '');
+    return '';
 }
 
 /**
@@ -248,7 +255,7 @@ function generateResolutionSuggestion(string $concernType, string $subject, stri
     }
 
     $apiKey = getenv('GEMINI_API_KEY') ?: (defined('GEMINI_API_KEY') ? GEMINI_API_KEY : '');
-    if (!empty($apiKey) && strpos($apiKey, 'AQ.') !== 0 && function_exists('curl_init')) {
+    if (!empty($apiKey) && function_exists('curl_init')) {
         $typeLabel = ucfirst(str_replace('_', ' ', $concernType));
         $prompt = "You are a professional school guidance counselor at Guinayang National High School (GNHS).\n"
                 . "Based on the case details and the counselor's direct interview observations and case notes, suggest an official resolution summary and appropriate student handbook sanction.\n\n"
@@ -349,7 +356,7 @@ function analyzeSessionConclusion(string $concernType, string $subject, string $
     }
 
     $apiKey = getenv('GEMINI_API_KEY') ?: (defined('GEMINI_API_KEY') ? GEMINI_API_KEY : '');
-    if (!empty($apiKey) && strpos($apiKey, 'AQ.') !== 0 && function_exists('curl_init')) {
+    if (!empty($apiKey) && function_exists('curl_init')) {
         $typeLabel = ucfirst(str_replace('_', ' ', $concernType));
         $sessionCount = count($existingSessions);
         $prompt = "You are a licensed school guidance counselor and clinical supervisor at Guinayang National High School (GNHS) in the Philippines.\n"

@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GNHS — Guidance Case Management System</title>
-  <link rel="stylesheet" href="style.css?v=2.4" />
+  <link rel="stylesheet" href="style.css?v=2.7" />
   <link
     href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,600;1,400&display=swap"
     rel="stylesheet" />
@@ -264,12 +264,18 @@
 
         <div style="display:flex;align-items:center;margin:16px 0 10px;gap:10px;">
           <div style="flex:1;height:1px;background:var(--border);"></div>
-          <span style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:0.5px;">OR FAST LOGIN</span>
+          <span style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:0.5px;">OR</span>
           <div style="flex:1;height:1px;background:var(--border);"></div>
         </div>
 
-        <button type="button" class="btn-ghost" onclick="openEmailOtpFlow()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;font-size:13.5px;border:1.5px solid var(--border);border-radius:10px;padding:11px 14px;background:var(--bg2);color:var(--text);font-weight:700;cursor:pointer;transition:.2s;">
-          <i class="fas fa-envelope-open-text" style="color:var(--maroon);font-size:15px;"></i> Sign in with Email Code (Gmail / DepEd)
+        <button type="button" class="btn-google-sign-in" onclick="openGoogleAccountChooser()">
+          <svg width="18" height="18" viewBox="0 0 48 48">
+            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+          </svg>
+          <span>Google</span>
         </button>
       </div>
       <div class="modal-step hidden" id="step-role">
@@ -335,9 +341,111 @@
           <div style="flex:1;height:1px;background:var(--border);"></div>
         </div>
 
-        <button type="button" class="btn-ghost" onclick="openEmailOtpFlow()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;font-size:13.5px;border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;background:var(--bg2);color:var(--text);font-weight:700;cursor:pointer;transition:.2s;">
-          <i class="fas fa-envelope-open-text" style="color:var(--maroon);font-size:15px;"></i> Sign in with Email Code (Gmail / DepEd)
+        <button type="button" class="btn-google-sign-in" onclick="openGoogleAccountChooser()">
+          <svg width="18" height="18" viewBox="0 0 48 48">
+            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+          </svg>
+          <span>Google</span>
         </button>
+      </div>
+
+      <!-- SHOPEE-STYLE GOOGLE ACCOUNT CHOOSER STEP -->
+      <div class="modal-step hidden" id="step-google-chooser">
+        <div class="google-top-bar">
+          <div class="google-brand">
+            <svg width="18" height="18" viewBox="0 0 48 48">
+              <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+              <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+              <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+              <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+            </svg>
+            <span>Sign in with Google</span>
+          </div>
+          <button type="button" class="modal-close" onclick="closeLoginModal()"><i class="fas fa-times"></i></button>
+        </div>
+
+        <!-- STAGE A: CHOOSE ACCOUNT LIST -->
+        <div id="googleStageList">
+          <div class="google-app-badge">
+            <i class="fas fa-graduation-cap" style="color:#fff;font-size:22px"></i>
+          </div>
+          <h2 class="google-chooser-title">Choose an account</h2>
+          <p class="google-chooser-sub">to continue to <strong>GNHS Guidance</strong></p>
+
+          <div id="googleAccountsList" class="google-accounts-list">
+            <!-- Rendered dynamically -->
+          </div>
+
+          <p class="google-privacy-footer">
+            Before using this app, you can review GNHS Guidance's <a href="#">Privacy Policy</a> and <a href="#">Terms of Service</a>.
+          </p>
+        </div>
+
+        <!-- STAGE B: USE ANOTHER ACCOUNT (EMAIL INPUT) -->
+        <div id="googleStageEmail" style="display:none">
+          <div class="google-app-badge">
+            <i class="fas fa-graduation-cap" style="color:#fff;font-size:22px"></i>
+          </div>
+          <h2 class="google-chooser-title">Sign in</h2>
+          <p class="google-chooser-sub">to continue to <strong>GNHS Guidance</strong></p>
+
+          <div id="google-email-msg" style="display:none"></div>
+
+          <div class="form-group">
+            <label>Email Address <span class="req">*</span></label>
+            <div class="input-wrap">
+              <i class="fas fa-envelope"></i>
+              <input type="email" id="google-custom-email" placeholder="e.g. name@gmail.com or name@deped.gov.ph" required onkeydown="if(event.key==='Enter')submitGoogleCustomEmail()" />
+            </div>
+            <span style="font-size:11.5px;color:var(--text-3);margin-top:4px;display:block;">Personal Gmail for Students &bull; DepEd / Gmail for Teachers</span>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:22px">
+            <button type="button" class="btn-ghost" onclick="showGoogleAccountList()" style="font-size:13px;padding:8px 14px">
+              Back to accounts
+            </button>
+            <button type="button" class="btn-submit" onclick="submitGoogleCustomEmail()" style="width:auto;padding:10px 24px;border-radius:20px;background:#1a73e8;color:#fff;border:none;font-weight:700">
+              Next &nbsp;<i class="fas fa-arrow-right"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- STAGE C: PASSWORD CONFIRMATION -->
+        <div id="googleStagePassword" style="display:none">
+          <div class="google-selected-chip">
+            <div class="google-chip-left">
+              <div class="google-chip-avatar" id="googleSelectedAvatar">G</div>
+              <div class="google-chip-info">
+                <span id="googleSelectedEmail" style="font-size:13px;color:var(--text);font-weight:700"></span>
+              </div>
+            </div>
+            <button type="button" class="google-chip-change" onclick="showGoogleAccountList()">Change</button>
+          </div>
+
+          <h2 class="google-chooser-title" style="font-size:20px;text-align:left">Welcome</h2>
+          <p class="google-chooser-sub" style="margin-bottom:16px;text-align:left">To continue, first verify it's you</p>
+
+          <div id="google-pass-msg" style="display:none"></div>
+
+          <div class="form-group">
+            <label>Password <span class="req">*</span></label>
+            <div class="input-wrap">
+              <i class="fas fa-lock"></i>
+              <input type="password" id="google-pass-input" placeholder="Enter your password" required onkeydown="if(event.key==='Enter')submitGoogleLogin()" />
+              <button class="toggle-pass" type="button" onclick="togglePass('google-pass-input')"><i class="fas fa-eye"></i></button>
+            </div>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:22px">
+            <a href="#" class="forgot-link" onclick="openResetPasswordModal('request')" style="font-size:12.5px">Forgot password?</a>
+            <button type="button" class="btn-submit" id="btnGoogleSubmit" onclick="submitGoogleLogin()" style="width:auto;padding:10px 24px;border-radius:20px;background:#1a73e8;color:#fff;border:none;font-weight:700">
+              Next &nbsp;<i class="fas fa-arrow-right"></i>
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- EMAIL CODE (OTP) LOGIN STEP -->
@@ -611,82 +719,132 @@
         </div>
         <p class="modal-sub" id="reg-role-label" style="margin-top:-10px;">Student Registration</p>
         <div id="reg-msg" style="display:none"></div>
-        <div class="form-row">
-          <div class="form-group"><label>First Name <span class="req">*</span></label>
-            <div class="input-wrap"><i class="fas fa-user"></i><input type="text" id="reg-fname" placeholder="Juan" required /></div>
+
+        <!-- STAGE 1: EMAIL LEGITIMACY VERIFICATION -->
+        <div id="reg-stage-verify">
+          <div class="form-group">
+            <label>Email Address <span class="req">*</span></label>
+            <div class="input-wrap">
+              <i class="fas fa-envelope"></i>
+              <input type="email" id="reg-email" placeholder="e.g. name@gmail.com or name@deped.gov.ph" required onkeydown="if(event.key==='Enter')sendRegEmailCode()" />
+            </div>
+            <span style="font-size:11.5px;color:var(--text-3);margin-top:4px;display:block;">A 6-digit confirmation code will be sent to confirm your email legitimacy.</span>
           </div>
-          <div class="form-group"><label>Middle Name</label>
-            <div class="input-wrap"><i class="fas fa-user"></i><input type="text" id="reg-mname" placeholder="Optional" /></div>
+
+          <div id="reg-code-box" style="display:none;margin-top:14px">
+            <div class="form-group">
+              <label>Enter 6-Digit Verification Code <span class="req">*</span></label>
+              <div class="input-wrap">
+                <i class="fas fa-key"></i>
+                <input type="text" id="reg-verify-code" placeholder="000000" maxlength="6" pattern="[0-9]*" inputmode="numeric" style="letter-spacing:6px;font-size:18px;font-weight:800;text-align:center" onkeydown="if(event.key==='Enter')verifyRegEmailCode()" />
+              </div>
+              <span style="font-size:11.5px;color:var(--text-3);margin-top:4px;display:block;">Check your inbox or spam folder. Code expires in 10 minutes.</span>
+            </div>
+
+            <button type="button" class="btn-submit" id="btnVerifyRegCode" onclick="verifyRegEmailCode()">
+              <i class="fas fa-check-circle"></i> Verify Code & Continue Setup
+            </button>
+
+            <div style="text-align:center;margin-top:10px">
+              <button type="button" onclick="sendRegEmailCode(true)" style="background:none;border:none;color:var(--text-3);font-size:12px;font-weight:700;cursor:pointer">
+                Didn't receive code? Resend
+              </button>
+            </div>
+          </div>
+
+          <div id="reg-send-btn-wrap" style="margin-top:14px">
+            <button type="button" class="btn-submit" id="btnSendRegCode" onclick="sendRegEmailCode()">
+              <i class="fas fa-paper-plane"></i> Send Verification Code
+            </button>
           </div>
         </div>
-        <div class="form-row">
-          <div class="form-group"><label>Last Name <span class="req">*</span></label>
-            <div class="input-wrap"><i class="fas fa-user"></i><input type="text" id="reg-lname" placeholder="Dela Cruz" required /></div>
+
+        <!-- STAGE 2: ACCOUNT SETUP (UNLOCKED AFTER EMAIL IS CONFIRMED) -->
+        <div id="reg-stage-setup" style="display:none">
+          <div style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);padding:10px 14px;border-radius:10px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between">
+            <div style="display:flex;align-items:center;gap:8px">
+              <i class="fas fa-circle-check" style="color:#10b981;font-size:16px"></i>
+              <div>
+                <span style="font-size:10.5px;color:var(--text-3);display:block">Verified Email:</span>
+                <strong style="font-size:12.5px;color:var(--text)" id="regVerifiedEmailBadge"></strong>
+              </div>
+            </div>
+            <button type="button" onclick="resetRegEmailVerification()" style="background:none;border:none;color:var(--maroon);font-size:11.5px;font-weight:700;cursor:pointer">Change</button>
           </div>
-          <div class="form-group"><label>Suffix</label>
-            <div class="input-wrap"><i class="fas fa-user"></i><input type="text" id="reg-suffix" placeholder="e.g. Jr., III" /></div>
-          </div>
-        </div>
-        <div class="form-group" id="reg-lrn-field">
-          <label id="reg-lrn-label">LRN (12 Digits) <span class="req">*</span></label>
-          <div class="input-wrap"><i class="fas fa-id-card"></i>
-            <input type="text" id="reg-lrn-input" inputmode="numeric" maxlength="12" pattern="[0-9]{12}" placeholder="Enter 12-digit LRN (Numbers only)" required />
-          </div>
-          <small id="reg-lrn-help" style="font-size:11px;color:var(--text-3);margin-top:4px;display:block;">Must be strictly 12 numeric digits.</small>
-        </div>
-        <div id="reg-grade-field">
+
           <div class="form-row">
-            <div class="form-group">
-              <label>Grade <span class="req">*</span></label>
-              <div class="select-wrap"><i class="fas fa-layer-group"></i>
-                <select id="reg-grade-level" onchange="regUpdateSections()">
-                  <option value="">Select Grade</option>
-                  <option value="7">Grade 7</option>
-                  <option value="8">Grade 8</option>
-                  <option value="9">Grade 9</option>
-                  <option value="10">Grade 10</option>
-                </select>
+            <div class="form-group"><label>First Name <span class="req">*</span></label>
+              <div class="input-wrap"><i class="fas fa-user"></i><input type="text" id="reg-fname" placeholder="Juan" required /></div>
+            </div>
+            <div class="form-group"><label>Middle Name</label>
+              <div class="input-wrap"><i class="fas fa-user"></i><input type="text" id="reg-mname" placeholder="Optional" /></div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Last Name <span class="req">*</span></label>
+              <div class="input-wrap"><i class="fas fa-user"></i><input type="text" id="reg-lname" placeholder="Dela Cruz" required /></div>
+            </div>
+            <div class="form-group"><label>Suffix</label>
+              <div class="input-wrap"><i class="fas fa-user"></i><input type="text" id="reg-suffix" placeholder="e.g. Jr., III" /></div>
+            </div>
+          </div>
+          <div class="form-group" id="reg-lrn-field">
+            <label id="reg-lrn-label">LRN (12 Digits) <span class="req">*</span></label>
+            <div class="input-wrap"><i class="fas fa-id-card"></i>
+              <input type="text" id="reg-lrn-input" inputmode="numeric" maxlength="12" pattern="[0-9]{12}" placeholder="Enter 12-digit LRN (Numbers only)" required />
+            </div>
+            <small id="reg-lrn-help" style="font-size:11px;color:var(--text-3);margin-top:4px;display:block;">Must be strictly 12 numeric digits.</small>
+          </div>
+          <div id="reg-grade-field">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Grade <span class="req">*</span></label>
+                <div class="select-wrap"><i class="fas fa-layer-group"></i>
+                  <select id="reg-grade-level" onchange="regUpdateSections()">
+                    <option value="">Select Grade</option>
+                    <option value="7">Grade 7</option>
+                    <option value="8">Grade 8</option>
+                    <option value="9">Grade 9</option>
+                    <option value="10">Grade 10</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Section <span class="req">*</span></label>
+                <div class="select-wrap"><i class="fas fa-users"></i>
+                  <select id="reg-section">
+                    <option value="">Select Grade First</option>
+                  </select>
+                </div>
               </div>
             </div>
-            <div class="form-group">
-              <label>Section <span class="req">*</span></label>
-              <div class="select-wrap"><i class="fas fa-users"></i>
-                <select id="reg-section">
-                  <option value="">Select Grade First</option>
-                </select>
+          </div>
+          <div class="form-group"><label>Password <span class="req">*</span></label>
+            <div class="input-wrap"><i class="fas fa-lock"></i><input type="password" id="reg-pass"
+                placeholder="Minimum 8 characters" required oninput="checkRegPassStrength()" /><button class="toggle-pass" type="button"
+                onclick="togglePass('reg-pass')"><i class="fas fa-eye"></i></button></div>
+            <div id="regPassRules" style="margin-top:7px;padding:8px 12px;background:rgba(0,0,0,0.03);border-radius:8px;border:1px solid var(--border);font-size:11.5px;display:flex;flex-direction:column;gap:3px">
+              <div id="reg-rule-len" style="color:var(--text-3);display:flex;align-items:center;gap:6px">
+                <i class="fas fa-circle-xmark" style="font-size:11px"></i> Minimum 8 characters
+              </div>
+              <div id="reg-rule-upper" style="color:var(--text-3);display:flex;align-items:center;gap:6px">
+                <i class="fas fa-circle-xmark" style="font-size:11px"></i> At least 1 uppercase letter (Caps Lock)
+              </div>
+              <div id="reg-rule-num" style="color:var(--text-3);display:flex;align-items:center;gap:6px">
+                <i class="fas fa-circle-xmark" style="font-size:11px"></i> At least 1 number (0-9)
+              </div>
+              <div id="reg-rule-sym" style="color:var(--text-3);display:flex;align-items:center;gap:6px">
+                <i class="fas fa-circle-xmark" style="font-size:11px"></i> At least 1 special character (e.g. !@#$%^&*)
               </div>
             </div>
           </div>
-        </div>
-        <div class="form-group"><label>Email Address <span class="req">*</span></label>
-          <div class="input-wrap"><i class="fas fa-envelope"></i><input type="email" id="reg-email" placeholder="email@example.com" required />
+          <div class="form-group"><label>Confirm Password <span class="req">*</span></label>
+            <div class="input-wrap"><i class="fas fa-lock"></i><input type="password" id="reg-confirm"
+                placeholder="Re-enter your password" required /></div>
           </div>
+          <button class="btn-submit" onclick="handleRegister()">Complete Account Setup &nbsp;<i
+              class="fas fa-arrow-right"></i></button>
         </div>
-        <div class="form-group"><label>Password <span class="req">*</span></label>
-          <div class="input-wrap"><i class="fas fa-lock"></i><input type="password" id="reg-pass"
-              placeholder="Minimum 8 characters" required oninput="checkRegPassStrength()" /><button class="toggle-pass" type="button"
-              onclick="togglePass('reg-pass')"><i class="fas fa-eye"></i></button></div>
-          <div id="regPassRules" style="margin-top:7px;padding:8px 12px;background:rgba(0,0,0,0.03);border-radius:8px;border:1px solid var(--border);font-size:11.5px;display:flex;flex-direction:column;gap:3px">
-            <div id="reg-rule-len" style="color:var(--text-3);display:flex;align-items:center;gap:6px">
-              <i class="fas fa-circle-xmark" style="font-size:11px"></i> Minimum 8 characters
-            </div>
-            <div id="reg-rule-upper" style="color:var(--text-3);display:flex;align-items:center;gap:6px">
-              <i class="fas fa-circle-xmark" style="font-size:11px"></i> At least 1 uppercase letter (Caps Lock)
-            </div>
-            <div id="reg-rule-num" style="color:var(--text-3);display:flex;align-items:center;gap:6px">
-              <i class="fas fa-circle-xmark" style="font-size:11px"></i> At least 1 number (0-9)
-            </div>
-            <div id="reg-rule-sym" style="color:var(--text-3);display:flex;align-items:center;gap:6px">
-              <i class="fas fa-circle-xmark" style="font-size:11px"></i> At least 1 special character (e.g. !@#$%^&*)
-            </div>
-          </div>
-        </div>
-        <div class="form-group"><label>Confirm Password <span class="req">*</span></label>
-          <div class="input-wrap"><i class="fas fa-lock"></i><input type="password" id="reg-confirm"
-              placeholder="Re-enter your password" required /></div>
-        </div>
-        <button class="btn-submit" onclick="handleRegister()">Create Account &nbsp;<i
-            class="fas fa-arrow-right"></i></button>
       </div>
     </div>
   </div>
@@ -695,7 +853,7 @@
   </div>
 
   <script src="theme.js?v=1.1"></script>
-  <script src="app.js?v=20261110_02"></script>
+  <script src="app.js?v=20261110_03"></script>
   <script>
     const GNHS_GRADE_SECTIONS = {
       '7':  ['Bonifacio', 'Burgos', 'Del Pilar', 'Diego Silang', 'Luna', 'Mabini', 'Malvar', 'Rizal'],
@@ -712,7 +870,7 @@
         : '<option value="">Select Grade First</option>';
     }
 
-    // ── INLINE EMAIL OTP LOGIN & REGISTRATION LOGIC (ZERO-DEPENDENCY FALLBACK) ──
+    // ── API POST HELPER ──
     window._apiPost = async function(url, data) {
       const r = await fetch(url, {
         method: 'POST',
@@ -722,71 +880,128 @@
       return r.json();
     };
 
-    let _otpEmail = '';
-    let _otpPendingRole = 'student';
-
-    window.setOtpRole = function(role) {
-      _otpPendingRole = role;
-      const tabStudent = document.getElementById('otpRoleTabStudent');
-      const tabTeacher = document.getElementById('otpRoleTabTeacher');
-      const sub = document.getElementById('email-otp-sub');
-
-      if (role === 'teacher') {
-        if (tabStudent) { tabStudent.style.background = 'transparent'; tabStudent.style.color = 'var(--text-2)'; }
-        if (tabTeacher) { tabTeacher.style.background = 'var(--maroon)'; tabTeacher.style.color = '#fff'; }
-        if (sub) sub.innerHTML = 'Enter your DepEd or personal Gmail to receive a 6-digit login code.';
-      } else {
-        if (tabStudent) { tabStudent.style.background = 'var(--maroon)'; tabStudent.style.color = '#fff'; }
-        if (tabTeacher) { tabTeacher.style.background = 'transparent'; tabTeacher.style.color = 'var(--text-2)'; }
-        if (sub) sub.innerHTML = 'Enter your personal Gmail to receive a 6-digit login code.';
+    // ── SAVED ACCOUNTS IN LOCALSTORAGE (SHOPEE STYLE) ──
+    function getSavedAccounts() {
+      try {
+        return JSON.parse(localStorage.getItem('gnhs_saved_accounts') || '[]');
+      } catch(e) {
+        return [];
       }
+    }
+
+    function saveAccountToDevice(acc) {
+      if (!acc || !acc.email) return;
+      try {
+        let list = getSavedAccounts();
+        list = list.filter(a => a.email.toLowerCase() !== acc.email.toLowerCase());
+        list.unshift({
+          email: acc.email.toLowerCase(),
+          name: acc.name || acc.email.split('@')[0],
+          role: acc.role || 'student',
+          initials: acc.initials || (acc.name ? acc.name.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase() : 'G')
+        });
+        if (list.length > 5) list = list.slice(0, 5);
+        localStorage.setItem('gnhs_saved_accounts', JSON.stringify(list));
+      } catch(e) {}
+    }
+
+    window.removeSavedAccount = function(email, e) {
+      if (e) e.stopPropagation();
+      try {
+        let list = getSavedAccounts().filter(a => a.email.toLowerCase() !== email.toLowerCase());
+        localStorage.setItem('gnhs_saved_accounts', JSON.stringify(list));
+        renderGoogleAccountsList();
+      } catch(e) {}
     };
 
-    window.openEmailOtpFlow = function() {
+    // ── SHOPEE-STYLE GOOGLE ACCOUNT CHOOSER LOGIC ──
+    let _selectedGoogleAccount = null;
+
+    window.openGoogleAccountChooser = function() {
       const lm = document.getElementById('login-msg'); if (lm) lm.style.display = 'none';
-      const em = document.getElementById('email-otp-msg'); if (em) em.style.display = 'none';
-      _otpEmail = '';
+      const gm = document.getElementById('google-pass-msg'); if (gm) gm.style.display = 'none';
+      const em = document.getElementById('google-email-msg'); if (em) em.style.display = 'none';
+      _selectedGoogleAccount = null;
 
-      const currentRole = (typeof _role !== 'undefined' && _role) ? _role : 'student';
-      setOtpRole(currentRole === 'teacher' ? 'teacher' : 'student');
-
-      const stage1 = document.getElementById('email-otp-stage-1');
-      const stage2 = document.getElementById('email-otp-stage-2');
-      if (stage1) stage1.style.display = 'block';
-      if (stage2) stage2.style.display = 'none';
-
-      const emailInput = document.getElementById('otp-email-input');
-      if (emailInput) {
-        const existing = document.querySelector('#step-login input[type="text"]')?.value?.trim();
-        if (existing && existing.includes('@')) {
-          emailInput.value = existing;
-          if (existing.endsWith('deped.gov.ph')) setOtpRole('teacher');
-        }
-        setTimeout(() => emailInput.focus(), 150);
-      }
-
+      showGoogleAccountList();
       if (typeof showStep === 'function') {
-        showStep('step-email-otp');
+        showStep('step-google-chooser');
       } else {
         document.querySelectorAll('.modal-step').forEach(s => s.classList.add('hidden'));
-        document.getElementById('step-email-otp')?.classList.remove('hidden');
+        document.getElementById('step-google-chooser')?.classList.remove('hidden');
       }
     };
 
-    window.editOtpEmail = function() {
-      const stage1 = document.getElementById('email-otp-stage-1');
-      const stage2 = document.getElementById('email-otp-stage-2');
-      if (stage1) stage1.style.display = 'block';
-      if (stage2) stage2.style.display = 'none';
-      const em = document.getElementById('email-otp-msg'); if (em) em.style.display = 'none';
-      const emailInput = document.getElementById('otp-email-input');
-      if (emailInput) emailInput.focus();
+    window.showGoogleAccountList = function() {
+      const sList = document.getElementById('googleStageList');
+      const sEmail = document.getElementById('googleStageEmail');
+      const sPass = document.getElementById('googleStagePassword');
+      if (sList) sList.style.display = 'block';
+      if (sEmail) sEmail.style.display = 'none';
+      if (sPass) sPass.style.display = 'none';
+
+      renderGoogleAccountsList();
     };
 
-    window.requestEmailCode = async function(isResend = false) {
-      const emailInput = document.getElementById('otp-email-input');
-      const email = emailInput?.value.trim().toLowerCase();
-      const msgEl = document.getElementById('email-otp-msg');
+    window.renderGoogleAccountsList = function() {
+      const container = document.getElementById('googleAccountsList');
+      if (!container) return;
+
+      const accounts = getSavedAccounts();
+      let html = '';
+
+      if (accounts.length > 0) {
+        accounts.forEach(acc => {
+          const initials = acc.initials || (acc.name ? acc.name.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase() : 'G');
+          html += `
+            <div class="google-account-item" onclick="selectGoogleAccount('${encodeURIComponent(acc.email)}', '${encodeURIComponent(acc.name)}', '${encodeURIComponent(acc.role)}', '${encodeURIComponent(initials)}')">
+              <div class="google-account-left">
+                <div class="google-account-avatar">${initials}</div>
+                <div class="google-account-details">
+                  <div class="google-account-name">${acc.name}</div>
+                  <div class="google-account-email">${acc.email}</div>
+                </div>
+              </div>
+              <button type="button" class="google-account-remove" title="Remove account" onclick="removeSavedAccount('${acc.email}', event)">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+          `;
+        });
+      }
+
+      html += `
+        <div class="google-use-another" onclick="showGoogleEmailInput()">
+          <div class="google-use-another-icon">
+            <i class="far fa-user-circle"></i>
+          </div>
+          <div>Use another account</div>
+        </div>
+      `;
+
+      container.innerHTML = html;
+    };
+
+    window.showGoogleEmailInput = function() {
+      const sList = document.getElementById('googleStageList');
+      const sEmail = document.getElementById('googleStageEmail');
+      const sPass = document.getElementById('googleStagePassword');
+      if (sList) sList.style.display = 'none';
+      if (sEmail) sEmail.style.display = 'block';
+      if (sPass) sPass.style.display = 'none';
+
+      const inp = document.getElementById('google-custom-email');
+      if (inp) {
+        const existing = document.querySelector('#step-login input[type="text"]')?.value?.trim();
+        if (existing && existing.includes('@')) inp.value = existing;
+        setTimeout(() => inp.focus(), 150);
+      }
+    };
+
+    window.submitGoogleCustomEmail = function() {
+      const inp = document.getElementById('google-custom-email');
+      const email = inp?.value.trim().toLowerCase();
+      const msgEl = document.getElementById('google-email-msg');
 
       if (!email || !email.includes('@')) {
         if (msgEl) {
@@ -796,25 +1011,77 @@
         }
         return;
       }
-      _otpEmail = email;
+      if (msgEl) msgEl.style.display = 'none';
 
-      if (_otpEmail.endsWith('deped.gov.ph')) {
-        setOtpRole('teacher');
+      const role = email.endsWith('deped.gov.ph') ? 'teacher' : ((typeof _role !== 'undefined' && _role) ? _role : 'student');
+      const name = email.split('@')[0];
+      const initials = name.substring(0, 2).toUpperCase();
+
+      selectGoogleAccount(email, name, role, initials);
+    };
+
+    window.selectGoogleAccount = function(rawEmail, rawName, rawRole, rawInitials) {
+      const email = decodeURIComponent(rawEmail);
+      const name = decodeURIComponent(rawName);
+      const role = decodeURIComponent(rawRole);
+      const initials = decodeURIComponent(rawInitials);
+
+      _selectedGoogleAccount = { email, name, role, initials };
+
+      const sList = document.getElementById('googleStageList');
+      const sEmail = document.getElementById('googleStageEmail');
+      const sPass = document.getElementById('googleStagePassword');
+      if (sList) sList.style.display = 'none';
+      if (sEmail) sEmail.style.display = 'none';
+      if (sPass) sPass.style.display = 'block';
+
+      const avatarEl = document.getElementById('googleSelectedAvatar');
+      const emailEl = document.getElementById('googleSelectedEmail');
+      if (avatarEl) avatarEl.textContent = initials || 'G';
+      if (emailEl) emailEl.textContent = email;
+
+      const passInp = document.getElementById('google-pass-input');
+      if (passInp) {
+        passInp.value = '';
+        setTimeout(() => passInp.focus(), 150);
+      }
+      const pm = document.getElementById('google-pass-msg');
+      if (pm) pm.style.display = 'none';
+    };
+
+    window.submitGoogleLogin = async function() {
+      if (!_selectedGoogleAccount || !_selectedGoogleAccount.email) {
+        showGoogleAccountList();
+        return;
       }
 
-      const btn = isResend ? document.getElementById('btnResendOtp') : document.getElementById('btnSendOtp');
+      const passInp = document.getElementById('google-pass-input');
+      const password = passInp?.value.trim();
+      const msgEl = document.getElementById('google-pass-msg');
+
+      if (!password) {
+        if (msgEl) {
+          msgEl.textContent = 'Please enter your password.';
+          msgEl.className = 'error-msg';
+          msgEl.style.display = 'block';
+        }
+        return;
+      }
+
+      const btn = document.getElementById('btnGoogleSubmit');
       if (btn) {
         btn.disabled = true;
         btn.dataset.orig = btn.innerHTML;
-        btn.innerHTML = '<span class="spinner"></span>&nbsp;Sending code…';
+        btn.innerHTML = '<span class="spinner"></span>&nbsp;Signing in…';
       }
       if (msgEl) msgEl.style.display = 'none';
 
       try {
         const caller = typeof apiPost === 'function' ? apiPost : window._apiPost;
-        const res = await caller('/gnhs-guidance/api/send_email_code.php', {
-          email: _otpEmail,
-          role: _otpPendingRole
+        const res = await caller('/gnhs-guidance/api/login.php', {
+          email: _selectedGoogleAccount.email,
+          password: password,
+          role: ''
         });
 
         if (btn) {
@@ -823,37 +1090,33 @@
         }
 
         if (res && res.success) {
-          const stage1 = document.getElementById('email-otp-stage-1');
-          const stage2 = document.getElementById('email-otp-stage-2');
-          if (stage1) stage1.style.display = 'none';
-          if (stage2) stage2.style.display = 'block';
+          saveAccountToDevice({
+            email: _selectedGoogleAccount.email,
+            name: (res.user && res.user.name) ? res.user.name : _selectedGoogleAccount.name,
+            role: (res.user && res.user.role) ? res.user.role : _selectedGoogleAccount.role,
+            initials: (res.user && res.user.initials) ? res.user.initials : _selectedGoogleAccount.initials
+          });
 
-          const targetLabel = document.getElementById('otp-target-email-label');
-          if (targetLabel) targetLabel.textContent = _otpEmail;
-
-          let msg = res.message;
-          if (res.code_hint) {
-            msg += ' [Testing Helper: Code is ' + res.code_hint + ']';
-          }
-          if (msgEl) {
-            msgEl.textContent = msg;
-            msgEl.className = 'success-msg';
-            msgEl.style.display = 'block';
-          }
-
-          const codeInput = document.getElementById('otp-code-input');
-          if (codeInput) {
-            codeInput.value = '';
-            setTimeout(() => codeInput.focus(), 150);
+          // Redirect into 2FA process
+          if (res.require_2fa && res.redirect) {
+            document.body.classList.add('page-exiting');
+            setTimeout(() => {
+              window.location.href = res.redirect;
+            }, 250);
+          } else if (res.redirect) {
+            document.body.classList.add('page-exiting');
+            setTimeout(() => {
+              window.location.href = res.redirect;
+            }, 250);
           }
         } else {
           if (msgEl) {
-            msgEl.textContent = (res && res.message) || 'Failed to send verification code.';
+            msgEl.textContent = (res && res.message) || 'Wrong password. Try again or click Forgot password.';
             msgEl.className = 'error-msg';
             msgEl.style.display = 'block';
           }
         }
-      } catch (err) {
+      } catch(err) {
         if (btn) {
           btn.disabled = false;
           btn.innerHTML = btn.dataset.orig || btn.innerHTML;
@@ -866,21 +1129,96 @@
       }
     };
 
-    window.verifyEmailCode = async function() {
-      const codeInput = document.getElementById('otp-code-input');
-      const code = codeInput?.value.trim();
-      const msgEl = document.getElementById('email-otp-msg');
+    // ── REGISTRATION EMAIL LEGITIMACY VERIFICATION LOGIC ──
+    let _regVerifiedEmail = '';
 
-      if (!code || code.length < 6) {
+    window.sendRegEmailCode = async function(isResend = false) {
+      const emailInput = document.getElementById('reg-email');
+      const email = emailInput?.value.trim().toLowerCase();
+      const msgEl = document.getElementById('reg-msg');
+
+      if (!email || !email.includes('@')) {
         if (msgEl) {
-          msgEl.textContent = 'Please enter the complete 6-digit verification code.';
+          msgEl.textContent = 'Please enter a valid email address.';
           msgEl.className = 'error-msg';
           msgEl.style.display = 'block';
         }
         return;
       }
 
-      const btn = document.getElementById('btnVerifyOtp');
+      const role = (typeof _role !== 'undefined' && _role) ? _role : (email.endsWith('deped.gov.ph') ? 'teacher' : 'student');
+      const btn = isResend ? null : document.getElementById('btnSendRegCode');
+      if (btn) {
+        btn.disabled = true;
+        btn.dataset.orig = btn.innerHTML;
+        btn.innerHTML = '<span class="spinner"></span>&nbsp;Sending code…';
+      }
+      if (msgEl) msgEl.style.display = 'none';
+
+      try {
+        const caller = typeof apiPost === 'function' ? apiPost : window._apiPost;
+        const res = await caller('/gnhs-guidance/api/send_email_code.php', { email, role });
+
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = btn.dataset.orig || btn.innerHTML;
+        }
+
+        if (res && res.success) {
+          const codeBox = document.getElementById('reg-code-box');
+          const sendWrap = document.getElementById('reg-send-btn-wrap');
+          if (codeBox) codeBox.style.display = 'block';
+          if (sendWrap) sendWrap.style.display = 'none';
+
+          let msg = res.message;
+          if (res.code_hint) msg += ' [Testing Helper: Code is ' + res.code_hint + ']';
+          if (msgEl) {
+            msgEl.textContent = msg;
+            msgEl.className = 'success-msg';
+            msgEl.style.display = 'block';
+          }
+          const codeInput = document.getElementById('reg-verify-code');
+          if (codeInput) {
+            codeInput.value = '';
+            setTimeout(() => codeInput.focus(), 150);
+          }
+        } else {
+          if (msgEl) {
+            msgEl.textContent = (res && res.message) || 'Failed to send confirmation code.';
+            msgEl.className = 'error-msg';
+            msgEl.style.display = 'block';
+          }
+        }
+      } catch(e) {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = btn.dataset.orig || btn.innerHTML;
+        }
+        if (msgEl) {
+          msgEl.textContent = 'Network error. Please try again.';
+          msgEl.className = 'error-msg';
+          msgEl.style.display = 'block';
+        }
+      }
+    };
+
+    window.verifyRegEmailCode = async function() {
+      const emailInput = document.getElementById('reg-email');
+      const email = emailInput?.value.trim().toLowerCase();
+      const codeInput = document.getElementById('reg-verify-code');
+      const code = codeInput?.value.trim();
+      const msgEl = document.getElementById('reg-msg');
+
+      if (!code || code.length < 6) {
+        if (msgEl) {
+          msgEl.textContent = 'Please enter the 6-digit confirmation code.';
+          msgEl.className = 'error-msg';
+          msgEl.style.display = 'block';
+        }
+        return;
+      }
+
+      const btn = document.getElementById('btnVerifyRegCode');
       if (btn) {
         btn.disabled = true;
         btn.dataset.orig = btn.innerHTML;
@@ -890,11 +1228,7 @@
 
       try {
         const caller = typeof apiPost === 'function' ? apiPost : window._apiPost;
-        const res = await caller('/gnhs-guidance/api/verify_email_code.php', {
-          email: _otpEmail,
-          code: code,
-          role: _otpPendingRole
-        });
+        const res = await caller('/gnhs-guidance/api/verify_email_code.php', { email, code });
 
         if (btn) {
           btn.disabled = false;
@@ -902,28 +1236,32 @@
         }
 
         if (res && res.success) {
-          if (!res.is_new) {
-            if (msgEl) {
-              msgEl.textContent = res.message || 'Verification successful! Logging you in...';
-              msgEl.className = 'success-msg';
-              msgEl.style.display = 'block';
-            }
-            document.body.classList.add('page-exiting');
-            setTimeout(() => {
-              window.location.href = res.redirect;
-            }, 350);
-          } else {
-            _otpPendingRole = res.role || _otpPendingRole;
-            openOtpCompleteProfile(res.email, _otpPendingRole);
+          _regVerifiedEmail = email;
+
+          const stageVerify = document.getElementById('reg-stage-verify');
+          const stageSetup = document.getElementById('reg-stage-setup');
+          const emailBadge = document.getElementById('regVerifiedEmailBadge');
+
+          if (stageVerify) stageVerify.style.display = 'none';
+          if (stageSetup) stageSetup.style.display = 'block';
+          if (emailBadge) emailBadge.textContent = _regVerifiedEmail;
+
+          if (msgEl) {
+            msgEl.textContent = 'Email verified! Please complete your account details.';
+            msgEl.className = 'success-msg';
+            msgEl.style.display = 'block';
           }
+
+          const fn = document.getElementById('reg-fname');
+          if (fn) setTimeout(() => fn.focus(), 150);
         } else {
           if (msgEl) {
-            msgEl.textContent = (res && res.message) || 'Invalid or expired code. Please try again.';
+            msgEl.textContent = (res && res.message) || 'Invalid or expired confirmation code.';
             msgEl.className = 'error-msg';
             msgEl.style.display = 'block';
           }
         }
-      } catch (err) {
+      } catch(e) {
         if (btn) {
           btn.disabled = false;
           btn.innerHTML = btn.dataset.orig || btn.innerHTML;
@@ -936,52 +1274,50 @@
       }
     };
 
-    window.openOtpCompleteProfile = function(email, role) {
-      if (typeof showStep === 'function') {
-        showStep('step-email-complete');
-      } else {
-        document.querySelectorAll('.modal-step').forEach(s => s.classList.add('hidden'));
-        document.getElementById('step-email-complete')?.classList.remove('hidden');
-      }
-
-      const cm = document.getElementById('email-complete-msg'); if (cm) cm.style.display = 'none';
-      const gradeGroup = document.getElementById('otp-complete-grade-group');
-      const idLabel = document.getElementById('otp-complete-id-label');
-
-      if (role === 'teacher') {
-        if (gradeGroup) gradeGroup.style.display = 'none';
-        if (idLabel) idLabel.textContent = 'Employee ID (Optional)';
-      } else {
-        if (gradeGroup) gradeGroup.style.display = 'block';
-        if (idLabel) idLabel.textContent = 'Student ID / LRN (Optional)';
-        otpUpdateSections();
-      }
-
-      const fnInput = document.getElementById('otp-complete-first-name');
-      if (fnInput) setTimeout(() => fnInput.focus(), 150);
+    window.resetRegEmailVerification = function() {
+      _regVerifiedEmail = '';
+      const stageVerify = document.getElementById('reg-stage-verify');
+      const stageSetup = document.getElementById('reg-stage-setup');
+      const codeBox = document.getElementById('reg-code-box');
+      const sendWrap = document.getElementById('reg-send-btn-wrap');
+      if (stageVerify) stageVerify.style.display = 'block';
+      if (stageSetup) stageSetup.style.display = 'none';
+      if (codeBox) codeBox.style.display = 'none';
+      if (sendWrap) sendWrap.style.display = 'block';
+      const msgEl = document.getElementById('reg-msg');
+      if (msgEl) msgEl.style.display = 'none';
+      const emailInput = document.getElementById('reg-email');
+      if (emailInput) emailInput.focus();
     };
 
-    window.otpUpdateSections = function() {
-      const grade = document.getElementById('otp-complete-grade')?.value;
-      const sel = document.getElementById('otp-complete-section');
-      if (!sel) return;
-      const secs = (typeof GNHS_GRADE_SECTIONS !== 'undefined' ? GNHS_GRADE_SECTIONS[grade] : []) || [];
-      sel.innerHTML = secs.length
-        ? '<option value="">Select Section</option>' + secs.map(s => '<option value="' + s + '">' + s + '</option>').join('')
-        : '<option value="">Select Grade First</option>';
-    };
+    window.handleRegister = async function() {
+      const email = _regVerifiedEmail || document.getElementById('reg-email')?.value.trim().toLowerCase();
+      const firstName = document.getElementById('reg-fname')?.value.trim();
+      const middleName = document.getElementById('reg-mname')?.value.trim();
+      const lastName = document.getElementById('reg-lname')?.value.trim();
+      const suffix = document.getElementById('reg-suffix')?.value.trim();
+      const lrn = document.getElementById('reg-lrn-input')?.value.trim();
+      const pass = document.getElementById('reg-pass')?.value.trim();
+      const confirm = document.getElementById('reg-confirm')?.value.trim();
+      const msgEl = document.getElementById('reg-msg');
 
-    window.finishOtpSignup = async function() {
-      const firstName = document.getElementById('otp-complete-first-name')?.value.trim();
-      const lastName  = document.getElementById('otp-complete-last-name')?.value.trim();
-      const idNumber  = document.getElementById('otp-complete-id-number')?.value.trim();
-      const msgEl = document.getElementById('email-complete-msg');
+      if (!_regVerifiedEmail) {
+        if (msgEl) {
+          msgEl.textContent = 'Please verify your email address first.';
+          msgEl.className = 'error-msg';
+          msgEl.style.display = 'block';
+        }
+        resetRegEmailVerification();
+        return;
+      }
 
-      let gradeSection = '';
-      if (_otpPendingRole === 'student') {
-        const grade = document.getElementById('otp-complete-grade')?.value;
-        const sec   = document.getElementById('otp-complete-section')?.value;
-        if (!grade || !sec) {
+      const role = (typeof _role !== 'undefined' && _role) ? _role : 'student';
+
+      let grade = '';
+      if (role === 'student') {
+        const gradeLevel = document.getElementById('reg-grade-level')?.value;
+        const sectionName = document.getElementById('reg-section')?.value;
+        if (!gradeLevel || !sectionName) {
           if (msgEl) {
             msgEl.textContent = 'Please select both your Grade Level and Section.';
             msgEl.className = 'error-msg';
@@ -989,19 +1325,46 @@
           }
           return;
         }
-        gradeSection = 'Grade ' + grade + ' - ' + sec;
+        grade = 'Grade ' + gradeLevel + ' - ' + sectionName;
       }
 
-      if (!firstName || !lastName) {
+      if (!firstName || !lastName || !lrn || !pass || !confirm) {
         if (msgEl) {
-          msgEl.textContent = 'Please enter both your First Name and Last Name.';
+          msgEl.textContent = 'Please fill in all required fields.';
           msgEl.className = 'error-msg';
           msgEl.style.display = 'block';
         }
         return;
       }
 
-      const btn = document.getElementById('btnFinishOtpSignup');
+      if (role === 'student' && !/^\d{12}$/.test(lrn)) {
+        if (msgEl) {
+          msgEl.textContent = 'Learner Reference Number (LRN) must be strictly 12 numeric digits.';
+          msgEl.className = 'error-msg';
+          msgEl.style.display = 'block';
+        }
+        return;
+      }
+
+      if (pass !== confirm) {
+        if (msgEl) {
+          msgEl.textContent = 'Passwords do not match.';
+          msgEl.className = 'error-msg';
+          msgEl.style.display = 'block';
+        }
+        return;
+      }
+
+      if (pass.length < 8 || !/[A-Z]/.test(pass) || !/[0-9]/.test(pass) || !/[^A-Za-z0-9]/.test(pass)) {
+        if (msgEl) {
+          msgEl.textContent = 'Password must meet all 4 security rules (8+ chars, uppercase, number, special character).';
+          msgEl.className = 'error-msg';
+          msgEl.style.display = 'block';
+        }
+        return;
+      }
+
+      const btn = document.querySelector('#reg-stage-setup .btn-submit') || document.querySelector('#step-register .btn-submit');
       if (btn) {
         btn.disabled = true;
         btn.dataset.orig = btn.innerHTML;
@@ -1011,13 +1374,17 @@
 
       try {
         const caller = typeof apiPost === 'function' ? apiPost : window._apiPost;
-        const res = await caller('/gnhs-guidance/api/complete_email_signup.php', {
-          email: _otpEmail,
+        const res = await caller('/gnhs-guidance/api/register.php', {
           first_name: firstName,
+          middle_name: middleName,
           last_name: lastName,
-          role: _otpPendingRole,
-          grade_section: gradeSection,
-          id_number: idNumber
+          suffix: suffix,
+          id_number: lrn,
+          grade_section: grade,
+          email: email,
+          password: pass,
+          confirm: confirm,
+          role: role
         });
 
         if (btn) {
@@ -1026,29 +1393,40 @@
         }
 
         if (res && res.success) {
+          const fullName = (firstName + ' ' + (middleName ? middleName + ' ' : '') + lastName + (suffix ? ' ' + suffix : '')).trim();
+          const initials = (firstName[0] + (lastName[0] || '')).toUpperCase();
+
+          saveAccountToDevice({
+            email: email,
+            name: fullName,
+            role: role,
+            initials: initials
+          });
+
           if (msgEl) {
-            msgEl.textContent = res.message || 'Profile created! Redirecting...';
+            msgEl.textContent = 'Account created successfully! Opening Google Sign In…';
             msgEl.className = 'success-msg';
             msgEl.style.display = 'block';
           }
-          document.body.classList.add('page-exiting');
+
           setTimeout(() => {
-            window.location.href = res.redirect;
-          }, 350);
+            openGoogleAccountChooser();
+            selectGoogleAccount(email, fullName, role, initials);
+          }, 800);
         } else {
           if (msgEl) {
-            msgEl.textContent = (res && res.message) || 'Failed to complete registration.';
+            msgEl.textContent = (res && res.message) || 'Registration failed.';
             msgEl.className = 'error-msg';
             msgEl.style.display = 'block';
           }
         }
-      } catch (err) {
+      } catch(e) {
         if (btn) {
           btn.disabled = false;
           btn.innerHTML = btn.dataset.orig || btn.innerHTML;
         }
         if (msgEl) {
-          msgEl.textContent = 'Server error. Please try again.';
+          msgEl.textContent = 'Unable to complete registration. Please check connection and try again.';
           msgEl.className = 'error-msg';
           msgEl.style.display = 'block';
         }

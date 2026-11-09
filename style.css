@@ -138,6 +138,238 @@ img{max-width:100%}
 .action-card:hover{border-color:var(--maroon-tint);background:var(--maroon-pale);transform:translateY(-4px);box-shadow:0 12px 24px rgba(85,0,0,.08)}
 .action-card i{font-size:32px;color:var(--maroon);margin-bottom:4px}
 .action-card strong{font-size:16px;font-weight:800}
+
+/* ── SHOPEE-STYLE GOOGLE SIGN-IN MODAL ── */
+.btn-google-sign-in {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 11px 16px;
+  background: var(--card-bg, #fff);
+  color: var(--text);
+  cursor: pointer;
+  transition: all .2s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.btn-google-sign-in:hover {
+  background: var(--bg2);
+  border-color: var(--text-3);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
+.google-chooser-container {
+  padding: 2px 0;
+  color: var(--text);
+}
+.google-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.google-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+.google-app-badge {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--maroon);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 14px;
+  box-shadow: 0 4px 12px rgba(128, 0, 0, 0.25);
+}
+.google-app-badge img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+.google-chooser-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 0 4px;
+  text-align: center;
+  color: var(--text);
+}
+.google-chooser-sub {
+  font-size: 13px;
+  color: var(--text-3);
+  margin-bottom: 20px;
+  text-align: center;
+}
+.google-accounts-list {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 20px;
+  background: var(--card-bg, #fff);
+}
+.google-account-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  border-bottom: 1px solid var(--border);
+}
+.google-account-item:last-child {
+  border-bottom: none;
+}
+.google-account-item:hover {
+  background: var(--bg2);
+}
+.google-account-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.google-account-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--maroon), #4a0000);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.google-account-details {
+  min-width: 0;
+}
+.google-account-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.google-account-email {
+  font-size: 12px;
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.google-account-remove {
+  background: none;
+  border: none;
+  color: var(--text-3);
+  font-size: 13px;
+  padding: 6px;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+.google-account-remove:hover {
+  opacity: 1;
+  color: #ef4444;
+}
+.google-use-another {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  color: var(--text);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.google-use-another:hover {
+  background: var(--bg2);
+}
+.google-use-another-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1.5px dashed var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+  font-size: 16px;
+}
+.google-privacy-footer {
+  font-size: 11.5px;
+  color: var(--text-3);
+  line-height: 1.5;
+  margin-top: 18px;
+  text-align: center;
+}
+.google-privacy-footer a {
+  color: var(--maroon);
+  font-weight: 600;
+  text-decoration: none;
+}
+.google-privacy-footer a:hover {
+  text-decoration: underline;
+}
+.google-selected-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  background: var(--bg2);
+  margin-bottom: 20px;
+}
+.google-chip-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.google-chip-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--maroon);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.google-chip-info {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.google-chip-change {
+  background: none;
+  border: none;
+  color: var(--maroon);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
 .action-card small{font-size:12px;color:var(--text-2);text-align:center;line-height:1.4}
 .role-cards{display:flex;flex-direction:column;gap:14px}
 .role-card{display:flex;align-items:center;gap:16px;padding:18px 20px;border-radius:16px;border:2px solid transparent;background:var(--bg);cursor:pointer;transition:all .3s cubic-bezier(0.16, 1, 0.3, 1)}

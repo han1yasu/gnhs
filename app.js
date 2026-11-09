@@ -155,6 +155,14 @@ async function handleLogin() {
   try {
     const res = await apiPost('/gnhs-guidance/api/login.php', { email, password, role:_role });
     if (res.success) { 
+      if (res.user && typeof saveAccountToDevice === 'function') {
+        saveAccountToDevice({
+          email: res.user.email || email,
+          name: res.user.name || email,
+          role: res.user.role || _role,
+          initials: res.user.initials
+        });
+      }
       document.body.classList.add('page-exiting');
       setTimeout(() => { window.location.href = res.redirect; }, 250);
     }

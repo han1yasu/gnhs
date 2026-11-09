@@ -110,7 +110,17 @@ try {
         'age'            => $user['age'] ?? null,
     ];
     
-    jsonOut(['success'=>true, 'require_2fa'=>true, 'redirect'=>'/gnhs-guidance/pages/totp_verify.php']);
+    jsonOut([
+        'success'     => true,
+        'require_2fa' => true,
+        'redirect'    => '/gnhs-guidance/pages/totp_verify.php',
+        'user'        => [
+            'email'    => $user['email'],
+            'name'     => trim($user['first_name'] . ' ' . $user['last_name']),
+            'role'     => $user['role'],
+            'initials' => $user['avatar_initials'] ?? strtoupper($user['first_name'][0].($user['last_name'][0]??''))
+        ]
+    ]);
 
     // Store session for normal login (No 2FA)
     $_SESSION['user'] = [

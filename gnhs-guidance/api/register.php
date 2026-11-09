@@ -74,7 +74,22 @@ try {
     $stmt = $db->prepare("INSERT INTO users (first_name,last_name,email,id_number,password,role,grade_section,avatar_initials,middle_name,suffix) VALUES (?,?,?,?,?,?,?,?,?,?)");
     $stmt->execute([$firstName,$lastName,$email,$idNumber,$hash,$role,$grade,$initials,$middleName,$suffix]);
 
-    jsonOut(['success'=>true,'message'=>'Account created successfully! You may now log in.']);
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        unset($_SESSION['verified_email_signup']);
+    }
+
+    $fullName = trim($firstName . ' ' . ($middleName ? $middleName . ' ' : '') . $lastName . ($suffix ? ' ' . $suffix : ''));
+
+    jsonOut([
+        'success' => true,
+        'message' => 'Account created successfully! You may now sign in with Google.',
+        'user' => [
+            'email'    => $email,
+            'name'     => $fullName,
+            'role'     => $role,
+            'initials' => $initials
+        ]
+    ]);
 
 } catch (PDOException $e) {
     if ($e->getCode() == 23000 || str_contains($e->getMessage(), '1062 Duplicate entry')) {

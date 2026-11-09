@@ -190,7 +190,7 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
   <nav class="sb-nav">
     <?= $sidebarLinks ?>
   </nav>
-  <div class="sb-user" id="sidebarUserBtn" onclick="openProfileModal()" style="cursor:pointer" title="View Profile / Change Password">
+  <div class="sb-user" id="sidebarUserBtn" onclick="openProfileModal()" style="cursor:pointer;padding-bottom:max(22px, calc(env(safe-area-inset-bottom, 16px) + 14px));margin-bottom:6px;" title="View Profile / Change Password">
     <div style="width:36px;height:36px;min-width:36px;min-height:36px;border-radius:10px;overflow:hidden;flex-shrink:0;border:2px solid rgba(255,255,255,.25);position:relative;">
       <?php if ($avatarPhoto): ?>
         <img src="<?= htmlspecialchars($avatarPhoto) ?>" alt="Avatar" <?= $avatarOnError ?> style="width:36px;height:36px;object-fit:cover;object-position:center top;display:block;"/>

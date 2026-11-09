@@ -72,16 +72,16 @@ $content = <<<HTML
         </div>
       </div>
 
-      <div class="form-group">
+      <div class="form-group" style="margin-bottom:20px;">
         <label>Observations / Reason for Referral <span class="req">*</span></label>
         <textarea id="observations" rows="6" maxlength="4000" placeholder="Describe your observations in detail (at least 30 characters, max 400 words). Be as specific as possible."></textarea>
-        <div class="char-count" style="display:flex;justify-content:space-between;align-items:center;font-size:12px;margin-top:4px">
+        <div class="char-count-bar" style="display:flex;justify-content:space-between;align-items:center;font-size:12px;margin-top:8px;position:relative!important;width:100%;">
           <span id="charCountNotice" style="color:var(--text-3)"><i class="fas fa-info-circle"></i> Minimum 30 characters required (<span id="charCount">0</span> chars)</span>
           <span id="wordCountBadge" style="font-weight:700;color:var(--text-2)"><span id="wordCount">0</span> / 400 words</span>
         </div>
       </div>
 
-      <div class="form-actions">
+      <div class="form-actions" style="margin-top:28px;clear:both;position:relative;">
         <button class="btn-secondary" onclick="history.back()">Cancel</button>
         <button class="btn-primary" id="submitBtn" onclick="submitReferral()">
           <i class="fas fa-paper-plane"></i> Submit Referral

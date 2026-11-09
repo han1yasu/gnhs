@@ -28,7 +28,7 @@ try {
     $caseStmt = $db->prepare("SELECT c.*, 
         CASE WHEN c.is_anonymous = 1 THEN 'Anonymous Student' ELSE CONCAT(su.first_name, ' ', su.last_name) END as student_name,
         su.avatar_photo as student_avatar,
-        su.grade_level, su.section,
+        su.grade_section,
         COALESCE(CONCAT(cu.first_name, ' ', cu.last_name), 'Guidance Counselor') as counselor_name,
         cu.avatar_photo as counselor_avatar
         FROM cases c

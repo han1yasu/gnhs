@@ -509,8 +509,8 @@ $content = <<<'HTML'
     color: var(--text-3);
   }
 
-  /* Mobile Responsive Behavior */
-  @media (max-width: 768px) {
+  /* Mobile and Tablet / iPad Responsive Behavior */
+  @media (max-width: 992px) {
     .msg-app {
       height: calc(100vh - 100px) !important;
       min-height: 480px !important;
@@ -541,10 +541,17 @@ $content = <<<'HTML'
     }
   }
 
-  @media (min-width: 769px) {
-    .msg-inbox-pane { display: flex !important; }
-    .msg-chat-pane { display: flex !important; }
-    .msg-back-btn { display: none !important; }
+  @media (min-width: 993px) {
+    .msg-inbox-pane {
+      display: flex !important;
+      width: 330px !important;
+    }
+    .msg-chat-pane {
+      display: flex !important;
+    }
+    .msg-back-btn {
+      display: none !important;
+    }
   }
 </style>
 
@@ -746,7 +753,7 @@ async function pageLoadInbox() {
     } else if (archiveId && !pageCurrentRefId) {
       const target = allInboxData.find(c => c.id == archiveId);
       if (target) openConversation(target.id);
-    } else if (!pageCurrentRefId && window.innerWidth > 768 && allInboxData.length > 0) {
+    } else if (!pageCurrentRefId && window.innerWidth > 992 && allInboxData.length > 0) {
       openConversation(allInboxData[0].id);
     }
   } catch(e) {
@@ -837,6 +844,15 @@ async function openConversation(refId) {
 
   showMobileChat();
 
+  const itemData = allInboxData.find(c => c.id == refId);
+  if (itemData) {
+    currentRefInfo = itemData;
+    renderChatHeader(itemData);
+    renderDrawerDetails(itemData);
+    itemData.unread_count = 0;
+    renderInboxItems(allInboxData);
+  }
+
   const input = document.getElementById('msgInput');
   const detailsBtn = document.getElementById('msgDetailsBtn');
   if (input) {
@@ -845,12 +861,6 @@ async function openConversation(refId) {
   }
   if (detailsBtn) detailsBtn.disabled = false;
   toggleSendBtnState();
-
-  const itemData = allInboxData.find(c => c.id == refId);
-  if (itemData) {
-    itemData.unread_count = 0;
-    renderInboxItems(allInboxData);
-  }
 
   await pageLoadMessages();
 
@@ -865,7 +875,7 @@ async function pageLoadMessages() {
     const data = await apiFetch('get_referral_messages.php?referral_id=' + pageCurrentRefId);
     if (!data.success) return;
 
-    currentRefInfo = data.referral_info || {};
+    currentRefInfo = Object.assign({}, currentRefInfo, data.referral_info || {});
     renderChatHeader(currentRefInfo);
     renderDrawerDetails(currentRefInfo);
     renderMessagesThread(data.messages || [], data.current_user_id);

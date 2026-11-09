@@ -26,7 +26,7 @@ if ($isCounselor) {
             c.evidence_files, c.witnesses, c.submitted_at, c.updated_at,
             CASE WHEN c.is_anonymous = 1 THEN 'Anonymous Student' ELSE CONCAT(u.first_name, ' ', u.last_name) END as student_name,
             u.avatar_photo as student_avatar,
-            u.grade_level, u.section,
+            u.grade_section,
             (SELECT message FROM case_messages WHERE case_id = c.id ORDER BY created_at DESC LIMIT 1) as latest_message,
             (SELECT created_at FROM case_messages WHERE case_id = c.id ORDER BY created_at DESC LIMIT 1) as latest_message_time,
             (SELECT COUNT(*) FROM case_messages WHERE case_id = c.id AND sender_id != ? AND is_read = 0) as unread_count

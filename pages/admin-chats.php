@@ -517,8 +517,8 @@ $content = <<<'HTML'
     color: var(--text-3);
   }
 
-  /* Mobile Responsive Behavior */
-  @media (max-width: 768px) {
+  /* Mobile and Tablet / iPad Responsive Behavior */
+  @media (max-width: 992px) {
     .msg-app {
       height: calc(100vh - 100px) !important;
       min-height: 480px !important;
@@ -549,10 +549,17 @@ $content = <<<'HTML'
     }
   }
 
-  @media (min-width: 769px) {
-    .msg-inbox-pane { display: flex !important; }
-    .msg-chat-pane { display: flex !important; }
-    .msg-back-btn { display: none !important; }
+  @media (min-width: 993px) {
+    .msg-inbox-pane {
+      display: flex !important;
+      width: 330px !important;
+    }
+    .msg-chat-pane {
+      display: flex !important;
+    }
+    .msg-back-btn {
+      display: none !important;
+    }
   }
 </style>
 
@@ -754,7 +761,7 @@ async function pageLoadInbox() {
     } else if (archiveId && !pageCurrentCaseId) {
       const target = allInboxData.find(c => c.id == archiveId);
       if (target) openConversation(target.id);
-    } else if (!pageCurrentCaseId && window.innerWidth > 768 && allInboxData.length > 0) {
+    } else if (!pageCurrentCaseId && window.innerWidth > 992 && allInboxData.length > 0) {
       openConversation(allInboxData[0].id);
     }
   } catch(e) {
@@ -848,6 +855,15 @@ async function openConversation(caseId) {
 
   showMobileChat();
 
+  const itemData = allInboxData.find(c => c.id == caseId);
+  if (itemData) {
+    currentCaseInfo = itemData;
+    renderChatHeader(itemData);
+    renderDrawerDetails(itemData);
+    itemData.unread_count = 0;
+    renderInboxItems(allInboxData);
+  }
+
   const input = document.getElementById('msgInput');
   const detailsBtn = document.getElementById('msgDetailsBtn');
   if (input) {
@@ -856,12 +872,6 @@ async function openConversation(caseId) {
   }
   if (detailsBtn) detailsBtn.disabled = false;
   toggleSendBtnState();
-
-  const itemData = allInboxData.find(c => c.id == caseId);
-  if (itemData) {
-    itemData.unread_count = 0;
-    renderInboxItems(allInboxData);
-  }
 
   await pageLoadMessages();
 
@@ -876,7 +886,7 @@ async function pageLoadMessages() {
     const data = await apiFetch('get_messages.php?case_id=' + pageCurrentCaseId);
     if (!data.success) return;
 
-    currentCaseInfo = data.case_info || {};
+    currentCaseInfo = Object.assign({}, currentCaseInfo, data.case_info || {});
     renderChatHeader(currentCaseInfo);
     renderDrawerDetails(currentCaseInfo);
     renderMessagesThread(data.messages || [], data.current_user_id);
@@ -933,7 +943,7 @@ function renderDrawerDetails(ci) {
       <div class="msg-detail-label">Student Details</div>
       <div class="msg-detail-val">
         ${escapeHtml(ci.student_name || 'Anonymous Student')}
-        ${ci.grade_level ? `<div style="font-size:12px;color:var(--text-3);margin-top:2px;">Grade ${ci.grade_level} - ${ci.section || ''}</div>` : ''}
+        ${ci.grade_section ? `<div style="font-size:12px;color:var(--text-3);margin-top:2px;">${escapeHtml(ci.grade_section)}</div>` : ''}
       </div>
     </div>
 

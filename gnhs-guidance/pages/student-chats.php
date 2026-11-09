@@ -524,8 +524,8 @@ $content = <<<'HTML'
     color: var(--text-3);
   }
 
-  /* Mobile Responsive Behavior (Messenger Experience) */
-  @media (max-width: 768px) {
+  /* Mobile and Tablet / iPad Responsive Behavior (Messenger Experience) */
+  @media (max-width: 992px) {
     .msg-app {
       height: calc(100vh - 100px) !important;
       min-height: 480px !important;
@@ -556,10 +556,17 @@ $content = <<<'HTML'
     }
   }
 
-  @media (min-width: 769px) {
-    .msg-inbox-pane { display: flex !important; }
-    .msg-chat-pane { display: flex !important; }
-    .msg-back-btn { display: none !important; }
+  @media (min-width: 993px) {
+    .msg-inbox-pane {
+      display: flex !important;
+      width: 330px !important;
+    }
+    .msg-chat-pane {
+      display: flex !important;
+    }
+    .msg-back-btn {
+      display: none !important;
+    }
   }
 </style>
 
@@ -762,7 +769,7 @@ async function pageLoadInbox() {
     } else if (archiveId && !pageCurrentCaseId) {
       const target = allInboxData.find(c => c.id == archiveId);
       if (target) openConversation(target.id);
-    } else if (!pageCurrentCaseId && window.innerWidth > 768 && allInboxData.length > 0) {
+    } else if (!pageCurrentCaseId && window.innerWidth > 992 && allInboxData.length > 0) {
       // On desktop, auto-open first chat
       openConversation(allInboxData[0].id);
     }
@@ -859,10 +866,20 @@ async function openConversation(caseId) {
     el.classList.toggle('active', el.dataset.caseId == caseId);
   });
 
-  // Switch mobile view to chat
+  // Switch mobile/tablet view to chat
   showMobileChat();
 
-  // Enable input & send button
+  // Instantly populate header and details drawer from inbox data so it immediately shows the concern details
+  const itemData = allInboxData.find(c => c.id == caseId);
+  if (itemData) {
+    currentCaseInfo = itemData;
+    renderChatHeader(itemData);
+    renderDrawerDetails(itemData);
+    itemData.unread_count = 0;
+    renderInboxItems(allInboxData);
+  }
+
+  // Enable input & send button & details button
   const input = document.getElementById('msgInput');
   const detailsBtn = document.getElementById('msgDetailsBtn');
   if (input) {
@@ -871,13 +888,6 @@ async function openConversation(caseId) {
   }
   if (detailsBtn) detailsBtn.disabled = false;
   toggleSendBtnState();
-
-  // Clear unread badge in local data
-  const itemData = allInboxData.find(c => c.id == caseId);
-  if (itemData) {
-    itemData.unread_count = 0;
-    renderInboxItems(allInboxData);
-  }
 
   // Load conversation messages
   await pageLoadMessages();
@@ -894,7 +904,7 @@ async function pageLoadMessages() {
     const data = await apiFetch('get_messages.php?case_id=' + pageCurrentCaseId);
     if (!data.success) return;
 
-    currentCaseInfo = data.case_info || {};
+    currentCaseInfo = Object.assign({}, currentCaseInfo, data.case_info || {});
     renderChatHeader(currentCaseInfo);
     renderDrawerDetails(currentCaseInfo);
     renderMessagesThread(data.messages || [], data.current_user_id);
@@ -908,14 +918,15 @@ function renderChatHeader(ci) {
   const subEl = document.getElementById('msgHeaderSub');
   const avatarEl = document.getElementById('msgHeaderAvatar');
 
-  const titleText = ci.counselor_name || 'Guidance Counselor';
-  const subjectText = ci.subject ? ` • ${ci.subject}` : '';
+  const titleText = ci.subject ? ci.subject : (ci.counselor_name || 'Guidance Counselor');
   const caseNum = ci.case_number ? `#${ci.case_number}` : `#${ci.id}`;
-  const prio = ci.priority ? `${ci.priority.toUpperCase()}` : 'NORMAL';
+  const prio = (ci.priority || 'medium').toUpperCase();
+  const typeLabel = (ci.concern_type || 'General').replace(/_/g, ' ');
+  const counselorLabel = ci.counselor_name ? `Counselor: ${ci.counselor_name}` : 'Counselor Assigned';
 
   if (titleEl) titleEl.innerText = titleText;
   if (subEl) {
-    subEl.innerHTML = `<span class="dot-online"></span> ${caseNum} (${ci.concern_type || 'Case'})${subjectText}`;
+    subEl.innerHTML = `<span class="dot-online"></span> ${caseNum} • ${typeLabel} (${prio}) • ${counselorLabel}`;
   }
 
   if (avatarEl) {

@@ -136,24 +136,6 @@ $fComp  = $statusFilter === 'completed' ? 'selected' : '';
 $fCanc  = $statusFilter === 'cancelled' ? 'selected' : '';
 
 $content = <<<HTML
-<!-- Top Tab Bar: Active Sessions vs Completed Sessions Archive -->
-<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px">
-  <div class="totp-tab-bar" style="background:var(--bg2);padding:4px;border-radius:12px;border:1px solid var(--border);display:inline-flex">
-    <a href="admin-sessions.php" class="tab-pill active" style="text-decoration:none">
-      <i class="fas fa-calendar-alt"></i> Active Sessions <span style="font-size:11px;font-weight:800;background:var(--maroon);color:#fff;padding:1px 6px;border-radius:10px;margin-left:4px">$countActive</span>
-    </a>
-    <a href="admin-sessions-archive.php" class="tab-pill" style="text-decoration:none">
-      <i class="fas fa-archive"></i> Sessions Archive <span style="font-size:11px;opacity:0.85">($countCompleted)</span>
-    </a>
-  </div>
-
-  <div style="display:inline-flex;gap:8px;align-items:center">
-    <a href="admin-sessions-archive.php" class="btn-sm-primary" style="background:var(--maroon);text-decoration:none;display:inline-flex;align-items:center;gap:6px">
-      <i class="fas fa-box-archive"></i> Go to Sessions Archive
-    </a>
-  </div>
-</div>
-
 <!-- Summary Metric Strip -->
 <div class="summary-cards" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-bottom: 22px;">
   <div class="sum-card">

@@ -545,7 +545,7 @@ function toggleSidebar(forceState) {
 document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('.sb-nav a').forEach(function(a) {
     a.addEventListener('click', function() {
-      if (window.innerWidth <= 768) {
+      if (window.innerWidth <= 992) {
         toggleSidebar(false);
       }
     });

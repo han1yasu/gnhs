@@ -105,14 +105,6 @@ foreach ($teachersList as $t) {
 }
 
 $content = <<<HTML
-<!-- Archive Sub-Navigation Tabs -->
-<div class="totp-tab-bar" style="background:var(--bg2);padding:4px;border-radius:12px;border:1px solid var(--border);display:inline-flex;margin-bottom:18px">
-  <a href="admin-archive.php" class="tab-pill" style="text-decoration:none"><i class="fas fa-folder"></i> Cases Archive</a>
-  <a href="admin-chat-archive.php" class="tab-pill" style="text-decoration:none"><i class="fas fa-history"></i> Chat Archive</a>
-  <a href="admin-referrals-archive.php" class="tab-pill active" style="text-decoration:none"><i class="fas fa-exchange-alt"></i> Referrals Archive</a>
-  <a href="admin-sessions-archive.php" class="tab-pill" style="text-decoration:none"><i class="fas fa-calendar-check"></i> Sessions Archive</a>
-</div>
-
 <div class="content-card">
   <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
     <div>
@@ -129,8 +121,8 @@ $content = <<<HTML
   </div>
 
   <div style="background:var(--maroon-pale);border:1px solid var(--maroon-tint);border-radius:10px;padding:12px 16px;margin:16px 0;font-size:13px;color:var(--maroon);display:flex;align-items:center;gap:10px">
-    <i class="fas fa-info-circle"></i>
-    <span>These are teacher referrals that have been addressed and marked as <strong>Resolved</strong> or <strong>Closed</strong>. They are preserved for student counseling history and record keeping.</span>
+    <i class="fas fa-info-circle" style="flex-shrink:0"></i>
+    <span style="flex:1;line-height:1.5">These are teacher referrals that have been addressed and marked as <strong>Resolved</strong> or <strong>Closed</strong>. They are preserved for student counseling history and record keeping.</span>
   </div>
 
   <!-- Filter & Search Bar -->

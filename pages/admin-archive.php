@@ -108,22 +108,14 @@ $st6 = $filterType==='behavioral'      ? 'selected' : '';
 $st7 = $filterType==='other'           ? 'selected' : '';
 
 $content = <<<HTML
-<!-- Archive Sub-Navigation Tabs -->
-<div class="totp-tab-bar" style="background:var(--bg2);padding:4px;border-radius:12px;border:1px solid var(--border);display:inline-flex;margin-bottom:18px">
-  <a href="admin-archive.php" class="tab-pill active" style="text-decoration:none"><i class="fas fa-folder"></i> Cases Archive</a>
-  <a href="admin-chat-archive.php" class="tab-pill" style="text-decoration:none"><i class="fas fa-history"></i> Chat Archive</a>
-  <a href="admin-referrals-archive.php" class="tab-pill" style="text-decoration:none"><i class="fas fa-exchange-alt"></i> Referrals Archive</a>
-  <a href="admin-sessions-archive.php" class="tab-pill" style="text-decoration:none"><i class="fas fa-calendar-check"></i> Sessions Archive</a>
-</div>
-
 <div class="content-card">
   <div class="card-header">
     <h3><i class="fas fa-archive"></i> Archived Cases <span id="archiveCasesCount" style="font-size:13px;font-weight:600;color:var(--text-3);margin-left:6px">($total resolved/closed)</span></h3>
     <a href="admin-cases.php" class="btn-sm-outline"><i class="fas fa-arrow-left"></i> Back to Active</a>
   </div>
   <div style="background:var(--maroon-pale);border:1px solid var(--maroon-tint);border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:var(--maroon);display:flex;align-items:center;gap:10px">
-    <i class="fas fa-info-circle"></i>
-    These are cases that have been marked as <strong>Resolved</strong> or <strong>Closed</strong>. They are kept for records.
+    <i class="fas fa-info-circle" style="flex-shrink:0"></i>
+    <span style="flex:1;line-height:1.5">These are cases that have been marked as <strong>Resolved</strong> or <strong>Closed</strong>. They are kept for records.</span>
   </div>
   <div class="filter-bar" style="margin-bottom:16px;flex-wrap:wrap">
     <div style="display:flex;gap:8px;flex:1;min-width:220px">

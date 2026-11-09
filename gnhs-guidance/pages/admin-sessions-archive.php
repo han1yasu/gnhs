@@ -149,23 +149,6 @@ $stSancYes = $filterSanctions === 'yes' ? 'selected' : '';
 $stSancNo  = $filterSanctions === 'no' ? 'selected' : '';
 
 $content = <<<HTML
-<!-- Top Tab Bar: Active Sessions vs Completed Sessions Archive -->
-<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px">
-  <div class="totp-tab-bar" style="background:var(--bg2);padding:4px;border-radius:12px;border:1px solid var(--border);display:inline-flex">
-    <a href="admin-sessions.php" class="tab-pill" style="text-decoration:none">
-      <i class="fas fa-calendar-alt"></i> Active Sessions <span style="font-size:11px;opacity:0.8">($countActive)</span>
-    </a>
-    <a href="admin-sessions-archive.php" class="tab-pill active" style="text-decoration:none">
-      <i class="fas fa-archive"></i> Sessions Archive <span style="font-size:11px;font-weight:800;background:var(--maroon);color:#fff;padding:1px 6px;border-radius:10px;margin-left:4px">$countCompleted</span>
-    </a>
-  </div>
-
-  <div style="display:inline-flex;gap:8px;align-items:center">
-    <a href="admin-archive.php" class="btn-sm-outline" title="View Cases Archive"><i class="fas fa-folder"></i> Cases Archive</a>
-    <a href="admin-referrals-archive.php" class="btn-sm-outline" title="View Referrals Archive"><i class="fas fa-exchange-alt"></i> Referrals Archive</a>
-  </div>
-</div>
-
 <!-- Metric Strip for Completed Sessions -->
 <div class="summary-cards" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-bottom: 22px;">
   <div class="sum-card" style="border: 1px solid rgba(22,163,74,0.3); background: rgba(240,253,244,0.6);">

@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../includes/config.php';
+require_once __DIR__ . '/../src/PureOTP.php';
 startSession();
 
 $pendingUser = $_SESSION['pending_user'] ?? null;
@@ -12,9 +13,15 @@ $db = getDB();
 $stmt = $db->prepare("SELECT totp_secret, totp_enabled, totp_reset_requested FROM users WHERE id = ? LIMIT 1");
 $stmt->execute([$pendingUser['id']]);
 $u = $stmt->fetch();
-$secret = $u['totp_secret'] ?? '';
+$secret = trim($u['totp_secret'] ?? '');
 $isTotpEnabled = !empty($u['totp_enabled']);
 $isResetRequested = !empty($u['totp_reset_requested']);
+
+// Ensure valid TOTP secret exists; if missing, generate and persist immediately
+if (empty($secret)) {
+    $secret = PureOTP::generateSecret(16);
+    $db->prepare("UPDATE users SET totp_secret = ? WHERE id = ?")->execute([$secret, $pendingUser['id']]);
+}
 
 $email = urlencode($pendingUser['email']);
 $issuer = urlencode('GNHS Guidance System');
@@ -57,14 +64,26 @@ $qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" . urle
 
     <?php if (!$isTotpEnabled): ?>
     <div style="margin-top: 16px; background: rgba(16, 185, 129, 0.18); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 10px; padding: 10px 14px; color: #d1fae5; font-size: 13px;">
-        <i class="fas fa-qrcode" style="color:#34d399; margin-right:6px;"></i> Authenticator setup required. Scan the QR code below.
+        <i class="fas fa-qrcode" style="color:#34d399; margin-right:6px;"></i> Authenticator setup required. Scan the QR code or enter the key below.
     </div>
     <div class="glass-setup-box" id="setupSection" style="display:block; margin-top:14px;">
-        <p style="font-size: 13px; margin-bottom: 12px; color:rgba(255,255,255,0.9)">Scan this QR code with Google Authenticator or Authy to set up your account.</p>
-        <div style="background:#fff; padding:10px; border-radius:12px; display:inline-block; margin-bottom:12px;">
-            <img src="<?= htmlspecialchars($qrUrl) ?>" alt="QR Code" style="width: 150px; height: 150px; display:block; border-radius:8px;">
+        <p style="font-size: 13px; margin-bottom: 12px; color:rgba(255,255,255,0.9)">Scan this QR code with Google Authenticator, Microsoft Authenticator, or Authy:</p>
+        <div style="background:#fff; padding:10px; border-radius:12px; display:inline-block; margin-bottom:12px; box-shadow: 0 4px 16px rgba(0,0,0,0.3);">
+            <img src="<?= htmlspecialchars($qrUrl) ?>" alt="QR Code" style="width: 160px; height: 160px; display:block; border-radius:8px;">
         </div>
-        <p style="font-size: 12px; color: rgba(255,255,255,0.7);">Manual setup key: <br><strong style="color:#fff; font-size:14px; letter-spacing:2px;"><?= htmlspecialchars($secret) ?></strong></p>
+        
+        <div style="margin-top:10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.18); border-radius: 10px; padding: 12px 14px; text-align: center;">
+            <div style="font-size: 11px; font-weight:700; color: rgba(255,255,255,0.7); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
+                <i class="fas fa-key" style="color:#fbbf24; margin-right:4px;"></i> Manual Setup Key
+            </div>
+            <div style="display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap;">
+                <code id="manualSecretKey" style="color:#fff; font-size:15px; font-weight:800; letter-spacing:2px; font-family: monospace; background: rgba(255,255,255,0.12); padding: 6px 12px; border-radius: 6px; user-select: all;"><?= htmlspecialchars(chunk_split($secret, 4, ' ')) ?></code>
+                <button type="button" onclick="copySecretKey('<?= htmlspecialchars($secret) ?>')" id="btnCopyKey" style="background:#550000; color:#fff; border:1px solid rgba(255,255,255,0.25); border-radius:6px; padding:6px 12px; font-size:12px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:5px; transition:0.2s">
+                    <i class="fas fa-copy"></i> Copy Key
+                </button>
+            </div>
+            <span style="font-size: 11px; color: rgba(255,255,255,0.65); display:block; margin-top:8px;">If you can't scan: Open your Authenticator app &rarr; tap <strong>+</strong> &rarr; choose <strong>Enter setup key</strong> &rarr; paste the key.</span>
+        </div>
     </div>
     <?php else: ?>
     <div style="margin-top: 16px;">
@@ -220,6 +239,46 @@ async function cancelTotpReset() {
             }
         }
     } catch(e) {}
+}
+
+function copySecretKey(key) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(key).then(() => {
+            const btn = document.getElementById('btnCopyKey');
+            if (btn) {
+                btn.innerHTML = '<i class="fas fa-check" style="color:#34d399"></i> Copied!';
+                btn.style.background = '#10b981';
+                setTimeout(() => {
+                    btn.innerHTML = '<i class="fas fa-copy"></i> Copy Key';
+                    btn.style.background = '#550000';
+                }, 2000);
+            }
+        }).catch(() => fallbackCopy(key));
+    } else {
+        fallbackCopy(key);
+    }
+}
+
+function fallbackCopy(key) {
+    const ta = document.createElement('textarea');
+    ta.value = key;
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+        document.execCommand('copy');
+        const btn = document.getElementById('btnCopyKey');
+        if (btn) {
+            btn.innerHTML = '<i class="fas fa-check" style="color:#34d399"></i> Copied!';
+            btn.style.background = '#10b981';
+            setTimeout(() => {
+                btn.innerHTML = '<i class="fas fa-copy"></i> Copy Key';
+                btn.style.background = '#550000';
+            }, 2000);
+        }
+    } catch(e) {
+        prompt('Copy your manual key:', key);
+    }
+    document.body.removeChild(ta);
 }
 
 window.addEventListener('load', () => input.focus());

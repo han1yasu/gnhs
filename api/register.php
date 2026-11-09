@@ -71,8 +71,11 @@ try {
     $hash    = password_hash($password, PASSWORD_BCRYPT);
     $initials = strtoupper($firstName[0].($lastName[0]??''));
 
-    $stmt = $db->prepare("INSERT INTO users (first_name,last_name,email,id_number,password,role,grade_section,avatar_initials,middle_name,suffix) VALUES (?,?,?,?,?,?,?,?,?,?)");
-    $stmt->execute([$firstName,$lastName,$email,$idNumber,$hash,$role,$grade,$initials,$middleName,$suffix]);
+    require_once __DIR__ . '/../src/PureOTP.php';
+    $totpSecret = PureOTP::generateSecret(16);
+
+    $stmt = $db->prepare("INSERT INTO users (first_name,last_name,email,id_number,password,role,grade_section,avatar_initials,middle_name,suffix,totp_secret,totp_enabled) VALUES (?,?,?,?,?,?,?,?,?,?,?,0)");
+    $stmt->execute([$firstName,$lastName,$email,$idNumber,$hash,$role,$grade,$initials,$middleName,$suffix,$totpSecret]);
     $newUserId = (int)$db->lastInsertId();
 
     if (session_status() === PHP_SESSION_ACTIVE) {
@@ -80,11 +83,6 @@ try {
     }
 
     $fullName = trim($firstName . ' ' . ($middleName ? $middleName . ' ' : '') . $lastName . ($suffix ? ' ' . $suffix : ''));
-
-    // Automatically initialize 2FA secret and set up pending session for instant 2FA onboarding
-    require_once __DIR__ . '/../src/PureOTP.php';
-    $totpSecret = PureOTP::generateSecret();
-    $db->prepare("UPDATE users SET totp_secret = ? WHERE id = ?")->execute([$totpSecret, $newUserId]);
 
     $_SESSION['pending_user'] = [
         'id'              => $newUserId,

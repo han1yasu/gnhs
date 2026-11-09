@@ -37,8 +37,8 @@ try {
 
     $secret = $user['totp_secret'];
 
-    // Strictly verify the TOTP code within the active 30-second timer window (circle timer)
-    if (PureOTP::verifyCode($secret, $code, 0)) {
+    // Strictly verify the TOTP code with $discrepancy = 1 to allow +/- 30 seconds for clock drift
+    if (PureOTP::verifyCode($secret, $code, 1)) {
         // Code is correct, promote pending_user to full user session
         
         if (empty($user['totp_enabled'])) {

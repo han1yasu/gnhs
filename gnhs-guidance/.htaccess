@@ -5,6 +5,27 @@ RewriteEngine On
 # Redirect domain root visits directly to /gnhs-guidance/
 RewriteRule ^$ /gnhs-guidance/ [L,R=301]
 
+# Chat rewrite aliases (singular / plural, with / without .php)
+RewriteRule ^student-chat(s)?(\.php)?$ pages/student-chats.php [L,QSA]
+RewriteRule ^pages/student-chat(\.php)?$ pages/student-chats.php [L,QSA]
+RewriteRule ^pages/student-chats$ pages/student-chats.php [L,QSA]
+
+RewriteRule ^student-chat(s)?-archive(\.php)?$ pages/student-chat-archive.php [L,QSA]
+RewriteRule ^pages/student-chat(s)?-archive(\.php)?$ pages/student-chat-archive.php [L,QSA]
+
+RewriteRule ^admin-chat(s)?(\.php)?$ pages/admin-chats.php [L,QSA]
+RewriteRule ^pages/admin-chat(\.php)?$ pages/admin-chats.php [L,QSA]
+RewriteRule ^pages/admin-chats$ pages/admin-chats.php [L,QSA]
+
+RewriteRule ^admin-chat(s)?-archive(\.php)?$ pages/admin-chat-archive.php [L,QSA]
+RewriteRule ^pages/admin-chat(s)?-archive(\.php)?$ pages/admin-chat-archive.php [L,QSA]
+
+RewriteRule ^teacher-referral(s)?-chat(\.php)?$ pages/teacher-referrals-chat.php [L,QSA]
+RewriteRule ^pages/teacher-referral(s)?-chat(\.php)?$ pages/teacher-referrals-chat.php [L,QSA]
+
+RewriteRule ^admin-referral(s)?-chat(\.php)?$ pages/admin-referrals-chat.php [L,QSA]
+RewriteRule ^pages/admin-referral(s)?-chat(\.php)?$ pages/admin-referrals-chat.php [L,QSA]
+
 # Uploads fallback rewrites
 RewriteCond %{REQUEST_URI} ^/gnhs-guidance/uploads/(.*)$
 RewriteCond %{DOCUMENT_ROOT}/uploads/%1 -f
@@ -13,6 +34,15 @@ RewriteRule ^gnhs-guidance/uploads/(.*)$ /uploads/$1 [L]
 RewriteCond %{REQUEST_URI} ^/uploads/(.*)$
 RewriteCond %{DOCUMENT_ROOT}/gnhs-guidance/uploads/%1 -f
 RewriteRule ^uploads/(.*)$ /gnhs-guidance/uploads/$1 [L]
+</IfModule>
+
+# Cache-Control headers to ensure mobile browsers always get latest updates
+<IfModule mod_headers.c>
+    <FilesMatch "\.(php|html)$">
+        Header set Cache-Control "no-cache, no-store, must-revalidate, max-age=0"
+        Header set Pragma "no-cache"
+        Header set Expires "0"
+    </FilesMatch>
 </IfModule>
 
 # Protect sensitive files

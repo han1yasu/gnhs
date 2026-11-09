@@ -5,262 +5,1077 @@ $user = requireLogin('admin');
 
 $content = <<<'HTML'
 <style>
-  /* Hide the global floating widget on this page */
+  /* Hide global floating widget on this full chat page */
   #floatingChatToggle, #chatWidget { display: none !important; }
-  
-  .chat-page-container {
+
+  /* Messenger Shell Container */
+  .msg-app {
     display: flex;
-    height: calc(100vh - 120px);
+    height: calc(100vh - 125px);
+    min-height: 520px;
     background: var(--bg);
-    border-radius: 12px;
+    border-radius: 14px;
     border: 1px solid var(--border);
     overflow: hidden;
+    position: relative;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.04);
   }
-  .chat-page-sidebar {
-    width: 350px;
+
+  /* Left Panel: Inbox List */
+  .msg-inbox-pane {
+    width: 380px;
     border-right: 1px solid var(--border);
     display: flex;
     flex-direction: column;
+    background: var(--bg);
+    flex-shrink: 0;
+  }
+  .msg-inbox-header {
+    padding: 16px 18px 12px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+  }
+  .msg-inbox-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .msg-inbox-title-row h2 {
+    font-size: 22px;
+    font-weight: 800;
+    margin: 0;
+    letter-spacing: -0.5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text);
+  }
+  .msg-inbox-search-box {
+    position: relative;
+  }
+  .msg-inbox-search-box i {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-3);
+    font-size: 13px;
+  }
+  .msg-inbox-search-input {
+    width: 100%;
+    padding: 9px 12px 9px 34px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--bg2);
+    color: var(--text);
+    font-size: 13.5px;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .msg-inbox-search-input:focus {
+    border-color: var(--maroon);
+    background: var(--bg);
+  }
+
+  .msg-inbox-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 6px 0;
+  }
+
+  /* Messenger Inbox Item */
+  .msg-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    user-select: none;
+    position: relative;
+  }
+  .msg-item:hover {
     background: var(--bg2);
   }
-  .chat-page-main {
+  .msg-item.active {
+    background: rgba(85,0,0,0.08);
+  }
+  [data-theme="dark"] .msg-item.active {
+    background: rgba(255,255,255,0.08);
+  }
+  .msg-avatar-wrap {
+    position: relative;
+    width: 50px;
+    height: 50px;
+    min-width: 50px;
+    min-height: 50px;
+    border-radius: 50%;
+  }
+  .msg-avatar-img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    background: var(--bg2);
+    display: block;
+  }
+  .msg-avatar-fallback {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--maroon), #8b1d1d);
+    color: #fff;
+    font-weight: 800;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-transform: uppercase;
+  }
+  .msg-online-badge {
+    position: absolute;
+    bottom: 1px;
+    right: 1px;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: #22c55e;
+    border: 2px solid var(--bg);
+  }
+
+  .msg-item-body {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+  }
+  .msg-item-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 2px;
+  }
+  .msg-item-name {
+    font-size: 14.5px;
+    font-weight: 700;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .msg-item-time {
+    font-size: 11.5px;
+    color: var(--text-3);
+    white-space: nowrap;
+    margin-left: 6px;
+    flex-shrink: 0;
+  }
+  .msg-item-preview {
+    font-size: 13px;
+    color: var(--text-2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 4px;
+    line-height: 1.3;
+  }
+  .msg-item-preview.unread {
+    font-weight: 800;
+    color: var(--text);
+  }
+  .msg-item-badges {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .msg-pill {
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 6px;
+    text-transform: capitalize;
+  }
+  .msg-pill-urg-urgent { background: #fee2e2; color: #dc2626; }
+  .msg-pill-urg-moderate { background: #fef3c7; color: #d97706; }
+  .msg-pill-urg-low { background: #e0f2fe; color: #0284c7; }
+  .msg-pill-status { background: var(--bg2); color: var(--text-3); border: 1px solid var(--border); }
+  .msg-unread-count-badge {
+    background: var(--maroon);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+    border-radius: 12px;
+    padding: 1px 7px;
+    margin-left: auto;
+  }
+
+  /* Right Panel: Conversation Thread */
+  .msg-chat-pane {
     flex: 1;
     display: flex;
     flex-direction: column;
     background: var(--bg);
+    min-width: 0;
+  }
+
+  /* Top Bar */
+  .msg-header-bar {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--bg);
+    min-height: 56px;
+    box-sizing: border-box;
+  }
+  .msg-back-btn {
+    display: none;
+    align-items: center;
+    gap: 4px;
+    background: none;
+    border: none;
+    color: var(--maroon);
+    font-weight: 700;
+    font-size: 14.5px;
+    cursor: pointer;
+    padding: 6px 4px;
+  }
+  .msg-header-partner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+  }
+  .msg-header-avatar {
+    position: relative;
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    min-height: 38px;
+    border-radius: 50%;
+  }
+  .msg-header-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .msg-header-title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .msg-header-sub {
+    margin: 1px 0 0;
+    font-size: 11.5px;
+    color: var(--text-2);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .msg-header-sub .dot-online {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #22c55e;
+  }
+  .msg-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .msg-icon-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: var(--bg2);
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-size: 14px;
+  }
+  .msg-icon-btn:hover {
+    background: var(--border);
+  }
+
+  /* Chat Messages Thread */
+  .msg-messages-thread {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: var(--bg2);
+  }
+  .msg-date-divider {
+    text-align: center;
+    margin: 10px 0;
+  }
+  .msg-date-divider span {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-3);
+    background: var(--bg);
+    padding: 3px 12px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+  }
+
+  /* Message Bubbles */
+  .msg-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    max-width: 82%;
+  }
+  .msg-row.sent {
+    align-self: flex-end;
+    flex-direction: row-reverse;
+  }
+  .msg-row.received {
+    align-self: flex-start;
+  }
+  .msg-bubble-avatar {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    min-height: 28px;
+    border-radius: 50%;
+    margin-bottom: 2px;
+  }
+  .msg-bubble-content {
+    display: flex;
+    flex-direction: column;
+  }
+  .msg-row.sent .msg-bubble-content {
+    align-items: flex-end;
+  }
+  .msg-row.received .msg-bubble-content {
+    align-items: flex-start;
+  }
+  .msg-sender-name {
+    font-size: 11px;
+    color: var(--text-3);
+    margin-bottom: 3px;
+    margin-left: 8px;
+  }
+  .msg-bubble {
+    padding: 10px 15px;
+    font-size: 14px;
+    line-height: 1.45;
+    word-break: break-word;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+  .msg-row.sent .msg-bubble {
+    background: var(--maroon);
+    color: #fff;
+    border-radius: 18px 18px 4px 18px;
+  }
+  .msg-row.received .msg-bubble {
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 18px 18px 18px 4px;
+  }
+  .msg-timestamp {
+    font-size: 10.5px;
+    color: var(--text-3);
+    margin-top: 3px;
+    padding: 0 6px;
+  }
+
+  /* Input Footer */
+  .msg-input-bar {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .msg-input-field {
+    flex: 1;
+    padding: 11px 18px;
+    border-radius: 24px;
+    border: 1px solid var(--border);
+    background: var(--bg2);
+    color: var(--text);
+    font-size: 14px;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .msg-input-field:focus {
+    border-color: var(--maroon);
+    background: var(--bg);
+  }
+  .msg-send-btn {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    min-height: 42px;
+    border-radius: 50%;
+    border: none;
+    background: var(--maroon);
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    transition: opacity 0.15s, transform 0.15s;
+    opacity: 0.5;
+  }
+  .msg-send-btn.active {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+
+  /* Slide-in Details Drawer */
+  .msg-drawer {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 360px;
+    max-width: 100%;
+    background: var(--bg);
+    border-left: 1px solid var(--border);
+    box-shadow: -4px 0 20px rgba(0,0,0,0.08);
+    display: flex;
+    flex-direction: column;
+    z-index: 50;
+    transform: translateX(100%);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .msg-drawer.open {
+    transform: translateX(0);
+  }
+  .msg-drawer-header {
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .msg-drawer-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 800;
+  }
+  .msg-drawer-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 18px;
+    font-size: 13.5px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .msg-detail-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+  .msg-detail-label {
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: var(--text-3);
+    margin-bottom: 4px;
+  }
+  .msg-detail-val {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  /* Empty State */
+  .msg-empty-state {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 30px;
+    color: var(--text-3);
+  }
+
+  /* Mobile Responsive Behavior */
+  @media (max-width: 768px) {
+    .msg-app {
+      height: calc(100vh - 100px) !important;
+      min-height: 480px !important;
+      border-radius: 0;
+      border-left: none;
+      border-right: none;
+    }
+    .msg-app.mobile-inbox-view .msg-inbox-pane {
+      display: flex !important;
+      width: 100% !important;
+      border-right: none;
+    }
+    .msg-app.mobile-inbox-view .msg-chat-pane {
+      display: none !important;
+    }
+    .msg-app.mobile-chat-view .msg-inbox-pane {
+      display: none !important;
+    }
+    .msg-app.mobile-chat-view .msg-chat-pane {
+      display: flex !important;
+      width: 100% !important;
+    }
+    .msg-back-btn {
+      display: inline-flex !important;
+    }
+    .msg-drawer {
+      width: 100% !important;
+    }
+  }
+
+  @media (min-width: 769px) {
+    .msg-inbox-pane { display: flex !important; }
+    .msg-chat-pane { display: flex !important; }
+    .msg-back-btn { display: none !important; }
   }
 </style>
 
-<div class="header-card" style="margin-bottom: 20px;">
-  <h2><i class="fas fa-comments" style="color:var(--maroon);margin-right:10px"></i> Referrals Chat</h2>
-  <p style="color:var(--text-2);margin-top:6px;">Manage your referral communications with teachers.</p>
-</div>
+<div class="msg-app mobile-inbox-view" id="msgApp">
+  <!-- Left Inbox Panel (List of Referrals) -->
+  <aside class="msg-inbox-pane" id="msgInboxPane">
+    <div class="msg-inbox-header">
+      <div class="msg-inbox-title-row">
+        <h2><i class="fas fa-comments" style="color:var(--maroon)"></i> Referrals Chat</h2>
+        <button type="button" class="msg-icon-btn" onclick="pageLoadInbox()" title="Refresh referrals">
+          <i class="fas fa-rotate"></i>
+        </button>
+      </div>
+      <div class="msg-inbox-search-box">
+        <i class="fas fa-search"></i>
+        <input type="text" id="msgSearchInput" class="msg-inbox-search-input" placeholder="Search teacher, student, ref #..." oninput="filterInboxItems()">
+      </div>
+    </div>
 
-<div class="chat-page-container">
-  <!-- Left Sidebar (Inbox) -->
-  <div class="chat-page-sidebar">
-    <div style="padding:20px;border-bottom:1px solid var(--border);background:var(--bg);">
-      <h3 style="font-size:18px;margin:0;">Active Referrals</h3>
-    </div>
-    <div id="pageChatInbox" style="flex:1;overflow-y:auto;">
-      <div style="padding:40px;text-align:center;color:var(--text-3);"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
-    </div>
-  </div>
-  
-  <!-- Right Main Area (Conversation) -->
-  <div class="chat-page-main">
-    <!-- Header -->
-    <div id="pageChatHeader" style="padding:20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:15px;background:var(--bg);">
-      <div style="width:40px;height:40px;border-radius:50%;background:var(--maroon);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;">
-        <i class="fas fa-user-graduate"></i>
-      </div>
-      <div>
-        <h3 id="pageChatTitle" style="margin:0;font-size:18px;color:var(--text);">Select a referral</h3>
-        <p id="pageChatSub" style="margin:4px 0 0 0;font-size:13px;color:var(--text-2);">Choose a referral from the left to start messaging.</p>
+    <div class="msg-inbox-list" id="msgInboxList">
+      <div style="padding:40px 20px;text-align:center;color:var(--text-3);">
+        <i class="fas fa-spinner fa-spin" style="font-size:24px;margin-bottom:8px;display:block"></i>
+        Loading teacher referrals...
       </div>
     </div>
-    
-    <!-- Messages -->
-    <div id="pageChatMessages" style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:15px;background:var(--bg2);">
-      <!-- Messages load here -->
-      <div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--text-3);flex-direction:column;gap:10px;">
-        <i class="fas fa-comments" style="font-size:48px;opacity:0.5;"></i>
-        <p>Your messages will appear here.</p>
+  </aside>
+
+  <!-- Right Chat Panel (Active Conversation) -->
+  <main class="msg-chat-pane" id="msgChatPane">
+    <!-- Header App Bar -->
+    <header class="msg-header-bar" id="msgHeaderBar">
+      <button type="button" class="msg-back-btn" onclick="showMobileInbox()">
+        <i class="fas fa-chevron-left"></i> Referrals
+      </button>
+
+      <div class="msg-header-partner" id="msgHeaderPartner">
+        <div class="msg-header-avatar" id="msgHeaderAvatar">
+          <div class="msg-avatar-fallback"><i class="fas fa-chalkboard-teacher"></i></div>
+          <span class="msg-online-badge"></span>
+        </div>
+        <div class="msg-header-info">
+          <div class="msg-header-title" id="msgHeaderTitle">Select a referral</div>
+          <div class="msg-header-sub" id="msgHeaderSub">
+            <span class="dot-online"></span> Teacher collaboration channel
+          </div>
+        </div>
+      </div>
+
+      <div class="msg-header-actions">
+        <button type="button" class="msg-icon-btn" id="msgDetailsBtn" onclick="toggleDetailsDrawer()" title="View Referral Details" disabled>
+          <i class="fas fa-circle-info"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Messages Container -->
+    <div class="msg-messages-thread" id="msgMessagesThread">
+      <div class="msg-empty-state">
+        <i class="fas fa-comments" style="font-size:48px;opacity:0.3;margin-bottom:12px;"></i>
+        <h4 style="margin:0 0 6px;color:var(--text);font-size:16px;">Teacher Referral Collaboration</h4>
+        <p style="margin:0;max-width:300px;font-size:13px;">Select a referral from the left to coordinate intervention and student support with referring faculty.</p>
       </div>
     </div>
-    
-    <!-- Input area -->
-    <div style="padding:20px;border-top:1px solid var(--border);background:var(--bg);display:flex;gap:10px;">
-      <input type="text" id="pageChatInput" placeholder="Type your message..." disabled style="flex:1;padding:12px 20px;border-radius:24px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:15px;outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--maroon)'" onblur="this.style.borderColor='var(--border)'" onkeypress="if(event.key==='Enter') pageSendMessage()">
-      <button id="pageChatSendBtn" onclick="pageSendMessage()" disabled style="background:var(--maroon);color:#fff;border:none;width:45px;height:45px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;opacity:0.5;"><i class="fas fa-paper-plane" style="margin-right:2px;"></i></button>
+
+    <!-- Input Bar -->
+    <div class="msg-input-bar" id="msgInputBar">
+      <input type="text" id="msgInput" class="msg-input-field" placeholder="Reply to teacher..." disabled autocomplete="off" oninput="toggleSendBtnState()" onkeypress="if(event.key==='Enter') pageSendMessage()">
+      <button type="button" id="msgSendBtn" class="msg-send-btn" onclick="pageSendMessage()" disabled title="Send message">
+        <i class="fas fa-paper-plane"></i>
+      </button>
     </div>
-  </div>
+
+    <!-- Referral Details Drawer -->
+    <aside class="msg-drawer" id="msgDrawer">
+      <div class="msg-drawer-header">
+        <h3><i class="fas fa-exchange-alt" style="color:var(--maroon)"></i> Referral Information</h3>
+        <button type="button" class="msg-icon-btn" onclick="toggleDetailsDrawer(false)" title="Close details">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="msg-drawer-body" id="msgDrawerBody">
+        <div style="color:var(--text-3);text-align:center;padding:20px;">No referral selected.</div>
+      </div>
+    </aside>
+  </main>
 </div>
 
 <script>
+let allInboxData = [];
 let pageCurrentRefId = null;
-let pageInboxPoll = null;
-let pageChatPoll = null;
+let currentRefInfo = null;
+let inboxPollTimer = null;
+let messagesPollTimer = null;
+
+function showMobileInbox() {
+  const app = document.getElementById('msgApp');
+  if (app) {
+    app.classList.remove('mobile-chat-view');
+    app.classList.add('mobile-inbox-view');
+  }
+  toggleDetailsDrawer(false);
+}
+
+function showMobileChat() {
+  const app = document.getElementById('msgApp');
+  if (app) {
+    app.classList.remove('mobile-inbox-view');
+    app.classList.add('mobile-chat-view');
+  }
+}
+
+function toggleDetailsDrawer(forceState) {
+  const drawer = document.getElementById('msgDrawer');
+  if (!drawer) return;
+  if (typeof forceState === 'boolean') {
+    drawer.classList.toggle('open', forceState);
+  } else {
+    drawer.classList.toggle('open');
+  }
+}
+
+function toggleSendBtnState() {
+  const input = document.getElementById('msgInput');
+  const btn = document.getElementById('msgSendBtn');
+  if (!input || !btn) return;
+  const hasText = input.value.trim().length > 0;
+  btn.disabled = !hasText || !pageCurrentRefId;
+  btn.classList.toggle('active', hasText && !!pageCurrentRefId);
+}
+
+function formatMsgTime(isoStr) {
+  if (!isoStr) return '';
+  const d = new Date(isoStr);
+  if (isNaN(d.getTime())) return '';
+  const now = new Date();
+  const isToday = d.toDateString() === now.toDateString();
+  const timeStr = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  if (isToday) return timeStr;
+  const yesterday = new Date();
+  yesterday.setDate(now.getDate() - 1);
+  if (d.toDateString() === yesterday.toDateString()) return 'Yesterday ' + timeStr;
+  return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+async function apiFetch(endpoint, options = {}) {
+  options.credentials = 'include';
+  const isNested = window.location.pathname.startsWith('/gnhs-guidance');
+  const base1 = isNested ? '/gnhs-guidance/api/' : '/api/';
+  const base2 = isNested ? '/api/' : '/gnhs-guidance/api/';
+
+  try {
+    const r1 = await fetch(base1 + endpoint, options);
+    if (r1.ok) {
+      const data = await r1.json();
+      if (data && data.success !== false) return data;
+    }
+  } catch(e) {}
+
+  try {
+    const r2 = await fetch(base2 + endpoint, options);
+    if (r2.ok) return await r2.json();
+  } catch(e) {}
+
+  return { success: false, message: 'Could not connect to server.' };
+}
 
 async function pageLoadInbox() {
   try {
     const params = new URLSearchParams(window.location.search);
-    const refIdParam = params.get('ref_id') || '';
-    const res = await fetch('/gnhs-guidance/api/get_referral_chat_inbox.php' + (refIdParam ? '?archive_id=' + refIdParam : ''));
-    const data = await res.json();
-    if (data.success) {
-      const list = document.getElementById('pageChatInbox');
-      if (data.inbox.length === 0) {
-        list.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-3);">No active referrals found.</div>';
-      } else {
-        list.innerHTML = data.inbox.map(c => {
-          const typeLabel = c.concern_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-          const urgLabel = c.urgency ? c.urgency.charAt(0).toUpperCase() + c.urgency.slice(1) + ' Urgency' : '';
-          
-          let lastMsg = c.latest_message ? c.latest_message : '<em>No messages yet</em>';
-          if(lastMsg.length > 50) lastMsg = lastMsg.substring(0, 50) + '...';
-          
-          let timeLabel = '';
-          if(c.latest_message_time) {
-            const d = new Date(c.latest_message_time);
-            timeLabel = d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-          }
-          
-          const badge = c.unread_count > 0 ? `<div style="background:var(--red);color:#fff;font-size:11px;font-weight:bold;border-radius:10px;padding:2px 6px;">${c.unread_count}</div>` : '';
-          
-          const isActive = pageCurrentRefId == c.id;
-          const bgClass = isActive ? 'background:var(--maroon);color:#fff;' : 'background:transparent;color:var(--text);';
-          const subColor = isActive ? 'color:rgba(255,255,255,0.8);' : 'color:var(--text-2);';
-          
-          const refNum = c.ref_number;
-          const studentName = c.student_name;
-          const teacherName = c.teacher_name || 'Unknown Teacher';
-          const subtext = `Re: ${studentName} - #${refNum} (${typeLabel} - ${urgLabel})`;
+    const archiveId = params.get('archive_id') || '';
+    const refId = params.get('ref_id') || '';
+    const query = refId ? '?ref_id=' + refId : (archiveId ? '?archive_id=' + archiveId : '');
 
-          return `
-            <div onclick="pageOpenChat(${c.id}, '${teacherName.replace(/'/g, "\\'")}', '${subtext.replace(/'/g, "\\'")}', '${c.status}')" style="padding:20px;border-bottom:1px solid var(--border);cursor:pointer;display:flex;gap:15px;align-items:center;transition:background 0.2s;${bgClass}" onmouseover="if(${pageCurrentRefId}!=${c.id}) this.style.background='var(--border)'" onmouseout="if(${pageCurrentRefId}!=${c.id}) this.style.background='transparent'">
-              <div style="flex:1;overflow:hidden;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-                  <strong style="font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${teacherName}</strong>
-                  <span style="font-size:11px;${subColor}">${timeLabel}</span>
-                </div>
-                <div style="font-size:12px;${subColor}margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                  ${subtext}
-                </div>
-                <div style="display:flex;justify-content:space-between;align-items:center;">
-                  <span style="font-size:13px;${subColor}font-weight:${c.unread_count > 0 && !isActive ? '600' : 'normal'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${lastMsg}</span>
-                  ${badge}
-                </div>
-              </div>
-            </div>
-          `;
-        }).join('');
-      }
-      
-      // Auto-open specific referral if requested
-      if (refIdParam && !pageCurrentRefId) {
-        const c = data.inbox.find(i => i.id == refIdParam);
-        if (c) {
-          const typeLabel = c.concern_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-          const urgLabel = c.urgency ? c.urgency.charAt(0).toUpperCase() + c.urgency.slice(1) + ' Urgency' : '';
-          const teacherName = c.teacher_name || 'Unknown Teacher';
-          pageOpenChat(c.id, teacherName, `Re: ${c.student_name} - #${c.ref_number} (${typeLabel} - ${urgLabel})`, c.status);
-        }
-      } else if (data.inbox.length > 0 && !pageCurrentRefId) {
-        // Auto-open first one if none selected
-        const c = data.inbox[0];
-        const typeLabel = c.concern_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-        const urgLabel = c.urgency ? c.urgency.charAt(0).toUpperCase() + c.urgency.slice(1) + ' Urgency' : '';
-        const teacherName = c.teacher_name || 'Unknown Teacher';
-        pageOpenChat(c.id, teacherName, `Re: ${c.student_name} - #${c.ref_number} (${typeLabel} - ${urgLabel})`, c.status);
-      }
+    const data = await apiFetch('get_referral_chat_inbox.php' + query);
+    const list = document.getElementById('msgInboxList');
+    if (!list) return;
+
+    if (!data.success) {
+      list.innerHTML = `
+        <div style="padding:32px 18px;text-align:center;color:var(--text-3);">
+          <i class="fas fa-exclamation-circle" style="color:var(--danger);font-size:24px;margin-bottom:8px;display:block"></i>
+          <span>${data.message || 'Unable to load referrals.'}</span><br>
+          <button onclick="pageLoadInbox()" class="btn-sm-primary" style="margin-top:10px;padding:5px 14px;font-size:12px">Retry</button>
+        </div>`;
+      return;
     }
-  } catch (e) {
+
+    allInboxData = data.inbox || [];
+    renderInboxItems(allInboxData);
+
+    if (refId && !pageCurrentRefId) {
+      const target = allInboxData.find(c => c.id == refId);
+      if (target) openConversation(target.id);
+    } else if (archiveId && !pageCurrentRefId) {
+      const target = allInboxData.find(c => c.id == archiveId);
+      if (target) openConversation(target.id);
+    } else if (!pageCurrentRefId && window.innerWidth > 768 && allInboxData.length > 0) {
+      openConversation(allInboxData[0].id);
+    }
+  } catch(e) {
     console.error(e);
   }
 }
 
-function pageOpenChat(id, title, sub, status) {
-  pageCurrentRefId = id;
-  document.getElementById('pageChatTitle').innerText = title;
-  document.getElementById('pageChatSub').innerText = sub;
-  
-  const input = document.getElementById('pageChatInput');
-  const btn = document.getElementById('pageChatSendBtn');
-  
-  if (status === 'resolved') {
-    input.disabled = true;
-    btn.disabled = true;
-    input.placeholder = 'This referral is resolved. Chat is read-only.';
-    btn.style.opacity = '0.5';
-  } else {
+function filterInboxItems() {
+  const q = (document.getElementById('msgSearchInput')?.value || '').toLowerCase().trim();
+  if (!q) {
+    renderInboxItems(allInboxData);
+    return;
+  }
+  const filtered = allInboxData.filter(c => {
+    const hay = [
+      c.teacher_name || '',
+      c.student_name || '',
+      c.ref_number || '',
+      c.concern_type || '',
+      c.latest_message || ''
+    ].join(' ').toLowerCase();
+    return hay.includes(q);
+  });
+  renderInboxItems(filtered);
+}
+
+function renderInboxItems(items) {
+  const list = document.getElementById('msgInboxList');
+  if (!list) return;
+
+  if (items.length === 0) {
+    list.innerHTML = `
+      <div style="padding:40px 20px;text-align:center;color:var(--text-3);font-size:13.5px;">
+        <i class="fas fa-inbox" style="font-size:36px;opacity:0.3;margin-bottom:12px;display:block"></i>
+        No active referrals found.
+      </div>`;
+    return;
+  }
+
+  list.innerHTML = items.map(c => {
+    const isActive = pageCurrentRefId == c.id;
+    const urg = (c.urgency || 'moderate').toLowerCase();
+    const urgClass = 'msg-pill-urg-' + urg;
+    const typeLabel = (c.concern_type || 'General').replace(/_/g, ' ');
+    const refNum = c.ref_number ? '#' + c.ref_number : '#' + c.id;
+    const teacherName = c.teacher_name || 'Referring Teacher';
+    const teacherAvatar = c.teacher_avatar || '';
+    const initials = teacherName.split(' ').map(n=>n[0]).slice(0,2).join('') || 'TR';
+
+    let preview = c.latest_message ? escapeHtml(c.latest_message) : 'No messages yet';
+    const hasUnread = parseInt(c.unread_count || 0) > 0;
+    const timeLabel = formatMsgTime(c.latest_message_time || c.submitted_at);
+
+    const avatarHtml = teacherAvatar
+      ? `<img src="${teacherAvatar}" class="msg-avatar-img" alt="${escapeHtml(teacherName)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+         <div class="msg-avatar-fallback" style="display:none">${initials}</div>`
+      : `<div class="msg-avatar-fallback">${initials}</div>`;
+
+    return `
+      <div class="msg-item ${isActive ? 'active' : ''}" onclick="openConversation(${c.id})" data-ref-id="${c.id}">
+        <div class="msg-avatar-wrap">
+          ${avatarHtml}
+          <span class="msg-online-badge"></span>
+        </div>
+        <div class="msg-item-body">
+          <div class="msg-item-top">
+            <span class="msg-item-name">${escapeHtml(teacherName)}</span>
+            <span class="msg-item-time">${timeLabel}</span>
+          </div>
+          <div class="msg-item-preview ${hasUnread ? 'unread' : ''}">
+            ${hasUnread ? '<strong>' + preview + '</strong>' : preview}
+          </div>
+          <div class="msg-item-badges">
+            <span class="msg-pill ${urgClass}">${urg} urgency</span>
+            <span class="msg-pill msg-pill-status">${refNum}</span>
+            <span class="msg-pill msg-pill-status">${escapeHtml(c.student_name || typeLabel)}</span>
+            ${hasUnread ? `<span class="msg-unread-count-badge">${c.unread_count}</span>` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function openConversation(refId) {
+  pageCurrentRefId = refId;
+
+  document.querySelectorAll('.msg-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.refId == refId);
+  });
+
+  showMobileChat();
+
+  const input = document.getElementById('msgInput');
+  const detailsBtn = document.getElementById('msgDetailsBtn');
+  if (input) {
     input.disabled = false;
-    btn.disabled = false;
-    input.placeholder = 'Type your message...';
-    btn.style.opacity = '1';
     input.focus();
   }
-  
-  pageLoadInbox(); // Refresh inbox to show active selection and clear badge
-  pageLoadMessages();
-  
-  if (pageChatPoll) clearInterval(pageChatPoll);
-  pageChatPoll = setInterval(pageLoadMessages, 3000);
+  if (detailsBtn) detailsBtn.disabled = false;
+  toggleSendBtnState();
+
+  const itemData = allInboxData.find(c => c.id == refId);
+  if (itemData) {
+    itemData.unread_count = 0;
+    renderInboxItems(allInboxData);
+  }
+
+  await pageLoadMessages();
+
+  if (messagesPollTimer) clearInterval(messagesPollTimer);
+  messagesPollTimer = setInterval(pageLoadMessages, 3500);
 }
 
 async function pageLoadMessages() {
   if (!pageCurrentRefId) return;
+
   try {
-    const res = await fetch('/gnhs-guidance/api/get_referral_messages.php?referral_id=' + pageCurrentRefId);
-    const data = await res.json();
-    if (data.success) {
-      const container = document.getElementById('pageChatMessages');
-      if(!container) return;
-      const atBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 10;
-      
-      container.innerHTML = data.messages.length ? data.messages.map(m => {
-        const isMe = m.user_id == data.current_user_id;
-        const align = isMe ? 'flex-end' : 'flex-start';
-        const bg = isMe ? 'var(--maroon)' : 'var(--bg)';
-        const color = isMe ? '#fff' : 'var(--text)';
-        const border = isMe ? 'none' : '1px solid var(--border)';
-        const roleBadge = !isMe ? `<div style="font-size:11px;color:var(--text-3);margin-bottom:4px">${m.first_name} (${m.role === 'admin' ? 'Counselor' : 'Teacher'})</div>` : '';
-        return `
-          <div style="display:flex;flex-direction:column;align-items:${align};width:100%">
-            ${roleBadge}
-            <div style="background:${bg};color:${color};border:${border};padding:12px 18px;border-radius:20px;max-width:75%;font-size:15px;line-height:1.5;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
-              ${m.message}
-            </div>
-            <div style="font-size:11px;color:var(--text-3);margin-top:6px;">${new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
-          </div>`;
-      }).join('') : '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--text-3);flex-direction:column;gap:10px;"><i class="fas fa-comments" style="font-size:48px;opacity:0.5;"></i><p>No messages yet. Say hello!</p></div>';
-      
-      if (atBottom) {
-        container.scrollTop = container.scrollHeight;
-      }
+    const data = await apiFetch('get_referral_messages.php?referral_id=' + pageCurrentRefId);
+    if (!data.success) return;
+
+    currentRefInfo = data.referral_info || {};
+    renderChatHeader(currentRefInfo);
+    renderDrawerDetails(currentRefInfo);
+    renderMessagesThread(data.messages || [], data.current_user_id);
+  } catch(e) {
+    console.error(e);
+  }
+}
+
+function renderChatHeader(ri) {
+  const titleEl = document.getElementById('msgHeaderTitle');
+  const subEl = document.getElementById('msgHeaderSub');
+  const avatarEl = document.getElementById('msgHeaderAvatar');
+
+  const titleText = ri.teacher_name || 'Referring Teacher';
+  const studentText = ri.student_name ? ` • Re: ${ri.student_name}` : '';
+  const refNum = ri.ref_number ? `#${ri.ref_number}` : `#${ri.id}`;
+
+  if (titleEl) titleEl.innerText = titleText;
+  if (subEl) {
+    subEl.innerHTML = `<span class="dot-online"></span> ${refNum}${studentText}`;
+  }
+
+  if (avatarEl) {
+    const avatar = ri.teacher_avatar;
+    const initials = titleText.split(' ').map(n=>n[0]).slice(0,2).join('') || 'TR';
+    if (avatar) {
+      avatarEl.innerHTML = `
+        <img src="${avatar}" class="msg-avatar-img" alt="${escapeHtml(titleText)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+        <div class="msg-avatar-fallback" style="display:none">${initials}</div>
+        <span class="msg-online-badge"></span>`;
+    } else {
+      avatarEl.innerHTML = `
+        <div class="msg-avatar-fallback">${initials}</div>
+        <span class="msg-online-badge"></span>`;
     }
-  } catch (e) {}
+  }
+}
+
+function renderDrawerDetails(ri) {
+  const body = document.getElementById('msgDrawerBody');
+  if (!body) return;
+
+  const refNum = ri.ref_number ? '#' + ri.ref_number : '#' + (ri.id || '');
+  const statusLabel = (ri.status || 'Pending').replace(/_/g, ' ').toUpperCase();
+  const dateStr = ri.submitted_at ? new Date(ri.submitted_at).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
+
+  body.innerHTML = `
+    <div class="msg-detail-card" style="border-left:4px solid var(--maroon);">
+      <div class="msg-detail-label">Referral Number</div>
+      <div class="msg-detail-val" style="font-size:16px;color:var(--maroon);">${refNum}</div>
+    </div>
+
+    <div class="msg-detail-card">
+      <div class="msg-detail-label">Referring Teacher</div>
+      <div class="msg-detail-val">
+        ${escapeHtml(ri.teacher_name || 'Faculty Member')}
+        ${ri.teacher_email ? `<div style="font-size:12px;color:var(--text-3);margin-top:2px;">${escapeHtml(ri.teacher_email)}</div>` : ''}
+      </div>
+    </div>
+
+    <div class="msg-detail-card">
+      <div class="msg-detail-label">Referred Student</div>
+      <div class="msg-detail-val">
+        ${escapeHtml(ri.student_name || 'N/A')}
+        ${ri.grade_section ? `<div style="font-size:12px;color:var(--text-3);margin-top:2px;">${escapeHtml(ri.grade_section)}</div>` : ''}
+      </div>
+    </div>
+
+    <div class="msg-detail-card">
+      <div class="msg-detail-label">Concern Type & Urgency</div>
+      <div class="msg-detail-val" style="display:flex;gap:6px;align-items:center;margin-top:4px;">
+        <span class="msg-pill msg-pill-status">${escapeHtml(ri.concern_type || 'General')}</span>
+        <span class="msg-pill msg-pill-urg-${(ri.urgency||'moderate').toLowerCase()}">${escapeHtml(ri.urgency || 'Moderate')}</span>
+      </div>
+    </div>
+
+    <div class="msg-detail-card">
+      <div class="msg-detail-label">Status & Date Submitted</div>
+      <div class="msg-detail-val">
+        <span class="status-badge status-${ri.status || 'pending'}">${statusLabel}</span>
+        <span style="font-size:12px;color:var(--text-3);margin-left:8px;">${dateStr}</span>
+      </div>
+    </div>
+
+    <div class="msg-detail-card">
+      <div class="msg-detail-label">Teacher Observations</div>
+      <div class="msg-detail-val" style="font-size:13px;line-height:1.5;white-space:pre-wrap;margin-top:4px;">${escapeHtml(ri.observations || 'No observations provided.')}</div>
+    </div>
+
+    <div style="margin-top:10px;">
+      <a href="admin-referrals.php" class="btn-primary" style="width:100%;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:8px;padding:9px 16px;font-size:13px;">
+        <i class="fas fa-external-link-alt"></i> View in All Referrals
+      </a>
+    </div>
+  `;
+}
+
+function renderMessagesThread(messages, currentUserId) {
+  const container = document.getElementById('msgMessagesThread');
+  if (!container) return;
+
+  if (messages.length === 0) {
+    container.innerHTML = `
+      <div class="msg-empty-state">
+        <div style="width:58px;height:58px;border-radius:50%;background:rgba(85,0,0,0.1);color:var(--maroon);display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:12px;">
+          <i class="fas fa-paper-plane"></i>
+        </div>
+        <h4 style="margin:0 0 6px;color:var(--text);font-size:15px;">Teacher Referral Collaboration</h4>
+        <p style="margin:0;max-width:300px;font-size:12.5px;color:var(--text-3);">Provide counseling feedback or request further observations from the referring faculty.</p>
+      </div>`;
+    return;
+  }
+
+  let html = '';
+  let lastDate = '';
+
+  messages.forEach(m => {
+    const isSent = (m.user_id == currentUserId);
+    const dateObj = new Date(m.created_at);
+    const dateHeader = dateObj.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+    const timeFormatted = dateObj.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+
+    if (dateHeader !== lastDate) {
+      lastDate = dateHeader;
+      html += `<div class="msg-date-divider"><span>${dateHeader}</span></div>`;
+    }
+
+    const senderAvatar = m.avatar_photo;
+    const senderName = m.first_name ? `${m.first_name} ${m.last_name || ''}` : 'Teacher';
+    const senderInitials = senderName.split(' ').map(n=>n[0]).slice(0,2).join('');
+    const avatarHtml = senderAvatar
+      ? `<img src="${senderAvatar}" class="msg-avatar-img msg-bubble-avatar" alt="${escapeHtml(senderName)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+         <div class="msg-avatar-fallback msg-bubble-avatar" style="display:none;font-size:11px;">${senderInitials}</div>`
+      : `<div class="msg-avatar-fallback msg-bubble-avatar" style="font-size:11px;">${senderInitials}</div>`;
+
+    html += `
+      <div class="msg-row ${isSent ? 'sent' : 'received'}">
+        ${!isSent ? avatarHtml : ''}
+        <div class="msg-bubble-content">
+          ${!isSent ? `<span class="msg-sender-name">${escapeHtml(senderName)}</span>` : ''}
+          <div class="msg-bubble">
+            ${escapeHtml(m.message)}
+          </div>
+          <span class="msg-timestamp">${timeFormatted}</span>
+        </div>
+      </div>
+    `;
+  });
+
+  const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 120;
+  container.innerHTML = html;
+  if (isNearBottom) {
+    container.scrollTop = container.scrollHeight;
+  }
 }
 
 async function pageSendMessage() {
   if (!pageCurrentRefId) return;
-  const input = document.getElementById('pageChatInput');
+  const input = document.getElementById('msgInput');
   const msg = input.value.trim();
   if (!msg) return;
-  
+
   input.value = '';
-  
-  const container = document.getElementById('pageChatMessages');
-  if (container.innerHTML.includes('No messages yet')) container.innerHTML = '';
-  container.innerHTML += `
-    <div style="display:flex;flex-direction:column;align-items:flex-end;width:100%">
-      <div style="background:var(--maroon);color:#fff;border:none;padding:12px 18px;border-radius:20px;max-width:75%;font-size:15px;line-height:1.5;opacity:0.7;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
-        ${msg.replace(/</g, "&lt;")}
-      </div>
-    </div>`;
-  container.scrollTop = container.scrollHeight;
+  toggleSendBtnState();
+
+  const thread = document.getElementById('msgMessagesThread');
+  if (thread && thread.innerHTML.includes('msg-empty-state')) thread.innerHTML = '';
+  if (thread) {
+    const timeStr = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    thread.innerHTML += `
+      <div class="msg-row sent">
+        <div class="msg-bubble-content">
+          <div class="msg-bubble" style="opacity:0.8;">
+            ${escapeHtml(msg)}
+          </div>
+          <span class="msg-timestamp">${timeStr} <i class="fas fa-check" style="font-size:9px"></i></span>
+        </div>
+      </div>`;
+    thread.scrollTop = thread.scrollHeight;
+  }
 
   try {
-    const res = await fetch('/gnhs-guidance/api/send_referral_message.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ referral_id: pageCurrentRefId, message: msg })
-    });
-    const data = await res.json();
-    if (data.success) {
-      pageLoadMessages();
-      pageLoadInbox();
+    const isNested = window.location.pathname.startsWith('/gnhs-guidance');
+    const apiPath = isNested ? '/gnhs-guidance/api/send_referral_message.php' : '/api/send_referral_message.php';
+    const res = await apiPost(apiPath, { referral_id: pageCurrentRefId, message: msg });
+    if (res.success) {
+      await pageLoadMessages();
+      await pageLoadInbox();
     } else {
-      showToast(data.message || 'Failed to send', 'error');
+      showToast(res.message || 'Failed to send message', 'error');
     }
-  } catch (e) {
+  } catch(e) {
     showToast('Failed to send message', 'error');
   }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    pageLoadInbox();
-    pageInboxPoll = setInterval(pageLoadInbox, 5000);
+  pageLoadInbox();
+  inboxPollTimer = setInterval(pageLoadInbox, 6000);
 });
 </script>
 HTML;

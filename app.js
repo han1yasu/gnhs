@@ -1327,7 +1327,7 @@ function buildReviewModal(c, notes, session) {
         <div class="input-wrap"><i class="fas fa-map-marker-alt"></i><input type="text" id="session-location" value="Guidance Office" placeholder="Guidance Office or Zoom Link"></div>
       </div>
       <div class="form-group" style="margin-top:20px;border-top:1px solid var(--border);padding-top:20px">
-        <button class="btn-primary" style="width:100%;background:var(--blue)" onclick="window.location.href=window.location.href.includes('admin')?'admin-chats.php?case_id=${c.id || _activeCaseId}':'student-chats.php?case_id=${c.id || _activeCaseId}'">
+        <button class="btn-primary" style="width:100%;background:var(--blue)" onclick="window.location.href=(window.location.pathname.startsWith('/gnhs-guidance')?'/gnhs-guidance/pages/':'/pages/')+(window.location.href.includes('admin')?'admin-chats.php':'student-chats.php')+'?case_id='+(c.id || _activeCaseId)">
           <i class="fas fa-comment-dots"></i> Message Student
         </button>
       </div>
@@ -1838,7 +1838,7 @@ async function openCaseModal(caseId) {
             </div>` : ''}
 
           <div style="margin-top:14px">
-            <button class="btn-primary" style="width:100%;background:var(--blue)" onclick="window.location.href=window.location.href.includes('admin')?'admin-chats.php':'student-chats.php'">
+            <button class="btn-primary" style="width:100%;background:var(--blue)" onclick="window.location.href=(window.location.pathname.startsWith('/gnhs-guidance')?'/gnhs-guidance/pages/':'/pages/')+(window.location.href.includes('admin')?'admin-chats.php':'student-chats.php')+'?case_id='+(c.id || _activeCaseId)">
               <i class="fas fa-comment-dots"></i> Message Counselor
             </button>
           </div>

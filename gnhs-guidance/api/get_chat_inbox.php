@@ -8,7 +8,6 @@ $isCounselor = ($user['role'] === 'admin');
 $archiveId = (int)($_GET['archive_id'] ?? 0);
 $caseId = (int)($_GET['case_id'] ?? 0);
 
-// Query active cases for this user (or specific archived/selected case)
 if ($isCounselor) {
     if ($archiveId) {
         $whereClause = "c.id = ?";
@@ -23,8 +22,11 @@ if ($isCounselor) {
     
     $orderClause = $caseId ? "(c.id = $caseId) DESC, latest_message_time DESC, c.updated_at DESC" : "latest_message_time DESC, c.updated_at DESC";
 
-    $sql = "SELECT c.id, c.case_number, c.concern_type, c.priority, c.status, c.is_anonymous, c.evidence_files, c.witnesses,
+    $sql = "SELECT c.id, c.case_number, c.subject, c.description, c.concern_type, c.priority, c.status, c.is_anonymous,
+            c.evidence_files, c.witnesses, c.submitted_at, c.updated_at,
             CASE WHEN c.is_anonymous = 1 THEN 'Anonymous Student' ELSE CONCAT(u.first_name, ' ', u.last_name) END as student_name,
+            u.avatar_photo as student_avatar,
+            u.grade_level, u.section,
             (SELECT message FROM case_messages WHERE case_id = c.id ORDER BY created_at DESC LIMIT 1) as latest_message,
             (SELECT created_at FROM case_messages WHERE case_id = c.id ORDER BY created_at DESC LIMIT 1) as latest_message_time,
             (SELECT COUNT(*) FROM case_messages WHERE case_id = c.id AND sender_id != ? AND is_read = 0) as unread_count
@@ -49,11 +51,16 @@ if ($isCounselor) {
     
     $orderClause = $caseId ? "(c.id = $caseId) DESC, latest_message_time DESC, c.updated_at DESC" : "latest_message_time DESC, c.updated_at DESC";
 
-    $sql = "SELECT c.id, c.case_number, c.concern_type, c.priority, c.status, c.is_anonymous, c.evidence_files, c.witnesses, 'Counselor' as student_name,
+    $sql = "SELECT c.id, c.case_number, c.subject, c.description, c.concern_type, c.priority, c.status, c.is_anonymous,
+            c.evidence_files, c.witnesses, c.submitted_at, c.updated_at,
+            COALESCE(CONCAT(cu.first_name, ' ', cu.last_name), 'Guidance Counselor') as counselor_name,
+            cu.avatar_photo as counselor_avatar,
+            'Counselor' as student_name,
             (SELECT message FROM case_messages WHERE case_id = c.id ORDER BY created_at DESC LIMIT 1) as latest_message,
             (SELECT created_at FROM case_messages WHERE case_id = c.id ORDER BY created_at DESC LIMIT 1) as latest_message_time,
             (SELECT COUNT(*) FROM case_messages WHERE case_id = c.id AND sender_id != ? AND is_read = 0) as unread_count
             FROM cases c
+            LEFT JOIN users cu ON c.assigned_to = cu.id
             WHERE $whereClause
             ORDER BY $orderClause";
     $stmt = $db->prepare($sql);
@@ -62,7 +69,6 @@ if ($isCounselor) {
 
 $inbox = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Return JSON response
 header('Content-Type: application/json');
 header('Cache-Control: no-cache, no-store, must-revalidate');
 header('Pragma: no-cache');

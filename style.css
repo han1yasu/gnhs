@@ -3027,6 +3027,23 @@ html, body {
   .review-header-strip > div {
     min-width: 100% !important;
   }
+
+  /* Content grid & columns single column stack */
+  .content-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 14px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    margin-bottom: 16px !important;
+  }
+  .left-col, .right-col {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 14px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
 }
 
 /* Smartphone Breakpoint (<= 640px) */
@@ -3095,19 +3112,147 @@ html, body {
     justify-content: center !important;
   }
 
-  /* Summary KPI Cards */
+  /* Summary KPI Cards — Compact & Sleek for Phones */
   .summary-cards {
+    display: grid !important;
     grid-template-columns: 1fr 1fr !important;
-    gap: 10px !important;
+    gap: 8px !important;
+    margin-bottom: 12px !important;
+    width: 100% !important;
   }
   .sum-card {
-    padding: 12px 10px !important;
+    padding: 8px 10px !important;
+    gap: 10px !important;
+    border-radius: 12px !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
+    min-height: unset !important;
+    display: flex !important;
+    align-items: center !important;
   }
-  .sum-card-num {
-    font-size: 20px !important;
+  .sum-icon {
+    width: 34px !important;
+    height: 34px !important;
+    border-radius: 9px !important;
+    font-size: 14px !important;
+    flex-shrink: 0 !important;
   }
-  .sum-card-label {
+  .sum-num, .sum-card-num {
+    font-size: 17px !important;
+    font-weight: 800 !important;
+    line-height: 1.1 !important;
+    margin-bottom: 2px !important;
+  }
+  .sum-label, .sum-card-label {
+    font-size: 10.5px !important;
+    font-weight: 600 !important;
+    line-height: 1.15 !important;
+    color: var(--text-3) !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  /* Cards & Content layout */
+  .content-card, .card {
+    padding: 14px 12px !important;
+    border-radius: 12px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .card-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    margin-bottom: 10px !important;
+  }
+  .card-header h3 {
+    font-size: 14px !important;
+    font-weight: 800 !important;
+  }
+  .btn-sm-primary {
+    padding: 4px 9px !important;
     font-size: 11px !important;
+    border-radius: 7px !important;
+  }
+
+  /* Compact Data Table on Phone */
+  .table-wrap {
+    border-radius: 8px !important;
+    margin-bottom: 4px !important;
+  }
+  .data-table {
+    min-width: 520px !important;
+    font-size: 12px !important;
+  }
+  .data-table th {
+    padding: 7px 8px !important;
+    font-size: 10px !important;
+  }
+  .data-table td {
+    padding: 8px 8px !important;
+    font-size: 11.5px !important;
+  }
+  .badge-evidence, .badge-witness {
+    font-size: 9.5px !important;
+    padding: 1.5px 5px !important;
+    gap: 3px !important;
+    margin-top: 2px !important;
+  }
+  .badge-evidence i, .badge-witness i {
+    font-size: 8.5px !important;
+  }
+  .case-type-wrap {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 3px !important;
+    align-items: center !important;
+  }
+  .btn-row-action {
+    padding: 3px 8px !important;
+    font-size: 11px !important;
+    border-radius: 6px !important;
+  }
+
+  /* Upcoming Session Card on Phone */
+  .session-card {
+    padding: 10px 12px !important;
+    gap: 12px !important;
+    border-radius: 10px !important;
+    margin-bottom: 8px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .session-date {
+    min-width: 42px !important;
+    height: 42px !important;
+    border-radius: 10px !important;
+  }
+  .s-month {
+    font-size: 9px !important;
+  }
+  .s-day {
+    font-size: 17px !important;
+  }
+  .session-info strong {
+    font-size: 13px !important;
+  }
+  .session-info p {
+    font-size: 11.5px !important;
+    margin-bottom: 2px !important;
+  }
+  .s-time, .s-loc {
+    font-size: 10.5px !important;
+  }
+
+  /* Quick links on Phone */
+  .quick-link {
+    padding: 8px 10px !important;
+    font-size: 12px !important;
+    gap: 8px !important;
+    border-radius: 8px !important;
+  }
+  .quick-link i:first-child {
+    font-size: 13px !important;
   }
 
   /* Modals */

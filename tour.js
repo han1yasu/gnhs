@@ -400,10 +400,23 @@
     // Handle mobile sidebar
     const sidebar = document.getElementById('sidebar');
     const isInsideSidebar = targetEl.closest('#sidebar') !== null;
-    if (isInsideSidebar && window.innerWidth <= 768) {
-      if (sidebar && !sidebar.classList.contains('open')) {
-        sidebar.classList.add('open');
+    if (window.innerWidth <= 768) {
+      if (isInsideSidebar) {
+        if (typeof toggleSidebar === 'function') {
+          toggleSidebar(true);
+        } else if (sidebar && !sidebar.classList.contains('open')) {
+          sidebar.classList.add('open');
+        }
         sidebarWasOpenedByTour = true;
+      } else {
+        // Target is outside sidebar: ALWAYS close the mobile drawer so it doesn't obstruct the screen
+        if (typeof toggleSidebar === 'function') {
+          toggleSidebar(false);
+        } else if (sidebar) {
+          sidebar.classList.remove('open');
+          const bd = document.getElementById('sidebarBackdrop');
+          if (bd) bd.classList.remove('active');
+        }
       }
     }
 

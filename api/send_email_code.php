@@ -114,29 +114,23 @@ $headers  = "MIME-Version: 1.0\r\n";
 $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
 $headers .= "From: GNHS Guidance Office <no-reply@gnhsguidance.com>\r\n";
 $headers .= "Reply-To: no-reply@gnhsguidance.com\r\n";
-$headers .= "To: <" . $email . ">\r\n";
-$headers .= "X-Entity-Recipient: " . $email . "\r\n";
 $headers .= "X-Mailer: PHP/" . phpversion() . "\r\n";
 
 $mailSent = false;
 try {
-    // Pass -f to explicitly force the envelope sender and prevent MTA broadcast / duplicate envelope delivery
-    $mailSent = @mail($email, $subject, $messageHtml, $headers, "-f no-reply@gnhsguidance.com");
+    $mailSent = @mail($email, $subject, $messageHtml, $headers);
 } catch (Exception $e) {
     $mailSent = false;
 }
 
-// Build response
+// Build response (Testing helper removed - real production delivery)
 $resp = [
     'success' => true,
-    'message' => 'A 6-digit code has been sent to ' . htmlspecialchars($email) . '. Please check your inbox or spam folder.',
+    'message' => 'A 6-digit verification code has been sent to ' . htmlspecialchars($email) . '. Please check your inbox or spam folder.',
     'email'   => $email,
     'role'    => $role,
     'mail_sent' => $mailSent
 ];
-
-// Testing helper code included so testing is 100% reliable even if local SMTP is offline
-$resp['code_hint'] = $code;
 
 jsonOut($resp);
 

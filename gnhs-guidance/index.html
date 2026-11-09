@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GNHS — Guidance Case Management System</title>
-  <link rel="stylesheet" href="style.css?v=2.9" />
+  <link rel="stylesheet" href="style.css?v=3.0" />
   <link
     href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,600;1,400&display=swap"
     rel="stylesheet" />
@@ -856,7 +856,7 @@
   </div>
 
   <script src="theme.js?v=1.1"></script>
-  <script src="app.js?v=20261110_04"></script>
+  <script src="app.js?v=20261110_05"></script>
   <script>
     const GNHS_GRADE_SECTIONS = {
       '7':  ['Bonifacio', 'Burgos', 'Del Pilar', 'Diego Silang', 'Luna', 'Mabini', 'Malvar', 'Rizal'],
@@ -1076,10 +1076,8 @@
         const caller = typeof apiPost === 'function' ? apiPost : window._apiPost;
         const res = await caller('/gnhs-guidance/api/send_email_code.php', { email, role });
         if (res && res.success) {
-          let msg = res.message;
-          if (res.code_hint) msg += ' [Testing Helper: Code is ' + res.code_hint + ']';
           if (msgEl) {
-            msgEl.textContent = msg;
+            msgEl.textContent = res.message || 'A 6-digit verification code has been sent. Please check your inbox or spam folder.';
             msgEl.className = 'success-msg';
             msgEl.style.display = 'block';
           }
@@ -1274,10 +1272,8 @@
           if (codeBox) codeBox.style.display = 'block';
           if (sendWrap) sendWrap.style.display = 'none';
 
-          let msg = res.message;
-          if (res.code_hint) msg += ' [Testing Helper: Code is ' + res.code_hint + ']';
           if (msgEl) {
-            msgEl.textContent = msg;
+            msgEl.textContent = res.message || 'A 6-digit verification code has been sent. Please check your inbox or spam folder.';
             msgEl.className = 'success-msg';
             msgEl.style.display = 'block';
           }

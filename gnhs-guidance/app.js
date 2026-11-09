@@ -1017,6 +1017,18 @@ async function submitConcern() {
     return;
   }
 
+  if (witnesses) {
+    if (witnesses.length > 100) {
+      showMsg('submitMsg', 'Witnesses field cannot exceed 100 characters.');
+      return;
+    }
+    const witWords = witnesses.trim().split(/\s+/).filter(w => w.length > 0).length;
+    if (witWords > 15) {
+      showMsg('submitMsg', 'Witnesses field cannot exceed 15 words.');
+      return;
+    }
+  }
+
   const btn = $('submitBtn');
   setLoading(btn, true); hideEl('submitMsg');
 
@@ -2409,7 +2421,7 @@ async function loadMessages() {
             <div style="background:${bg};color:${color};border:${border};padding:10px 14px;border-radius:18px;max-width:85%;font-size:14px;line-height:1.4;box-shadow:0 1px 2px rgba(0,0,0,0.05);">
               ${m.message}
             </div>
-            <div style="font-size:10px;color:var(--text-3);margin-top:4px;">${new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+            <div style="font-size:10px;color:var(--text-3);margin-top:4px;">${new Date(String(m.created_at).replace(' ', 'T')).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
           </div>`;
       }).join('') : '<div style="text-align:center;color:var(--text-3);font-size:13px;padding:20px">No messages yet. Send a message to start the conversation!</div>';
       

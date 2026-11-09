@@ -131,9 +131,13 @@ $content = <<<HTML
       <div class="form-group">
         <label style="display:flex;align-items:center;justify-content:space-between">
           <span><i class="fas fa-users" style="color:var(--maroon);margin-right:6px"></i> Witnesses <span class="opt-tag">(Optional)</span></span>
+          <span id="witnessCountBadge" style="font-size:12px;font-weight:700;color:var(--text-3)"><span id="witnessCharCount">0</span> / 100 characters</span>
         </label>
-        <div class="input-wrap"><i class="fas fa-user-friends"></i><input type="text" id="witnesses" placeholder="Names of any students, teachers, or staff who witnessed the incident (Optional)"/></div>
-        <span class="field-hint">Leave blank if no one else was present or if you do not wish to specify.</span>
+        <div class="input-wrap"><i class="fas fa-user-friends"></i><input type="text" id="witnesses" maxlength="100" placeholder="Full name of witness (e.g., Juan Dela Cruz) — Max 100 characters" oninput="updateWitnessCount(this)"/></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px">
+          <span class="field-hint" style="margin:0">Leave blank if no one else was present or if you do not wish to specify.</span>
+          <span id="witnessWordBadge" style="font-size:11px;color:var(--text-3);white-space:nowrap"><span id="witnessWordCount">0</span> / 15 words</span>
+        </div>
       </div>
 
       <!-- Optional Pictures & Videos Upload -->
@@ -286,6 +290,24 @@ document.getElementById('description')?.addEventListener('input', function(){
     }
   }
 });
+
+function updateWitnessCount(el) {
+  const val = el ? el.value || '' : '';
+  const chars = val.length;
+  const words = val.trim() ? val.trim().split(/\s+/).filter(w => w.length > 0).length : 0;
+  const charEl = document.getElementById('witnessCharCount');
+  const wordEl = document.getElementById('witnessWordCount');
+  const badgeEl = document.getElementById('witnessCountBadge');
+  if (charEl) charEl.textContent = chars;
+  if (wordEl) wordEl.textContent = words;
+  if (badgeEl) {
+    if (chars > 100 || words > 15) {
+      badgeEl.style.color = '#dc2626';
+    } else {
+      badgeEl.style.color = 'var(--text-3)';
+    }
+  }
+}
 
 function validateConcernSpam(text) {
   const clean = (text || '').trim();
@@ -644,6 +666,20 @@ async function submitConcern() {
   if (incidentDate && incidentDate > todayStr) {
     showMsg('submitMsg', 'Incident date cannot be in the future. Please select today (' + todayStr + ') or an earlier date.');
     return;
+  }
+
+  if (witnesses) {
+    if (witnesses.length > 100) {
+      showMsg('submitMsg', 'Witnesses field cannot exceed 100 characters. Please provide the full name(s) of the witness(es).');
+      document.getElementById('witnesses')?.focus();
+      return;
+    }
+    const witWords = witnesses.trim().split(/\s+/).filter(w => w.length > 0).length;
+    if (witWords > 15) {
+      showMsg('submitMsg', 'Witnesses field cannot exceed 15 words. Please provide just the full name(s).');
+      document.getElementById('witnesses')?.focus();
+      return;
+    }
   }
 
   const btn = document.getElementById('submitBtn');

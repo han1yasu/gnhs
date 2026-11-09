@@ -69,6 +69,17 @@ if (strlen($subject) >= 15) {
     }
 }
 
+// Witness field validation (capped at 100 characters / 15 words to cleanly fit person full names)
+if (!empty($witnesses)) {
+    if (mb_strlen($witnesses) > 100) {
+        jsonOut(['success'=>false, 'message'=>'Witnesses field cannot exceed 100 characters. Please provide the full name(s) of the witness(es).']);
+    }
+    $witWords = preg_split('/\s+/u', trim($witnesses), -1, PREG_SPLIT_NO_EMPTY);
+    if (count($witWords) > 15) {
+        jsonOut(['success'=>false, 'message'=>'Witnesses field cannot exceed 15 words. Please provide just the full name(s).']);
+    }
+}
+
 // Profanity filter
 if (containsProfanity($subject) || containsProfanity($description) || ($witnesses && containsProfanity($witnesses))) {
     jsonOut(['success'=>false,'message'=>'Please remove inappropriate language or profanity from your submission.']);

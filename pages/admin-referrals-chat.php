@@ -724,9 +724,17 @@ function toggleSendBtnState() {
   btn.classList.toggle('active', hasText && !!pageCurrentRefId);
 }
 
+function parseChatDate(dateStr) {
+  if (!dateStr) return new Date();
+  if (dateStr instanceof Date) return dateStr;
+  const s = String(dateStr).trim().replace(' ', 'T');
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? new Date(dateStr) : d;
+}
+
 function formatMsgTime(isoStr) {
   if (!isoStr) return '';
-  const d = new Date(isoStr);
+  const d = parseChatDate(isoStr);
   if (isNaN(d.getTime())) return '';
   const now = new Date();
   const isToday = d.toDateString() === now.toDateString();
@@ -1049,7 +1057,7 @@ function renderMessagesThread(messages, currentUserId) {
       if (lastSeenSentId === null && (m.is_read == 1 || m.is_read === true || m.is_read === '1')) {
         lastSeenSentId = m.id;
         if (m.read_at) {
-          const rd = new Date(m.read_at);
+          const rd = parseChatDate(m.read_at);
           if (!isNaN(rd.getTime())) {
             lastSeenSentTime = rd.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
           }
@@ -1063,7 +1071,7 @@ function renderMessagesThread(messages, currentUserId) {
 
   messages.forEach(m => {
     const isSent = (m.user_id == currentUserId);
-    const dateObj = new Date(m.created_at);
+    const dateObj = parseChatDate(m.created_at);
     const dateHeader = dateObj.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
     const timeFormatted = dateObj.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 

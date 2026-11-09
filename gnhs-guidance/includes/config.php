@@ -26,10 +26,30 @@ function getDB(): PDO {
     static $pdo = null;
     if (!$pdo) {
         $dsn = "mysql:host=".DB_HOST.";dbname=".DB_NAME.";charset=utf8mb4";
-        $pdo = new PDO($dsn, DB_USER, DB_PASS, [
+        $options = [
             PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        ]);
+        ];
+        if (defined('PDO::MYSQL_ATTR_INIT_COMMAND')) {
+            $options[PDO::MYSQL_ATTR_INIT_COMMAND] = "SET time_zone = '+08:00'";
+        }
+        $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
+        try {
+            $pdo->exec("SET time_zone = '+08:00'");
+        } catch(Exception $e) {}
+
+        // Ensure database timestamps match Philippine Standard Time (PHT, UTC+8)
+        try {
+            $pdo->exec("CREATE TABLE IF NOT EXISTS system_migrations (migration_key VARCHAR(100) PRIMARY KEY, migrated_at DATETIME)");
+            $migrated = $pdo->query("SELECT 1 FROM system_migrations WHERE migration_key = 'fix_utc_messages_to_pht_v1'")->fetch();
+            if (!$migrated) {
+                $pdo->exec("UPDATE case_messages SET created_at = DATE_ADD(created_at, INTERVAL 8 HOUR) WHERE created_at <= DATE_SUB(NOW(), INTERVAL 7 HOUR) AND created_at >= '2026-11-08 00:00:00'");
+                $pdo->exec("UPDATE case_messages SET read_at = DATE_ADD(read_at, INTERVAL 8 HOUR) WHERE read_at IS NOT NULL AND read_at <= DATE_SUB(NOW(), INTERVAL 7 HOUR) AND read_at >= '2026-11-08 00:00:00'");
+                $pdo->exec("UPDATE referral_messages SET created_at = DATE_ADD(created_at, INTERVAL 8 HOUR) WHERE created_at <= DATE_SUB(NOW(), INTERVAL 7 HOUR) AND created_at >= '2026-11-08 00:00:00'");
+                $pdo->exec("UPDATE referral_messages SET read_at = DATE_ADD(read_at, INTERVAL 8 HOUR) WHERE read_at IS NOT NULL AND read_at <= DATE_SUB(NOW(), INTERVAL 7 HOUR) AND read_at >= '2026-11-08 00:00:00'");
+                $pdo->exec("INSERT INTO system_migrations (migration_key, migrated_at) VALUES ('fix_utc_messages_to_pht_v1', NOW())");
+            }
+        } catch(Exception $e) {}
         // Normalize em dash (–) to hyphen (-) in grade_section — run silently once
         try {
             $pdo->exec("UPDATE users SET grade_section = REPLACE(grade_section, ' – ', ' - ') WHERE grade_section LIKE '%–%'");

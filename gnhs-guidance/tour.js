@@ -486,11 +486,11 @@
   function positionTooltipCard(targetRect) {
     if (!cardEl) return;
 
-    const cardWidth = 380;
-    const cardHeight = cardEl.offsetHeight || 260;
     const viewW = window.innerWidth;
     const viewH = window.innerHeight;
-    const margin = 16;
+    const margin = 14;
+    const cardWidth = Math.min(380, viewW - (margin * 2));
+    const cardHeight = cardEl.offsetHeight || 260;
 
     let left = 0;
     let top = 0;
@@ -500,10 +500,10 @@
       // Center horizontally on mobile
       left = Math.max(margin, (viewW - cardWidth) / 2);
       if (targetRect.top > viewH / 2) {
-        // Target is lower: put card above target
+        // Target is in lower half: put card above target
         top = Math.max(margin, targetRect.top - cardHeight - margin);
       } else {
-        // Target is higher: put card below target
+        // Target is in upper half: put card below target
         top = Math.min(viewH - cardHeight - margin, targetRect.bottom + margin);
       }
     } else {
@@ -633,3 +633,4 @@
   }
 
 })();
+

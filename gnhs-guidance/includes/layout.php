@@ -207,11 +207,14 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
   </div>
 </aside>
 
+<!-- SIDEBAR BACKDROP FOR MOBILE -->
+<div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar(false)"></div>
+
 <!-- MAIN -->
 <div class="main-content">
   <header class="topbar">
     <div class="topbar-left">
-      <button class="topbar-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">
+      <button class="topbar-toggle" onclick="toggleSidebar()">
         <i class="fas fa-bars"></i>
       </button>
       <div class="topbar-brand" id="topbarBrand">
@@ -254,7 +257,7 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
             <div class="tb-avatar"><?= $initials ?></div>
           <?php endif; ?>
         </div>
-        <span><?= $fullName ?></span>
+        <span class="tb-user-name-text"><?= $fullName ?></span>
         <i class="fas fa-chevron-down" style="font-size:11px;color:var(--text-3);margin-left:4px"></i>
         <div class="profile-dropdown hidden" id="profileDropdown">
           <div class="pd-header">
@@ -525,6 +528,25 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
 <script src="/gnhs-guidance/app.js?v=3.0"></script>
 <script src="/gnhs-guidance/tour.js?v=1.0"></script>
 <script>
+function toggleSidebar(forceState) {
+  const sb = document.getElementById('sidebar');
+  const bd = document.getElementById('sidebarBackdrop');
+  if (!sb) return;
+  const shouldOpen = (forceState !== undefined) ? forceState : !sb.classList.contains('open');
+  sb.classList.toggle('open', shouldOpen);
+  if (bd) bd.classList.toggle('active', shouldOpen);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.sb-nav a').forEach(function(a) {
+    a.addEventListener('click', function() {
+      if (window.innerWidth <= 768) {
+        toggleSidebar(false);
+      }
+    });
+  });
+});
+
 function showToast(msg, type) {
   type = type || 'success';
   let c = document.getElementById('toast-container');

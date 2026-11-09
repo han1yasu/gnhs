@@ -2,9 +2,19 @@
 // ── GNHS Guidance System — Config & DB ────────────────────────
 date_default_timezone_set('Asia/Manila');
 
-// Load environment configuration file if present (for Hostinger or production)
-if (file_exists(__DIR__ . '/env.php')) {
-    require_once __DIR__ . '/env.php';
+// Load environment configuration file if present (checks all possible server locations)
+$envLocations = [
+    __DIR__ . '/env.php',
+    dirname(__DIR__) . '/includes/env.php',
+    dirname(__DIR__, 2) . '/includes/env.php',
+    ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/includes/env.php',
+    ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/gnhs-guidance/includes/env.php',
+];
+foreach ($envLocations as $envPath) {
+    if (!empty($envPath) && file_exists($envPath)) {
+        require_once $envPath;
+        break;
+    }
 }
 
 define('DB_HOST', getenv('DB_HOST') ?: 'localhost');

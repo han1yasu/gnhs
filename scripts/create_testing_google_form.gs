@@ -1,413 +1,435 @@
 /**
- * =========================================================================================
- * GNHS GUIDANCE SYSTEM — COMPREHENSIVE FUNCTIONALITY & ACCEPTANCE TESTING FORM GENERATOR
- * =========================================================================================
+ * ====================================================================================================
+ * GNHS GUIDANCE SYSTEM — IT PROFESSIONAL FUNCTIONALITY & SOFTWARE QUALITY EVALUATION FORM (ISO/IEC 25010)
+ * ====================================================================================================
+ * 
+ * TARGET AUDIENCE:
+ * Exclusively for IT Professionals, Software Engineers, QA / Test Engineers, Capstone Defense Panelists,
+ * and Technical Evaluators evaluating the live system at: https://gnhsguidance.com/
  * 
  * INSTRUCTIONS:
  * 1. Open Google Apps Script: https://script.google.com/
- * 2. Click "New project".
- * 3. Delete any default code in Code.gs, paste this entire script, and click "Save" (Ctrl+S).
- * 4. Select the function "createGNHSFunctionalityTestForm" and click "Run".
- * 5. Review and grant permissions if prompted by Google.
- * 6. Check the Execution Log (Ctrl+Enter) — it will output the live Edit URL and Shareable URL of your new Form!
- * =========================================================================================
+ * 2. Click "+ New project".
+ * 3. Replace all default code with this script and save (Ctrl+S).
+ * 4. Ensure "createGNHSITProfessionalTestForm" is selected, then click "Run".
+ * 5. Review permissions if prompted (Allow access).
+ * 6. View the Execution Log (Ctrl+Enter) — it prints your live Form Edit URL and Shareable Fill-in URL!
+ * ====================================================================================================
  */
 
-function createGNHSFunctionalityTestForm() {
-  const formTitle = "GNHS Guidance System — Comprehensive Functionality & Acceptance Testing";
+function createGNHSITProfessionalTestForm() {
+  const formTitle = "GNHS Guidance System — IT Professional Functionality & Software Quality Evaluation";
   const form = FormApp.create(formTitle);
 
   form.setDescription(
-    "Guinayang National High School (GNHS) Guidance System\n" +
-    "Official Functionality, Quality Assurance & User Acceptance Testing (UAT) Form\n\n" +
-    "Live Deployment URL: https://gnhsguidance.com/\n\n" +
-    "PURPOSE:\n" +
-    "This evaluation form systematically verifies all functional modules of the GNHS Guidance System across " +
-    "Student, Faculty/Adviser, and Guidance Counselor roles. Please evaluate each test case based on your actual " +
-    "testing on desktop, laptop, or mobile devices.\n\n" +
-    "EVALUATION CRITERIA:\n" +
-    "• Passed (Working as Expected): Feature functions accurately with no defects.\n" +
-    "• Needs Improvement: Feature works but requires UI, wording, or minor behavioral polish.\n" +
-    "• Failed (Bug Found): Feature failed to execute, displayed error, or produced incorrect output.\n" +
-    "• Not Tested / N/A: Test case was not covered during this testing session."
+    "Guinayang National High School (GNHS) Automated Guidance Management System\n" +
+    "Official Software Quality Assurance (QA) & User Acceptance Testing (UAT) Instrument\n\n" +
+    "SYSTEM UNDER TEST (SUT):\n" +
+    "• Production URL: https://gnhsguidance.com/\n" +
+    "• Architecture: Client-Server / MVC, PHP 8.2 backend, MariaDB/MySQL relational store, Vanilla ES6+ SPA components\n" +
+    "• Evaluation Framework: ISO/IEC 25010 Software Product Quality Standards\n\n" +
+    "TARGET EVALUATORS:\n" +
+    "This technical evaluation instrument is designed exclusively for IT Professionals, Software Engineers, " +
+    "Quality Assurance Testers, Capstone Defense Panelists, and Systems Evaluators.\n\n" +
+    "EVALUATION VERDICT CRITERIA:\n" +
+    "• Pass (Meets Technical Specification): Functionality operates strictly according to design and technical requirements with no errors.\n" +
+    "• Pass with Minor Observation: Functional logic operates correctly, but minor cosmetic, UI alignment, or wording polish is noted.\n" +
+    "• Fail (Functional Defect / Logic Error): Logic error, security flaw, unhandled exception, or broken state encountered.\n" +
+    "• Not Evaluated / N/A: Test case was not covered during this evaluation session."
   );
 
   form.setConfirmationMessage(
-    "Thank you! Your functionality testing evaluation for the GNHS Guidance System has been recorded successfully."
+    "Thank you for completing the technical evaluation of the GNHS Guidance System. Your formal QA & UAT assessment has been recorded."
   );
   form.setAllowResponseEdits(true);
 
   const testColumns = [
-    "Passed (Working as Expected)",
-    "Needs Improvement",
-    "Failed (Bug Found)",
-    "Not Tested / N/A"
+    "Pass (Meets Specification)",
+    "Pass with Minor Observation",
+    "Fail (Defect / Bug Found)",
+    "Not Evaluated / N/A"
   ];
 
-  // =========================================================================================
-  // SECTION 1: TESTER IDENTIFICATION & ENVIRONMENT
-  // =========================================================================================
+  // ====================================================================================================
+  // SECTION 1: EVALUATOR PROFILE (IT PROFESSIONAL)
+  // ====================================================================================================
   form.addSectionHeaderItem()
-    .setTitle("Tester Identification & Testing Environment")
-    .setHelpText("Please provide your details and the device/browser used during testing.");
+    .setTitle("Section 1: Evaluator Profile & Technical Test Environment")
+    .setHelpText("Please supply your technical profile and the client environment used during test execution.");
 
   form.addTextItem()
-    .setTitle("1. Tester Full Name")
+    .setTitle("1.1 Evaluator Full Name")
     .setRequired(true);
 
   form.addMultipleChoiceItem()
-    .setTitle("2. Evaluator Role")
+    .setTitle("1.2 Professional Designation / Primary Technical Specialization")
     .setChoiceValues([
-      "Student Evaluator",
-      "Advisory Teacher / Faculty Member",
-      "Guidance Counselor / Guidance Admin"
+      "Software Engineer / Full-Stack Developer",
+      "Quality Assurance (QA) / Software Test Engineer",
+      "Systems Analyst / Software Architect",
+      "IT Faculty Member / Capstone Defense Panelist",
+      "Information Security / Cybersecurity Specialist",
+      "Database Administrator / Cloud Infrastructure Engineer"
     ])
     .setRequired(true);
 
+  form.addTextItem()
+    .setTitle("1.3 Organization / Institutional Affiliation")
+    .setHelpText("e.g. SDO, University, Tech Company, or DepEd Office")
+    .setRequired(true);
+
   form.addCheckboxItem()
-    .setTitle("3. Testing Device(s) Used (Select all that apply)")
+    .setTitle("1.4 Testing Device(s) & Hardware Profile (Select all applied)")
     .setChoiceValues([
-      "Desktop Computer (PC)",
+      "Desktop Workstation (Windows / macOS / Linux)",
       "Laptop (Windows / macOS)",
-      "Mobile Smartphone (Android)",
-      "Mobile Smartphone (iOS / iPhone)",
+      "Mobile Smartphone (Android / Chromium Engine)",
+      "Mobile Smartphone (iOS / WebKit Safari Engine)",
       "Tablet / iPad"
     ])
     .setRequired(true);
 
   form.addCheckboxItem()
-    .setTitle("4. Web Browser(s) Tested")
+    .setTitle("1.5 Primary Web Browser(s) Exercised")
     .setChoiceValues([
-      "Google Chrome",
-      "Safari (iOS / macOS)",
-      "Mozilla Firefox",
-      "Microsoft Edge",
-      "Android System Webview / Mobile Chrome"
+      "Google Chrome (Chromium V8 Engine)",
+      "Apple Safari (iOS / macOS WebKit Engine)",
+      "Mozilla Firefox (Gecko Engine)",
+      "Microsoft Edge (Chromium Engine)",
+      "Mobile WebView / Embedded Mobile Browser"
     ])
     .setRequired(true);
 
   form.addDateItem()
-    .setTitle("5. Date of Testing")
+    .setTitle("1.6 Date of Technical Evaluation")
     .setRequired(true);
 
-  // =========================================================================================
-  // MODULE 1: AUTHENTICATION, IDENTITY & ACCESS CONTROL
-  // =========================================================================================
+  // ====================================================================================================
+  // MODULE 1: AUTHENTICATION, IDENTITY & ACCESS CONTROL (RBAC & 2FA)
+  // ====================================================================================================
   form.addPageBreakItem()
-    .setTitle("Module 1: Authentication, Identity & Access Control")
-    .setHelpText("Evaluation of multi-role login, 2FA/TOTP authenticator, Google flow, passwordless email verification, and keyboard progression.");
+    .setTitle("Module 1: Authentication, Identity & Access Control (RBAC, 2FA & Google Auth)")
+    .setHelpText("Verification of Role-Based Access Control (Student, Teacher, Counselor), RFC 6238 TOTP, Google flow, passwordless email verification, keyboard navigation, and brute-force defenses.");
 
   form.addGridItem()
-    .setTitle("Module 1 Functionality Checklist")
+    .setTitle("Module 1 Functional Verification Checklist")
     .setColumns(testColumns)
     .setRows([
-      "1.1 Student Login using 12-digit LRN & Password",
-      "1.2 Teacher & Counselor Login using Employee ID or Email",
-      "1.3 Keyboard Progression (Enter on Email/LRN moves to Password; Enter on Password submits)",
-      "1.4 Google Sign-In with Official Google Button & Shopee-Style Account Chooser",
-      "1.5 Passwordless Email Verification (Delivers 6-digit code to specific Gmail/DepEd email before registration)",
-      "1.6 2FA / TOTP Setup with 0ms Instant Vector QR Code & Formatted Manual Setup Key (1-click copy)",
-      "1.7 2FA 6-digit Code Verification during login with Authenticator app (Google Auth, Microsoft Auth, Authy)",
-      "1.8 Brute-Force Defense (Failed attempt counter, temporary lockout, and live countdown timer)",
-      "1.9 First-Time Onboarding Wizard (Student LRN/Grade/Section, Emergency Contact, Security Questions, Avatar)"
+      "TC-AUTH-01: RBAC Partitioning — Role segregation and URI guard authorization for Student, Teacher, and Counselor",
+      "TC-AUTH-02: Identifier Validation — Numeric 12-digit LRN constraint for students vs. Employee ID/Email credentials for staff",
+      "TC-AUTH-03: Sequential Keyboard Navigation — Enter key shifts focus from identifier to password; Enter on password executes login without reload",
+      "TC-AUTH-04: Google OAuth / GIS Integration — One-click Google Identity Services credential exchange, JWT parsing, and session mapping",
+      "TC-AUTH-05: Passwordless Email Verification — Single-envelope 6-digit cryptographic code dispatch to user's specific email address before signup",
+      "TC-AUTH-06: RFC 6238 TOTP Vector QR & Secret — 0ms client-side QR rendering (qrcode.min.js), session secret persistence, and Base32 manual key copy",
+      "TC-AUTH-07: Time-Based 2FA Verification — 6-digit TOTP verification against authenticator apps (Google Auth, Microsoft Auth, Authy) with clock-skew tolerance",
+      "TC-AUTH-08: Brute-Force & Lockout Defense — Failed attempt rate limiting, progressive lockout throttling, and timestamp-based automated unlock release",
+      "TC-AUTH-09: First-Time Profile Wizard — Mandatory attribute completion (LRN, grade/section, security questions, avatar upload & compression)"
     ])
     .setRequired(true);
 
   form.addParagraphTextItem()
-    .setTitle("Module 1: Comments, Observations & Issues Found (Optional)")
-    .setHelpText("Note down any specific bugs, usability issues, or remarks regarding Authentication & 2FA.");
+    .setTitle("Module 1: Technical Observations, Anomalies & Defect Logs (Optional)")
+    .setHelpText("Specify any observed authentication vulnerabilities, console errors, or logic deviations.");
 
-  // =========================================================================================
-  // MODULE 2: STUDENT CONCERN & INCIDENT REPORTING
-  // =========================================================================================
+  // ====================================================================================================
+  // MODULE 2: STUDENT CONCERN & INCIDENT REPORTING ENGINE
+  // ====================================================================================================
   form.addPageBreakItem()
-    .setTitle("Module 2: Student Concern & Incident Reporting Module")
-    .setHelpText("Evaluation of concern submission, anti-spam validation, profanity filtering, anonymous token, peer report, teacher shield, witness limits, and evidence upload.");
+    .setTitle("Module 2: Student Concern & Incident Reporting Engine")
+    .setHelpText("Verification of incident intake, content quality validation, lexical profanity screening, anonymous tracking tokens, peer reporting, teacher shield, witness boundaries, and multi-media evidence ingestion.");
 
   form.addGridItem()
-    .setTitle("Module 2 Functionality Checklist")
+    .setTitle("Module 2 Functional Verification Checklist")
     .setColumns(testColumns)
     .setRows([
-      "2.1 Concern Intake Form with 7 Categories (Bullying, Academic, Emotional, Family, Peer, Behavioral, Other)",
-      "2.2 Anti-Spam & Content Quality Validation (Enforces min 30 words, max 400 words, rejects random spam/gibberish)",
-      "2.3 Automated Profanity & Inappropriate Language Screening across Subject, Description, and Witnesses",
-      "2.4 Anonymous Reporting Option (Hides student name, creates tracking token, masks identity from counselor)",
-      "2.5 Peer Reporting ('Report for a Friend' with target classmate name and grade details)",
-      "2.6 Adviser / Teacher Protection Shield (Hides incidents involving teachers from advisory teacher portals)",
-      "2.7 Witness Field Limit (Enforces max 100 characters and max 15 words with live dual counters)",
-      "2.8 Multi-Media Evidence Uploader (Drag & drop, file picker, Ctrl+V paste for JPG, PNG, WEBP, GIF, MP4, MOV up to 100MB)"
+      "TC-REP-01: Taxonomy Classification — Accurate classification across 7 predefined guidance concern types with custom specification handler",
+      "TC-REP-02: Dual-Layer Anti-Spam Engine — Client and server validation enforcing 30-word minimum, 400-word ceiling, and pattern spam rejection",
+      "TC-REP-03: Automated Lexical Screening — Real-time and server-side filtering of inappropriate profanity across subject, description, and witness fields",
+      "TC-REP-04: Anonymous Token Cryptography — Identity shrouding, private tracking token generation, and counselor-facing student identity masking",
+      "TC-REP-05: Peer Proxy Reporting Model — Third-party reporting capturing victim data while maintaining reporter safety and confidentiality",
+      "TC-REP-06: Adviser Concern Shield — Flag restricting visibility of concerns involving advisory teachers from advisory faculty queries",
+      "TC-REP-07: Witness Boundary Constraints — Dual-layer enforcement (maxlength='100' characters, max 15 words) with dynamic live double counter UI",
+      "TC-REP-08: Multi-Media Evidence Ingestion — Drag-and-drop, file picker, and clipboard paste pipeline supporting JPG, PNG, WEBP, GIF, MP4, MOV up to 100MB"
     ])
     .setRequired(true);
 
   form.addParagraphTextItem()
-    .setTitle("Module 2: Comments, Observations & Issues Found (Optional)")
-    .setHelpText("Note down any remarks or issues regarding incident submission, evidence upload, or validation filters.");
+    .setTitle("Module 2: Technical Observations, Anomalies & Defect Logs (Optional)");
 
-  // =========================================================================================
-  // MODULE 3: STUDENT DASHBOARD & CASE TRACKING
-  // =========================================================================================
+  // ====================================================================================================
+  // MODULE 3: STUDENT DASHBOARD & CASE STATE MANAGEMENT
+  // ====================================================================================================
   form.addPageBreakItem()
-    .setTitle("Module 3: Student Dashboard & Case Tracking Module")
-    .setHelpText("Evaluation of the student portal dashboard, active cases tracking, mobile empty states, session reminders, and case appeals.");
+    .setTitle("Module 3: Student Dashboard & Case State Management")
+    .setHelpText("Verification of real-time KPI metrics, responsive table wrappers, upcoming session notifications, case detail modals, and appeals state transitions.");
 
   form.addGridItem()
-    .setTitle("Module 3 Functionality Checklist")
+    .setTitle("Module 3 Functional Verification Checklist")
     .setColumns(testColumns)
     .setRows([
-      "3.1 Real-Time KPI Metric Cards (Total Cases, Pending Review, Resolved Cases, Unread Notifications)",
-      "3.2 Responsive Active Cases Table with mobile-scaled empty state typography (.empty-table-cell)",
-      "3.3 Upcoming Counseling Session Alert Card (Displays counselor name, date, time, and office location)",
-      "3.4 Detailed Case Modal (Full concern details, assigned counselor, status badge, triage priority)",
-      "3.5 Student Case Archive & Appeals Workflow (Submitting formal appeal statement for closed cases)",
-      "3.6 Student Sessions History & Concluded Session Attendance Overview"
+      "TC-STAT-01: Real-Time KPI Aggregation — Asynchronous summation and rendering of Total Cases, Pending, Resolved, and Unread counts",
+      "TC-STAT-02: Responsive Viewport Adaptation — Mobile viewport scaling with -webkit-text-size-adjust: 100% preventing font inflation on empty states",
+      "TC-STAT-03: Chronological Session Alerts — Accurate retrieval and display of next scheduled consultation (Counselor, timestamp, venue)",
+      "TC-STAT-04: Relational Detail Modal — Seamless relational case data loading (category, triage priority, AI overview, counselor assignments)",
+      "TC-STAT-05: Case Appeal Lifecycle — Formal appeal justification submission on resolved cases successfully transitioning records to review queues",
+      "TC-STAT-06: Session History & Attendance Logs — Historical session records tracking past consultation feedback and completion status"
     ])
     .setRequired(true);
 
   form.addParagraphTextItem()
-    .setTitle("Module 3: Comments, Observations & Issues Found (Optional)");
+    .setTitle("Module 3: Technical Observations, Anomalies & Defect Logs (Optional)");
 
-  // =========================================================================================
-  // MODULE 4: GUIDANCE MESSAGING & REAL-TIME CHAT
-  // =========================================================================================
+  // ====================================================================================================
+  // MODULE 4: GUIDANCE MESSAGING & ASYNCHRONOUS REAL-TIME CHAT
+  // ====================================================================================================
   form.addPageBreakItem()
-    .setTitle("Module 4: Guidance Messaging & Real-Time Chat Module")
-    .setHelpText("Evaluation of two-way private guidance chat, anonymous masking, real-time polling, and Messenger-style 'Seen' read receipts.");
+    .setTitle("Module 4: Guidance Messaging & Real-Time Chat Engine")
+    .setHelpText("Verification of 1-to-1 case message isolation, anonymous masking, optimistic UI, background polling, and Messenger-style 'Seen' read receipts.");
 
   form.addGridItem()
-    .setTitle("Module 4 Functionality Checklist")
+    .setTitle("Module 4 Functional Verification Checklist")
     .setColumns(testColumns)
     .setRows([
-      "4.1 Two-Way Private Chat linked to specific Case IDs (#C-0001, etc.)",
-      "4.2 Anonymous Chat Masking (Student identity masked as 'Anonymous Student' when enabled)",
-      "4.3 Optimistic Message Rendering (Sent bubble appears immediately with delivery indicator)",
-      "4.4 Auto-Sync Polling (Receives new incoming messages within 3.5 seconds without page reload)",
-      "4.5 Messenger-Style 'Sent' Status (Unread sent message displays ✓ Sent status)",
-      "4.6 Messenger-Style 'Seen' Status (Displays ✓✓ Seen [timestamp] on the last message opened by recipient)",
-      "4.7 Chat Archive Transcript Viewer for concluded and resolved cases"
+      "TC-CHAT-01: Relational Thread Binding — 1-to-1 conversation isolation strictly bounded to distinct Case IDs (case_id foreign key)",
+      "TC-CHAT-02: Anonymous Identity Masking — Student name and avatar masked to 'Anonymous Student' in counselor chat thread when enabled",
+      "TC-CHAT-03: Optimistic UI & Polling Sync — Instant client-side message bubble dispatch with non-blocking 3.5-second polling loop",
+      "TC-CHAT-04: Read Receipt Transaction — Database atomic update marking is_read=1 and read_at=NOW() when recipient accesses conversation",
+      "TC-CHAT-05: Messenger-Style Seen Receipts — Visual rendering of '✓ Sent' (unread) vs. '✓✓ Seen [timestamp]' on the latest message opened by recipient",
+      "TC-CHAT-06: Permanent Chat Archival — Complete, immutable chat transcript preservation for concluded and resolved guidance cases"
     ])
     .setRequired(true);
 
   form.addParagraphTextItem()
-    .setTitle("Module 4: Comments, Observations & Issues Found (Optional)")
-    .setHelpText("Note down remarks regarding chat delivery, read receipts, and real-time syncing.");
+    .setTitle("Module 4: Technical Observations, Anomalies & Defect Logs (Optional)");
 
-  // =========================================================================================
+  // ====================================================================================================
   // MODULE 5: FACULTY REFERRAL & ADVISORY OVERSIGHT (TEACHER PORTAL)
-  // =========================================================================================
+  // ====================================================================================================
   form.addPageBreakItem()
-    .setTitle("Module 5: Faculty Referral & Advisory Oversight Module (Teacher Portal)")
-    .setHelpText("Evaluation of faculty referral submission, teacher dashboard, referral collaboration chat, and advisory class oversight.");
+    .setTitle("Module 5: Faculty Referral & Advisory Oversight (Teacher Portal)")
+    .setHelpText("Verification of structured referral intake, urgency triage, teacher-counselor direct collaboration chat, and student privacy compliance in advisory rosters.");
 
   form.addGridItem()
-    .setTitle("Module 5 Functionality Checklist")
+    .setTitle("Module 5 Functional Verification Checklist")
     .setColumns(testColumns)
     .setRows([
-      "5.1 Teacher Dashboard Referral Metrics & Active Referrals Feed",
-      "5.2 Submit Student Referral (Student name, LRN, behavioral observations, prior interventions)",
-      "5.3 Referral Urgency Prioritization (Low, Medium, High)",
-      "5.4 Teacher-Counselor Collaboration Chat with Messenger-style 'Seen' & 'Sent' receipts",
-      "5.5 Advisory Section Roster & High-Level Guidance Concern Flags (Confidentiality-compliant)",
-      "5.6 Teacher Protection Shield Enforcement (Teacher cannot view cases filed against themselves)"
+      "TC-TEACH-01: Teacher Referral Metrics — Tracking faculty-submitted referrals across status queues (Submitted, Under Review, Scheduled, Resolved)",
+      "TC-TEACH-02: Structured Referral Ingestion — Capture of student identity, behavioral indicators, academic distress signs, and prior interventions",
+      "TC-TEACH-03: Referral Priority Indexing — Priority triage tagging (Low, Medium, High) for counselor queue ranking",
+      "TC-TEACH-04: Referral Collaboration Chat — Dedicated consultation channel between referring faculty and counselor with bidirectional Seen receipts",
+      "TC-TEACH-05: Advisory Class Privacy Enforcement — Section roster displays aggregated guidance flags while strictly redacting private incident narratives, evidence, and witness logs",
+      "TC-TEACH-06: Teacher Shield Query Exclusion — Robust query filtering preventing teachers from accessing incidents filed against themselves"
     ])
     .setRequired(true);
 
   form.addParagraphTextItem()
-    .setTitle("Module 5: Comments, Observations & Issues Found (Optional)");
+    .setTitle("Module 5: Technical Observations, Anomalies & Defect Logs (Optional)");
 
-  // =========================================================================================
-  // MODULE 6: GUIDANCE ADMINISTRATION & CASE MANAGEMENT (COUNSELOR PORTAL)
-  // =========================================================================================
+  // ====================================================================================================
+  // MODULE 6: GUIDANCE ADMINISTRATION & MASTER CASE MANAGEMENT
+  // ====================================================================================================
   form.addPageBreakItem()
-    .setTitle("Module 6: Guidance Administration & Case Management Module")
-    .setHelpText("Evaluation of counselor dashboard, master case management, triage, lifecycle progression, appeals review, and follow-ups.");
+    .setTitle("Module 6: Guidance Administration & Master Case Management (Counselor Portal)")
+    .setHelpText("Verification of master triage dashboard, multi-parameter search/filters, counselor assignment, state machine lifecycle, and appeals adjudication.");
 
   form.addGridItem()
-    .setTitle("Module 6 Functionality Checklist")
+    .setTitle("Module 6 Functional Verification Checklist")
     .setColumns(testColumns)
     .setRows([
-      "6.1 Counselor Central Dashboard (Master KPI counters, incident intake feed, urgent referral alerts)",
-      "6.2 Master Case Management (Search, filters by status, priority, category, date range)",
-      "6.3 Counselor Case Assignment & Priority Triage (Low, Medium, High, Urgent)",
-      "6.4 Case Lifecycle Progression (Pending -> Under Review -> Ongoing -> Concluded -> Resolved -> Reopened)",
-      "6.5 Student Appeal Review Desk (Counselor reviews appeal justification and reopens case if warranted)",
-      "6.6 Master Case Archive with historical resolution timeline, evidence attachments, and counselor notes",
-      "6.7 Follow-up Care Tracking (Post-counseling check-ins, monitoring intervals, behavioral progress)"
+      "TC-ADMIN-01: Master Counselor Dashboard — Centralized intake feed, urgent referral alerts, and real-time caseload metrics",
+      "TC-ADMIN-02: Multi-Parameter Query Engine — Dynamic SQL filtering across status, priority, category, date range, and student identifiers",
+      "TC-ADMIN-03: Workload & Case Assignment — Case allocation and ownership attribution to specific guidance counselors",
+      "TC-ADMIN-04: State Machine Lifecycle — Sequential progression (Pending -> Under Review -> Ongoing -> Concluded -> Resolved -> Reopened)",
+      "TC-ADMIN-05: Student Appeal Adjudication — Counselor review of student appeal justifications and execution of case reopening workflows",
+      "TC-ADMIN-06: Master Archival Vault — Permanent archival storage of closed records, counselor resolution logs, and historical evidence",
+      "TC-ADMIN-07: Follow-up Care Tracking — Longitudinal observation logs, check-in schedules, and post-resolution monitoring intervals"
     ])
     .setRequired(true);
 
   form.addParagraphTextItem()
-    .setTitle("Module 6: Comments, Observations & Issues Found (Optional)");
+    .setTitle("Module 6: Technical Observations, Anomalies & Defect Logs (Optional)");
 
-  // =========================================================================================
+  // ====================================================================================================
   // MODULE 7: COUNSELING SESSIONS & IN-SESSION MANAGEMENT
-  // =========================================================================================
+  // ====================================================================================================
   form.addPageBreakItem()
-    .setTitle("Module 7: Counseling Sessions & In-Session Management Module")
-    .setHelpText("Evaluation of session scheduling, live in-session stopwatch timer, counselor clinical notes, AI resolution assistant, and session archive.");
+    .setTitle("Module 7: Counseling Sessions & Clinical In-Session Management")
+    .setHelpText("Verification of session booking, countdown timers, real-time in-session stopwatch, clinical notes, and AI guidance recommendations.");
 
   form.addGridItem()
-    .setTitle("Module 7 Functionality Checklist")
+    .setTitle("Module 7 Functional Verification Checklist")
     .setColumns(testColumns)
     .setRows([
-      "7.1 Counseling Session Scheduler (Links session to Case/Referral with date, time, venue, participants)",
-      "7.2 Upcoming Sessions Calendar Feed with Live Countdowns and Status Badges",
-      "7.3 Live In-Session Controller with Real-Time Stopwatch/Timer (startSessionTimer)",
-      "7.4 Counselor Clinical Session Notes & Student Agreement Action Plan Documentation",
-      "7.5 AI Resolution Suggestion Assistant (Contextual AI suggestions for DepEd-aligned interventions)",
-      "7.6 Concluded Session Archive with Attendance Logs, Duration, and Resolution Outcomes"
+      "TC-SESS-01: Session Booking & Venue Allocation — Booking calendar appointments linked to cases/referrals with venue, time, and attendee specifications",
+      "TC-SESS-02: Chronological Feed & Countdowns — Real-time countdown calculation to scheduled sessions with status tagging",
+      "TC-SESS-03: Active Session Controller — In-session state tracking with client/server synchronized stopwatch timer (startSessionTimer)",
+      "TC-SESS-04: Confidential Clinical Notes — Counselor progress notes, behavioral observations, and student agreement commitments",
+      "TC-SESS-05: AI Guidance Resolution Assistant — Algorithmic summarization and contextual DepEd guidance strategy suggestions (summarizer.php)",
+      "TC-SESS-06: Concluded Session Archive — Audited records of session durations, timestamps, and resolution outcomes"
     ])
     .setRequired(true);
 
   form.addParagraphTextItem()
-    .setTitle("Module 7: Comments, Observations & Issues Found (Optional)");
+    .setTitle("Module 7: Technical Observations, Anomalies & Defect Logs (Optional)");
 
-  // =========================================================================================
-  // MODULE 8: EVIDENCE VAULT & SECURE MEDIA LIGHTBOX
-  // =========================================================================================
+  // ====================================================================================================
+  // MODULE 8: EVIDENCE VAULT & MULTI-MEDIA LIGHTBOX ARCHITECTURE
+  // ====================================================================================================
   form.addPageBreakItem()
-    .setTitle("Module 8: Evidence Vault & Secure Media Lightbox Module")
-    .setHelpText("Evaluation of evidence vault storage, in-browser media preview, video playback, and access isolation.");
+    .setTitle("Module 8: Evidence Vault & Multi-Media Lightbox Architecture")
+    .setHelpText("Verification of evidence storage security, file integrity, in-browser media stream playback, and role-based data isolation.");
 
   form.addGridItem()
-    .setTitle("Module 8 Functionality Checklist")
+    .setTitle("Module 8 Functional Verification Checklist")
     .setColumns(testColumns)
     .setRows([
-      "8.1 Secure Evidence Vault File Storage & MIME-type Sanitization",
-      "8.2 In-Browser Responsive Lightbox (Zoom, pan, and responsive video player)",
-      "8.3 Large File Support (Verified handling of photo evidence and video clips up to 100MB)",
-      "8.4 Strict Role-Based Evidence Isolation (Restricted exclusively to counselors; hidden from teachers & peers)"
+      "TC-EVID-01: Secure Media Ingestion — Upload directory isolation, filename hashing, and binary sanitization",
+      "TC-EVID-02: In-Browser Media Lightbox — Responsive modal with pan, zoom, and cross-browser video stream playback (MP4, MOV, WEBM)",
+      "TC-EVID-03: Large File Handling — Stable handling and buffering of large media assets up to 100MB per file",
+      "TC-EVID-04: Granular Evidence Access Control — Absolute access control restricting evidence visibility strictly to Counselors, denying teacher and student access"
     ])
     .setRequired(true);
 
   form.addParagraphTextItem()
-    .setTitle("Module 8: Comments, Observations & Issues Found (Optional)");
+    .setTitle("Module 8: Technical Observations, Anomalies & Defect Logs (Optional)");
 
-  // =========================================================================================
-  // MODULE 9: ANALYTICS, INSIGHTS & VISUAL REPORTING
-  // =========================================================================================
+  // ====================================================================================================
+  // MODULE 9: ANALYTICS, TREND MODELING & VISUAL REPORTING
+  // ====================================================================================================
   form.addPageBreakItem()
-    .setTitle("Module 9: Analytics, Insights & Visual Reporting Module")
-    .setHelpText("Evaluation of statistical charts, trend graphs, resolution rate tracking, and academic term filtering.");
+    .setTitle("Module 9: Analytics, Trend Modeling & Visual Reporting")
+    .setHelpText("Verification of statistical aggregation, incident trend visualization, resolution efficiency metrics, and demographic heatmaps.");
 
   form.addGridItem()
-    .setTitle("Module 9 Functionality Checklist")
+    .setTitle("Module 9 Functional Verification Checklist")
     .setColumns(testColumns)
     .setRows([
-      "9.1 Concern Category Distribution Chart (Bullying, Academic Stress, Emotional, Family, etc.)",
-      "9.2 Longitudinal Incident Trend Analysis (Monthly and quarterly case volume tracking)",
-      "9.3 Resolution Metrics (Average resolution turnaround time and resolution success rates)",
-      "9.4 Priority & Urgency Distribution Breakdown",
-      "9.5 Grade Level & Advisory Section Incident Heatmap",
-      "9.6 Academic Year, Semester, and Custom Date Range Filters"
+      "TC-DATA-01: Concern Taxonomy Distribution — Statistical aggregation and chart rendering of incident taxonomy",
+      "TC-DATA-02: Longitudinal Temporal Trends — Month-over-month and quarterly incident trajectory tracking",
+      "TC-DATA-03: Resolution Efficiency Metrics — Statistical computation of average time-to-resolution and resolution success rates",
+      "TC-DATA-04: Priority Risk Matrix — Visual risk categorization and incident urgency distribution (Low, Medium, High, Urgent)",
+      "TC-DATA-05: Demographic & Section Heatmap — Incident frequency mapping across grade levels and advisory sections",
+      "TC-DATA-06: Dynamic Temporal Query Filtering — Dynamic SQL filtering by Academic Year, Semester, and custom date brackets"
     ])
     .setRequired(true);
 
   form.addParagraphTextItem()
-    .setTitle("Module 9: Comments, Observations & Issues Found (Optional)");
+    .setTitle("Module 9: Technical Observations, Anomalies & Defect Logs (Optional)");
 
-  // =========================================================================================
-  // MODULE 10: USER ADMINISTRATION & DIRECTORY MANAGEMENT
-  // =========================================================================================
+  // ====================================================================================================
+  // MODULE 10: USER ADMINISTRATION & DIRECTORY SERVICES
+  // ====================================================================================================
   form.addPageBreakItem()
-    .setTitle("Module 10: User Administration & Directory Management Module")
-    .setHelpText("Evaluation of master accounts table, search/filter, profile modification, advisory assignments, and password reset.");
+    .setTitle("Module 10: User Administration & Directory Services")
+    .setHelpText("Verification of user accounts master table, indexed queries, advisory class binding, and administrative password resets.");
 
   form.addGridItem()
-    .setTitle("Module 10 Functionality Checklist")
+    .setTitle("Module 10 Functional Verification Checklist")
     .setColumns(testColumns)
     .setRows([
-      "10.1 Master User Accounts Table (Students, Teachers, Guidance Counselors, Staff)",
-      "10.2 Search & Filtering (Search by Name, Email, LRN, Employee ID; filter by Role & Section)",
-      "10.3 User Profile Editing (Update Grade, Section, Role, Contact Information, Account Status)",
-      "10.4 Teacher Advisory Class Assignment & Section Reassignment",
-      "10.5 Administrator Password Reset with Temporary Password Generation"
+      "TC-USER-01: Master Accounts Directory — Unified administrative table covering all user entities across Student, Teacher, and Counselor roles",
+      "TC-USER-02: Indexed Query & Role Filtering — Fast search indexing by Name, Email, LRN, Employee ID, and Advisory Section",
+      "TC-USER-03: Profile & Attribute Management — Real-time modification of user profiles, sections, roles, and account statuses (Active, Inactive, Suspended)",
+      "TC-USER-04: Teacher Advisory Class Association — Relational binding and re-binding of teachers to designated advisory classes (assign_advisory.php)",
+      "TC-USER-05: Administrative Password Reset Protocol — Generation and secure issuance of temporary credentials by authorized counselors"
     ])
     .setRequired(true);
 
   form.addParagraphTextItem()
-    .setTitle("Module 10: Comments, Observations & Issues Found (Optional)");
+    .setTitle("Module 10: Technical Observations, Anomalies & Defect Logs (Optional)");
 
-  // =========================================================================================
+  // ====================================================================================================
   // MODULE 11: SECURITY, RECOVERY, SYSTEM TIME & UX INFRASTRUCTURE
-  // =========================================================================================
+  // ====================================================================================================
   form.addPageBreakItem()
-    .setTitle("Module 11: Security, Recovery, System Time & UX Infrastructure Module")
-    .setHelpText("Evaluation of self-service resets, manual reset tickets, 2FA emergency resets, Philippine Standard Time sync, notifications, theme toggles, and mobile responsiveness.");
+    .setTitle("Module 11: Security, Recovery, System Time & UX Infrastructure")
+    .setHelpText("Verification of password resets, 2FA emergency resets, Philippine Standard Time (UTC+8) synchronization, notifications, and mobile adaptation.");
 
   form.addGridItem()
-    .setTitle("Module 11 Functionality Checklist")
+    .setTitle("Module 11 Functional Verification Checklist")
     .setColumns(testColumns)
     .setRows([
-      "11.1 Self-Service Email Password Reset with 10-Minute Expiring Tokens",
-      "11.2 Manual Password Reset Request System (ID verification for students without email access)",
-      "11.3 Student Ticket Status Checker (Real-time tracking of reset request progress)",
-      "11.4 2FA Emergency Reset Ticket System (Identity verification via security questions + Admin TOTP reset)",
-      "11.5 System Time Accuracy (Philippine Standard Time UTC+8 synchronized across PHP, MySQL, and chats)",
-      "11.6 Cross-Browser Datetime Parsing (Safari, iOS WebKit, Chrome, Firefox, Edge)",
-      "11.7 Real-Time In-App Notifications (Notification bell with live unread counter badges)",
-      "11.8 Theme Engine (Seamless Light Mode and Dark Mode toggling with persistent user preference)",
-      "11.9 Mobile Responsive Navigation (Collapsible drawer menu, responsive headers, touch-friendly UI)",
-      "11.10 Interactive Guided Tour (Interactive walkthrough of system features for first-time users)"
+      "TC-SEC-01: Self-Service Tokenized Reset — Cryptographic 10-minute expiring tokens sent via secure email link",
+      "TC-SEC-02: Manual Reset Ticket Workflow — Identity-verification reset ticket for students lacking active email access",
+      "TC-SEC-03: Real-Time Ticket Status Query — Asynchronous inquiry endpoint tracking reset ticket verification progress",
+      "TC-SEC-04: 2FA Emergency Recovery Protocol — Identity verification via hashed security questions and administrative TOTP secret reset",
+      "TC-SEC-05: Database Timezone Synchronization — Strict MySQL session timezone enforcement (+08:00 / PHT) harmonized with PHP's Asia/Manila",
+      "TC-SEC-06: Cross-Browser Datetime Serialization — Robust ISO-8601 parsing (parseChatDate()) across Safari (WebKit), Chrome (V8), Firefox, and Edge",
+      "TC-SEC-07: In-App Event Notification Engine — Topbar notification bell with dynamic badge counters triggered on chat messages, sessions, and status updates",
+      "TC-SEC-08: Theme Engine & Preference Persistence — High-contrast Maroon & White Light/Dark mode toggling with localStorage state retention",
+      "TC-SEC-09: Viewport Adaptation & Mobile Navigation — Responsive sidebar-to-drawer transitions, touch targets, and horizontal overflow clamping",
+      "TC-SEC-10: Interactive Guided Tour Architecture — Interactive multi-step onboarding guide (tour.js) walking users through key workflows"
     ])
     .setRequired(true);
 
   form.addParagraphTextItem()
-    .setTitle("Module 11: Comments, Observations & Issues Found (Optional)");
+    .setTitle("Module 11: Technical Observations, Anomalies & Defect Logs (Optional)");
 
-  // =========================================================================================
-  // SECTION 12: OVERALL SYSTEM EVALUATION & DEPLOYMENT SIGN-OFF
-  // =========================================================================================
+  // ====================================================================================================
+  // SECTION 12: ISO/IEC 25010 SOFTWARE QUALITY EVALUATION & PRODUCTION SIGN-OFF
+  // ====================================================================================================
   form.addPageBreakItem()
-    .setTitle("Overall System Evaluation & Deployment Sign-Off")
-    .setHelpText("Final rating and deployment readiness recommendation for the GNHS Guidance System.");
+    .setTitle("Section 12: ISO/IEC 25010 Software Quality Evaluation & Production Readiness Sign-Off")
+    .setHelpText("Standardized Software Product Quality evaluation based on ISO/IEC 25010 benchmarks.");
 
   form.addScaleItem()
-    .setTitle("12.1 Overall System Usability & User Experience (UX)")
+    .setTitle("12.1 Functional Suitability (Completeness, Correctness & Task Appropriateness)")
     .setBounds(1, 5)
-    .setLabels("1 = Difficult to Navigate", "5 = Highly Intuitive & User-Friendly")
+    .setLabels("1 = Non-Compliant / Flawed", "5 = Fully Compliant & Robust")
     .setRequired(true);
 
   form.addScaleItem()
-    .setTitle("12.2 Overall System Speed & Performance")
+    .setTitle("12.2 Security & Data Privacy (Confidentiality, Integrity, Non-Repudiation, RBAC)")
     .setBounds(1, 5)
-    .setLabels("1 = Slow / Laggy", "5 = Fast & Instantaneous")
+    .setLabels("1 = High Security Risk", "5 = High Security & DepEd Compliant")
     .setRequired(true);
 
   form.addScaleItem()
-    .setTitle("12.3 Mobile Responsiveness & Phone Experience")
+    .setTitle("12.3 Performance Efficiency (Turnaround Time, Asynchronous Polling, Resource Efficiency)")
     .setBounds(1, 5)
-    .setLabels("1 = Poor Mobile Layout", "5 = Excellent Mobile Adaptation")
+    .setLabels("1 = Latency / High Overhead", "5 = Fast & Highly Responsive")
     .setRequired(true);
 
   form.addScaleItem()
-    .setTitle("12.4 Security & Data Privacy Implementation")
+    .setTitle("12.4 Usability & User Experience (Learnability, Operability, Accessibility & Error Protection)")
     .setBounds(1, 5)
-    .setLabels("1 = Concerns Observed", "5 = Highly Secure & DepEd Compliant")
+    .setLabels("1 = Poor Usability", "5 = Highly Intuitive & Ergonomic")
+    .setRequired(true);
+
+  form.addScaleItem()
+    .setTitle("12.5 Reliability & Fault Tolerance (Input Sanitization, Error Handling & Recovery)")
+    .setBounds(1, 5)
+    .setLabels("1 = Fragile / Unhandled Exceptions", "5 = Highly Resilient & Fault-Tolerant")
+    .setRequired(true);
+
+  form.addScaleItem()
+    .setTitle("12.6 Compatibility & Portability (Cross-Browser Engine Parity & Mobile Viewport Adaptation)")
+    .setBounds(1, 5)
+    .setLabels("1 = Engine Incompatibilities", "5 = Flawless Cross-Platform Adaptation")
     .setRequired(true);
 
   form.addMultipleChoiceItem()
-    .setTitle("12.5 Production Deployment Recommendation")
+    .setTitle("12.7 Overall Production Deployment Recommendation")
     .setChoiceValues([
-      "Ready for Full Production Deployment (No critical issues found)",
-      "Ready for Deployment with Minor Recommended Polish",
-      "Requires Bug Fixes & Follow-up Retesting",
-      "Not Ready for Production Deployment"
+      "Approved for Immediate Production Deployment (No Blocking Defects)",
+      "Approved with Minor Recommended Polish (Cosmetic / Non-Functional Enhancements)",
+      "Conditional Approval (Requires Retesting after Specific Defect Fixes)",
+      "Rejected (Critical Architectural, Security, or Functional Defects Encountered)"
     ])
     .setRequired(true);
 
   form.addParagraphTextItem()
-    .setTitle("12.6 Critical Bugs, Edge Cases, or Defect Reports")
-    .setHelpText("Describe any critical errors, steps to reproduce, or blocking issues identified during testing.");
+    .setTitle("12.8 Defect & Anomaly Logging (Technical Bugs / Edge Cases Identified)")
+    .setHelpText("Provide steps to reproduce, HTTP status codes, device/browser details, and expected vs. actual outcomes for any discovered bugs.");
 
   form.addParagraphTextItem()
-    .setTitle("12.7 General Recommendations, Panel Feedback & Commendations")
-    .setHelpText("Provide any general comments, suggestions for future enhancements, or overall panel remarks.");
+    .setTitle("12.9 Architectural Observations, Technical Commendations & Panel Remarks")
+    .setHelpText("Provide technical assessment feedback regarding the system's software architecture, security mechanisms, or capstone defense sign-off.");
 
-  // Output URLs in the execution log
+  // Output URLs in execution log
   Logger.log("=================================================================================");
-  Logger.log("GOOGLE FORM SUCCESSFULLY CREATED!");
+  Logger.log("IT PROFESSIONAL FUNCTIONALITY TEST FORM (ISO/IEC 25010) GENERATED SUCCESSFULLY!");
   Logger.log("Edit URL (Form Builder): " + form.getEditUrl());
-  Logger.log("Shareable Fill-in URL (for Testers): " + form.getPublishedUrl());
+  Logger.log("Shareable Fill-in URL (for IT Evaluators): " + form.getPublishedUrl());
   Logger.log("=================================================================================");
 }
-

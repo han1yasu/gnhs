@@ -60,9 +60,7 @@ function createGNHSFunctionalityTestForm() {
     .setChoiceValues([
       "Student Evaluator",
       "Advisory Teacher / Faculty Member",
-      "Guidance Counselor / Guidance Admin",
-      "IT Specialist / Technical Evaluator / Panel Member",
-      "School Administrator"
+      "Guidance Counselor / Guidance Admin"
     ])
     .setRequired(true);
 
@@ -412,3 +410,4 @@ function createGNHSFunctionalityTestForm() {
   Logger.log("Shareable Fill-in URL (for Testers): " + form.getPublishedUrl());
   Logger.log("=================================================================================");
 }
+

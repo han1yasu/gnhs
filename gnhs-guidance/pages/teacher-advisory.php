@@ -326,9 +326,14 @@ HTML;
         {$advisoryClass}
       </span>
     </div>
-    <a href="teacher-referral.php" class="btn-sm-primary" style="text-decoration:none">
-      <i class="fas fa-user-plus"></i> New Referral
-    </a>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button type="button" class="btn-sm-primary" onclick="openTeacherAddStudentModal()" style="display:inline-flex;align-items:center;gap:6px">
+        <i class="fas fa-user-plus"></i> Add Student Account
+      </button>
+      <a href="teacher-referral.php" class="btn-sm-outline" style="text-decoration:none">
+        <i class="fas fa-clipboard-check"></i> New Referral
+      </a>
+    </div>
   </div>
 
   <div class="roster-filter-bar">
@@ -571,6 +576,81 @@ $content .= <<<HTML
     </div>
   </div>
 </div>
+
+<!-- Teacher Add Student Modal -->
+<div class="modal-overlay hidden" id="teacherAddStudentModal" onclick="if(event.target.id==='teacherAddStudentModal')closeTeacherAddStudentModal()">
+  <div class="modal-box" style="max-width:520px;text-align:left">
+    <button class="modal-close" onclick="closeTeacherAddStudentModal()"><i class="fas fa-times"></i></button>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:14px">
+      <div style="width:44px;height:44px;border-radius:12px;background:var(--maroon-pale);color:var(--maroon);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">
+        <i class="fas fa-user-graduate"></i>
+      </div>
+      <div>
+        <h2 class="modal-title" style="text-align:left;margin:0;font-size:20px">Register Student Account</h2>
+        <div style="font-size:12px;color:var(--text-3);margin-top:2px">Create student portal credentials for your class</div>
+      </div>
+    </div>
+
+    <div id="tasMsg" style="display:none;margin-bottom:14px"></div>
+
+    <form id="teacherAddStudentForm" onsubmit="saveTeacherNewStudent(event)">
+      <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        <div class="form-group" style="margin:0">
+          <label style="font-size:12.5px;font-weight:700;color:var(--text);display:block;margin-bottom:4px">First Name <span style="color:#dc2626">*</span></label>
+          <div class="input-wrap"><i class="fas fa-user"></i><input type="text" id="tasFirst" placeholder="First Name" required /></div>
+        </div>
+        <div class="form-group" style="margin:0">
+          <label style="font-size:12.5px;font-weight:700;color:var(--text);display:block;margin-bottom:4px">Last Name <span style="color:#dc2626">*</span></label>
+          <div class="input-wrap"><i class="fas fa-user"></i><input type="text" id="tasLast" placeholder="Last Name" required /></div>
+        </div>
+      </div>
+
+      <div class="form-row" style="margin-bottom:12px">
+        <div class="form-group" style="margin:0">
+          <label style="font-size:12.5px;font-weight:700;color:var(--text);display:block;margin-bottom:4px">Middle Name</label>
+          <div class="input-wrap"><i class="fas fa-user"></i><input type="text" id="tasMiddle" placeholder="Optional" /></div>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom:12px">
+        <label style="font-size:12.5px;font-weight:700;color:var(--text);display:block;margin-bottom:4px">12-Digit Student LRN <span style="color:#dc2626">*</span></label>
+        <div class="input-wrap"><i class="fas fa-id-card"></i>
+          <input type="text" id="tasLrn" placeholder="Enter strictly 12 digits" maxlength="12" inputmode="numeric" pattern="[0-9]{12}" required oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,12)" />
+        </div>
+        <span style="font-size:11px;color:var(--text-3);margin-top:2px;display:block">Must be strictly 12 numeric digits.</span>
+      </div>
+
+      <div class="form-group" style="margin-bottom:12px">
+        <label style="font-size:12.5px;font-weight:700;color:var(--text);display:block;margin-bottom:4px">Student Email Address <span style="color:#dc2626">*</span></label>
+        <div class="input-wrap"><i class="fas fa-envelope"></i>
+          <input type="email" id="tasEmail" placeholder="student@example.com or deped email" required />
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom:12px">
+        <label style="font-size:12.5px;font-weight:700;color:var(--text);display:block;margin-bottom:4px">Grade & Section <span style="color:#dc2626">*</span></label>
+        <div class="input-wrap"><i class="fas fa-school"></i>
+          <input type="text" id="tasGrade" value="{$advisoryClass}" placeholder="e.g. Grade 10 - Diamond" required />
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom:18px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <label style="font-size:12.5px;font-weight:700;color:var(--text);margin:0">Temporary Password <span style="color:#dc2626">*</span></label>
+          <button type="button" onclick="document.getElementById('tasPass').value='Student@2026'" style="font-size:11px;color:var(--maroon);background:none;border:none;cursor:pointer;font-weight:700">Preset: Student@2026</button>
+        </div>
+        <div class="input-wrap"><i class="fas fa-lock"></i>
+          <input type="text" id="tasPass" value="Student@2026" placeholder="Min 8 chars, 1 uppercase, 1 number, 1 special char" required />
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;justify-content:flex-end;border-top:1px solid var(--border);padding-top:14px">
+        <button type="button" class="btn-secondary" onclick="closeTeacherAddStudentModal()">Cancel</button>
+        <button type="submit" class="btn-primary" id="btnSaveTeacherStudent"><i class="fas fa-save"></i> Create Student Account</button>
+      </div>
+    </form>
+  </div>
+</div>
 HTML;
 
 // Attach pure JavaScript using concatenation to ensure complete compatibility
@@ -746,6 +826,106 @@ function openCaseSummaryModal(caseId) {
     + "</div>";
 
   document.getElementById("concernSummaryModal").classList.remove("hidden");
+}
+
+function openTeacherAddStudentModal() {
+  document.getElementById("teacherAddStudentModal").classList.remove("hidden");
+  const msg = document.getElementById("tasMsg");
+  if (msg) msg.style.display = "none";
+}
+
+function closeTeacherAddStudentModal() {
+  document.getElementById("teacherAddStudentModal").classList.add("hidden");
+}
+
+async function saveTeacherNewStudent(e) {
+  e.preventDefault();
+  const btn = document.getElementById("btnSaveTeacherStudent");
+  const msg = document.getElementById("tasMsg");
+  const first = document.getElementById("tasFirst").value.trim();
+  const last = document.getElementById("tasLast").value.trim();
+  const middle = document.getElementById("tasMiddle").value.trim();
+  const lrn = document.getElementById("tasLrn").value.trim();
+  const email = document.getElementById("tasEmail").value.trim();
+  const grade = document.getElementById("tasGrade").value.trim();
+  const pass = document.getElementById("tasPass").value.trim();
+
+  if (!first || !last || !lrn || !email || !grade || !pass) {
+    msg.className = "error-msg";
+    msg.style.display = "block";
+    msg.style.background = "#fee2e2";
+    msg.style.border = "1px solid #f87171";
+    msg.style.color = "#991b1b";
+    msg.style.padding = "10px 14px";
+    msg.style.borderRadius = "8px";
+    msg.style.fontSize = "13px";
+    msg.textContent = "Please fill all required fields.";
+    return;
+  }
+  if (!/^\d{12}$/.test(lrn)) {
+    msg.className = "error-msg";
+    msg.style.display = "block";
+    msg.style.background = "#fee2e2";
+    msg.style.border = "1px solid #f87171";
+    msg.style.color = "#991b1b";
+    msg.style.padding = "10px 14px";
+    msg.style.borderRadius = "8px";
+    msg.style.fontSize = "13px";
+    msg.textContent = "Student LRN must be strictly 12 numeric digits.";
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = "<i class=\"fas fa-spinner fa-spin\"></i> Creating...";
+
+  try {
+    const isNested = window.location.pathname.startsWith("/gnhs-guidance");
+    const apiPath = isNested ? "/gnhs-guidance/api/register.php" : "/api/register.php";
+    const res = await fetch(apiPath, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        first_name: first,
+        last_name: last,
+        middle_name: middle,
+        email: email,
+        password: pass,
+        confirm: pass,
+        role: "student",
+        id_number: lrn,
+        grade_section: grade
+      })
+    });
+    const ans = await res.json();
+    if (ans.success) {
+      if (typeof showToast === "function") showToast(ans.message || "Student account created!", "success");
+      else alert(ans.message || "Student account created!");
+      closeTeacherAddStudentModal();
+      setTimeout(function(){ location.reload(); }, 900);
+    } else {
+      msg.className = "error-msg";
+      msg.style.display = "block";
+      msg.style.background = "#fee2e2";
+      msg.style.border = "1px solid #f87171";
+      msg.style.color = "#991b1b";
+      msg.style.padding = "10px 14px";
+      msg.style.borderRadius = "8px";
+      msg.style.fontSize = "13px";
+      msg.textContent = ans.message || "Failed to create student account.";
+    }
+  } catch (err) {
+    msg.className = "error-msg";
+    msg.style.display = "block";
+    msg.style.background = "#fee2e2";
+    msg.style.border = "1px solid #f87171";
+    msg.style.color = "#991b1b";
+    msg.style.padding = "10px 14px";
+    msg.style.borderRadius = "8px";
+    msg.style.fontSize = "13px";
+    msg.textContent = "Server connection error. Please try again.";
+  }
+  btn.disabled = false;
+  btn.innerHTML = "<i class=\"fas fa-save\"></i> Create Student Account";
 }
 </script>
 ';

@@ -63,6 +63,8 @@ try {
         $redirectUrl = $redirectMap[$role] ?? '/gnhs-guidance/index.html';
         if ($role === 'student' && empty($_SESSION['user']['is_setup_complete'])) {
             $redirectUrl = '/gnhs-guidance/pages/student-setup.php';
+        } else if ($role === 'teacher' && empty($_SESSION['user']['is_setup_complete'])) {
+            $redirectUrl = '/gnhs-guidance/pages/teacher-setup.php';
         }
         
         jsonOut(['success'=>true, 'redirect'=>$redirectUrl]);

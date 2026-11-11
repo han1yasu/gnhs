@@ -256,11 +256,15 @@
         <div id="timeoutAlertBanner" style="display:none;margin-bottom:16px;background:#fef2f2;border:1px solid #f87171;color:#991b1b;padding:12px 14px;border-radius:10px;font-size:13px;font-weight:600;text-align:left">
           <i class="fas fa-clock" style="color:#dc2626;margin-right:6px"></i> Your session expired due to 15 minutes of inactivity. Please log in again.
         </div>
-        <div class="action-cards">
-          <div class="action-card" onclick="goToRoleSelect('login')"><i
-              class="fas fa-sign-in-alt"></i><strong>Login</strong><small>I already have an account</small></div>
-          <div class="action-card" onclick="goToRoleSelect('register')"><i class="fas fa-user-plus"></i><strong>Create
-              Account</strong><small>I'm new here</small></div>
+        <div class="action-cards" style="grid-template-columns:1fr;">
+          <div class="action-card" onclick="goToRoleSelect('login')" style="padding:18px 22px;display:flex;align-items:center;justify-content:center;gap:14px;text-align:left;width:100%">
+            <i class="fas fa-sign-in-alt" style="font-size:24px;margin-bottom:0"></i>
+            <div>
+              <strong style="font-size:16px;display:block">Login to System</strong>
+              <small style="font-size:12px;color:var(--text-3)">Sign in with LRN, Employee ID, or Email</small>
+            </div>
+            <i class="fas fa-arrow-right" style="margin-left:auto;font-size:14px;opacity:0.6"></i>
+          </div>
         </div>
 
         <div style="display:flex;align-items:center;margin:16px 0 10px;gap:10px;">
@@ -309,12 +313,8 @@
           <button type="button" class="modal-close" onclick="closeLoginModal()"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-logo" id="login-role-badge"><i class="fas fa-user-graduate"></i></div>
-        <div class="modal-tab-header tab-login">
-          <div class="modal-tab-indicator"></div>
-          <div class="modal-tab-btn active" onclick="switchToLogin()">Login</div>
-          <div class="modal-tab-btn" onclick="switchToRegister()">Create Account</div>
-        </div>
-        <p class="modal-sub" id="login-role-label" style="margin-top:-10px;">Student Login</p>
+        <h3 style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:2px;text-align:center;">Account Login</h3>
+        <p class="modal-sub" id="login-role-label" style="margin-top:0;">Student Login</p>
         <div id="login-msg" style="display:none"></div>
         <div class="form-group"><label id="login-id-label">Email Address <span class="req">*</span></label>
           <div class="input-wrap"><i class="fas fa-envelope"></i><input type="text" id="login-email-input"
@@ -327,12 +327,7 @@
         </div>
         <div class="form-options">
           <label class="checkbox-label"><input type="checkbox"> Remember me</label>
-          <a href="#" class="forgot-link" onclick="openResetPasswordModal('request')">Reset password?</a>
-        </div>
-        <div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);display:flex;justify-content:flex-end">
-          <a href="#" class="forgot-link" onclick="openResetPasswordModal('status')" style="color:var(--maroon);font-weight:700;font-size:12px;display:inline-flex;align-items:center;gap:5px">
-            <i class="fas fa-clock-rotate-left"></i> Check reset request update?
-          </a>
+          <a href="#" class="forgot-link" onclick="openResetPasswordModal()">Forgot password?</a>
         </div>
         <button class="btn-submit" onclick="handleLogin()">Login &nbsp;<i class="fas fa-arrow-right"></i></button>
 
@@ -568,146 +563,107 @@
         </button>
       </div>
 
-      <!-- RESET PASSWORD REQUEST / STATUS STEP -->
+      <!-- RESET PASSWORD MODAL: 3-STEP EMAIL OTP CONFIRMATION & NEW PASSWORD -->
       <div class="modal-step hidden" id="step-forgot">
         <div class="modal-top-nav">
           <button type="button" class="modal-back" onclick="goBack('step-login')"><i class="fas fa-arrow-left"></i> Back</button>
           <button type="button" class="modal-close" onclick="closeLoginModal()"><i class="fas fa-times"></i></button>
         </div>
 
-        <!-- Mode Toggle Tabs: Submit Request vs Check Update -->
-        <div class="profile-tabs-nav" style="margin:4px 0 20px 0">
-          <button type="button" class="profile-tab-pill active" id="tabBtnRequestReset" onclick="switchResetTab('request')">
-            <i class="fas fa-key"></i> Request Reset
-          </button>
-          <button type="button" class="profile-tab-pill" id="tabBtnCheckStatus" onclick="switchResetTab('status')">
-            <i class="fas fa-clock-rotate-left"></i> Check Request Update
-          </button>
-        </div>
+        <div class="modal-logo" style="background:var(--maroon-pale);color:var(--maroon)"><i class="fas fa-key"></i></div>
+        <h2 class="modal-title" id="forgot-modal-title">Reset Password</h2>
+        <p class="modal-sub" id="forgot-modal-sub">Enter your registered Email or Student ID / LRN to receive a 6-digit confirmation code.</p>
 
-        <!-- PANE 1: Submit Reset Request -->
-        <div id="paneResetRequest">
-          <div class="modal-logo"><i class="fas fa-key"></i></div>
-          <h2 class="modal-title">Reset Password</h2>
-          <p class="modal-sub">Enter your registered Student ID / LRN or Email to begin identity verification.</p>
-          <div id="forgot-msg" style="display:none"></div>
-          <div class="form-group"><label>Student ID / LRN or Email</label>
-            <div class="input-wrap"><i class="fas fa-id-card"></i><input type="text" id="forgot-email"
-                placeholder="Enter Student ID or Email" onkeydown="if(event.key==='Enter') handleForgot()" /></div>
-          </div>
-          <button class="btn-submit" id="btnLookupAccount" onclick="handleForgot()">Verify Account &nbsp;<i class="fas fa-arrow-right"></i></button>
-          <div style="margin-top:14px;text-align:center">
-            <a href="#" onclick="showStep('step-login')" style="color:var(--maroon);font-size:12.5px;font-weight:700;display:inline-flex;align-items:center;gap:6px;text-decoration:none">
-              <i class="fas fa-arrow-left"></i> Remembered your password? Back to Login
-            </a>
-          </div>
-        </div>
+        <div id="forgot-msg" style="display:none;margin-bottom:14px"></div>
 
-        <!-- PANE 2: Check Reset Request Status & View Changed Password -->
-        <div id="paneResetStatus" class="hidden">
-          <div class="modal-logo" style="background:var(--maroon-pale);color:var(--maroon)"><i class="fas fa-shield-halved"></i></div>
-          <h2 class="modal-title">Check Request Update</h2>
-          <p class="modal-sub">See if the School IT Administrator has issued your temporary password.</p>
-          <div id="status-check-msg" style="display:none"></div>
-          <div class="form-group"><label>Student ID / LRN or Email</label>
-            <div class="input-wrap"><i class="fas fa-id-card"></i><input type="text" id="status-email"
-                placeholder="Enter Student ID or Email" onkeydown="if(event.key==='Enter') handleCheckResetStatus()" /></div>
-          </div>
-          <button class="btn-submit" id="btnCheckResetStatus" onclick="handleCheckResetStatus()">
-            Check Request Status &nbsp;<i class="fas fa-search"></i>
-          </button>
-          <div style="margin-top:14px;text-align:center">
-            <a href="#" onclick="showStep('step-login')" style="color:var(--maroon);font-size:12.5px;font-weight:700;display:inline-flex;align-items:center;gap:6px;text-decoration:none">
-              <i class="fas fa-arrow-left"></i> Remembered your password? Back to Login
-            </a>
-          </div>
-        </div>
-      </div>
-
-      <!-- RESET PASSWORD REQUEST STEP 2: SECURITY TEST -->
-      <div class="modal-step hidden" id="step-security-test">
-        <div class="modal-top-nav">
-          <button type="button" class="modal-back" onclick="showStep('step-forgot')"><i class="fas fa-arrow-left"></i> Back</button>
-          <button type="button" class="modal-close" onclick="closeLoginModal()"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="modal-logo" style="background:var(--maroon-pale);color:var(--maroon)"><i class="fas fa-shield-halved"></i></div>
-        <h2 class="modal-title">Security Verification Test</h2>
-        <p class="modal-sub" id="secTestSubtitle">Please answer your personal security questions to verify your identity.</p>
-        <div id="sec-test-msg" style="display:none"></div>
-        
-        <div id="secTestAdminNotice" style="display:none;background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:#92400e;line-height:1.4;text-align:left">
-          <i class="fas fa-user-shield" style="color:#d97706;margin-right:4px"></i> <strong>Guidance Counselor Account:</strong> Your existing password is never invalidated. If you remember your password or clicked reset by mistake, you can return to login and sign in immediately.
-        </div>
-
-        <div id="secQuestionsForm">
+        <!-- STAGE 1: ENTER EMAIL / LRN -->
+        <div id="forgot-stage-1">
           <div class="form-group">
-            <label style="font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:4px;display:block">
-              <i class="fas fa-question-circle" style="color:var(--maroon)"></i> Question 1
-            </label>
-            <div id="dispQuestion1" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px"></div>
+            <label>Registered Email or Student LRN / ID <span class="req">*</span></label>
+            <div class="input-wrap">
+              <i class="fas fa-envelope"></i>
+              <input type="text" id="forgot-email-input" placeholder="e.g. name@gmail.com or 12-digit LRN" required onkeydown="if(event.key==='Enter')sendResetEmailCode()" />
+            </div>
+            <span style="font-size:11.5px;color:var(--text-3);margin-top:4px;display:block;">A 6-digit verification code will be sent to confirm your email.</span>
+          </div>
+
+          <button type="button" class="btn-submit" id="btnSendResetCode" onclick="sendResetEmailCode()">
+            <i class="fas fa-paper-plane"></i> Send 6-Digit Code
+          </button>
+        </div>
+
+        <!-- STAGE 2: ENTER 6-DIGIT CODE -->
+        <div id="forgot-stage-2" style="display:none">
+          <div style="background:var(--bg2);padding:12px 14px;border-radius:10px;border:1px solid var(--border);margin-bottom:16px;font-size:13px;display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <span style="color:var(--text-3);font-size:11px;display:block;">Code sent to:</span>
+              <strong id="forgot-target-email-label" style="color:var(--maroon)"></strong>
+            </div>
+            <button type="button" onclick="editResetEmail()" style="background:none;border:none;color:var(--maroon);font-weight:700;font-size:12px;cursor:pointer">Change</button>
+          </div>
+
+          <div class="form-group">
+            <label>Enter 6-Digit Confirmation Code <span class="req">*</span></label>
+            <div class="input-wrap">
+              <i class="fas fa-shield-alt"></i>
+              <input type="text" id="forgot-code-input" placeholder="000000" maxlength="6" pattern="[0-9]*" inputmode="numeric" style="letter-spacing:6px;font-size:22px;font-weight:800;text-align:center" onkeydown="if(event.key==='Enter')verifyResetEmailCode()" />
+            </div>
+            <span style="font-size:11.5px;color:var(--text-3);margin-top:4px;display:block;">Please check your inbox or spam folder. Code expires in 10 minutes.</span>
+          </div>
+
+          <button type="button" class="btn-submit" id="btnVerifyResetCode" onclick="verifyResetEmailCode()">
+            <i class="fas fa-check-circle"></i> Verify Code & Continue
+          </button>
+
+          <div style="text-align:center;margin-top:14px">
+            <button type="button" id="btnResendResetCode" onclick="sendResetEmailCode(true)" style="background:none;border:none;color:var(--text-3);font-size:12px;font-weight:700;cursor:pointer">
+              Didn't receive code? Resend Code
+            </button>
+          </div>
+        </div>
+
+        <!-- STAGE 3: SET NEW PASSWORD -->
+        <div id="forgot-stage-3" style="display:none">
+          <div class="form-group">
+            <label>New Password <span class="req">*</span></label>
             <div class="input-wrap">
               <i class="fas fa-lock"></i>
-              <input type="text" id="secTestAnswer1" placeholder="Type your answer" autocomplete="off" />
+              <input type="password" id="forgot-new-password" placeholder="Enter new strong password" required oninput="validateResetPasswordStrength()" />
+              <button class="toggle-pass" type="button" onclick="togglePass('forgot-new-password')"><i class="fas fa-eye"></i></button>
             </div>
           </div>
 
-          <div class="form-group" id="secQ2Group">
-            <label style="font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:4px;display:block">
-              <i class="fas fa-question-circle" style="color:var(--maroon)"></i> Question 2
-            </label>
-            <div id="dispQuestion2" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px"></div>
+          <div class="form-group">
+            <label>Confirm New Password <span class="req">*</span></label>
             <div class="input-wrap">
               <i class="fas fa-lock"></i>
-              <input type="text" id="secTestAnswer2" placeholder="Type your answer" autocomplete="off" onkeydown="if(event.key==='Enter') submitSecurityTest()" />
+              <input type="password" id="forgot-confirm-password" placeholder="Re-type new password" required oninput="validateResetPasswordStrength()" onkeydown="if(event.key==='Enter')submitNewPasswordReset()" />
+              <button class="toggle-pass" type="button" onclick="togglePass('forgot-confirm-password')"><i class="fas fa-eye"></i></button>
             </div>
           </div>
 
-          <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:#1e40af">
-            <i class="fas fa-info-circle"></i> Once verified, your request will be recorded for Counselor Milena Jacob to approve and issue your new password.
+          <!-- Live Password Requirements Checklist -->
+          <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:12px;text-align:left">
+            <div style="font-weight:700;color:var(--text);margin-bottom:6px"><i class="fas fa-shield-halved" style="color:var(--maroon);margin-right:4px"></i> Password Standards:</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+              <div id="pwReqLen" style="color:#94a3b8"><i class="fas fa-circle-xmark"></i> At least 8 characters</div>
+              <div id="pwReqUpper" style="color:#94a3b8"><i class="fas fa-circle-xmark"></i> 1 uppercase letter</div>
+              <div id="pwReqNum" style="color:#94a3b8"><i class="fas fa-circle-xmark"></i> 1 number (0-9)</div>
+              <div id="pwReqSpecial" style="color:#94a3b8"><i class="fas fa-circle-xmark"></i> 1 special char (!@#$)</div>
+            </div>
+            <div id="pwReqMatch" style="color:#94a3b8;margin-top:6px;border-top:1px dashed var(--border);padding-top:6px"><i class="fas fa-circle-xmark"></i> Passwords must match</div>
           </div>
 
-          <button class="btn-submit" id="btnSubmitSecTest" onclick="submitSecurityTest()">Submit Request to Counselor &nbsp;<i class="fas fa-paper-plane"></i></button>
-          
-          <div style="margin-top:12px;text-align:center">
-            <a href="#" onclick="showStep('step-login')" style="color:var(--maroon);font-size:12.5px;font-weight:700;display:inline-flex;align-items:center;gap:6px;text-decoration:none">
-              <i class="fas fa-key"></i> Remembered your password? Cancel &amp; Back to Login
-            </a>
-          </div>
+          <button type="button" class="btn-submit" id="btnSaveNewPassword" onclick="submitNewPasswordReset()">
+            <i class="fas fa-save"></i> Save New Password & Log In
+          </button>
         </div>
-      </div>
 
-      <!-- RESET PASSWORD REQUEST STEP 3: SUBMITTED CONFIRMATION -->
-      <div class="modal-step hidden" id="step-reset-submitted">
-        <div class="modal-top-nav">
-          <div style="width:20px"></div>
-          <button type="button" class="modal-close" onclick="closeLoginModal()"><i class="fas fa-times"></i></button>
+        <div style="margin-top:16px;text-align:center">
+          <a href="#" onclick="showStep('step-login')" style="color:var(--maroon);font-size:12.5px;font-weight:700;display:inline-flex;align-items:center;gap:6px;text-decoration:none">
+            <i class="fas fa-arrow-left"></i> Back to Login
+          </a>
         </div>
-        <div class="modal-logo" style="background:var(--maroon-pale);color:var(--maroon)"><i class="fas fa-check-circle"></i></div>
-        <h2 class="modal-title">Request Submitted to Guidance</h2>
-        <p class="modal-sub" id="secSuccessSubtitle" style="font-size:13.5px;line-height:1.5">
-          Your identity has been verified! A password reset request has been officially recorded for Guidance Counselor Milena Jacob.
-        </p>
-        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:18px;text-align:left;font-size:12.5px;color:var(--text-2);line-height:1.5">
-          <strong><i class="fas fa-shield-halved" style="color:var(--maroon)"></i> Your Existing Password:</strong>
-          <ul style="margin:6px 0 0 18px;padding:0">
-            <li><strong>Your current password is NOT invalidated.</strong> If you remember it, you can log in directly at any time.</li>
-            <li>Logging in with your current password automatically resolves this reset request.</li>
-            <li>You can also check your request update anytime by clicking <strong>Check Request Update</strong>.</li>
-          </ul>
-        </div>
-        <button class="btn-submit" onclick="showStep('step-login');if($('login-pass'))$('login-pass').focus();" style="margin-bottom:8px">
-          <i class="fas fa-key"></i> I Remember My Password — Log In Now
-        </button>
-        <button class="btn-submit" onclick="closeLoginModal()" style="background:var(--bg2);color:var(--text);border:1px solid var(--border)">Done &nbsp;<i class="fas fa-check"></i></button>
-      </div>
-
-      <!-- RESET PASSWORD STATUS UPDATE RESULT STEP -->
-      <div class="modal-step hidden" id="step-status-result">
-        <div class="modal-top-nav">
-          <button type="button" class="modal-back" onclick="showStep('step-forgot')"><i class="fas fa-arrow-left"></i> Back</button>
-          <button type="button" class="modal-close" onclick="closeLoginModal()"><i class="fas fa-times"></i></button>
-        </div>
-        <div id="statusResultContainer"></div>
       </div>
       <div class="modal-step hidden" id="step-register">
         <div class="modal-top-nav">

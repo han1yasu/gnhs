@@ -154,6 +154,8 @@ try {
     $redirectUrl = $redirectMap[$user['role']] ?? '/gnhs-guidance/index.html';
     if ($user['role'] === 'student' && empty($user['is_setup_complete'])) {
         $redirectUrl = '/gnhs-guidance/pages/student-setup.php';
+    } else if ($user['role'] === 'teacher' && empty($user['is_setup_complete'])) {
+        $redirectUrl = '/gnhs-guidance/pages/teacher-setup.php';
     }
 
     jsonOut(['success'=>true,'redirect'=>$redirectUrl,'user'=>$_SESSION['user']]);

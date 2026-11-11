@@ -75,29 +75,49 @@ $middleName = $dbUser['middle_name'] ?? '';
     
     <form id="setupForm" onsubmit="completeSetup(event)">
         <div class="form-row">
-            <label>First Name</label>
+            <label>First Name <span style="color:#fbbf24">*</span></label>
             <input type="text" id="firstName" class="setup-input" value="<?= htmlspecialchars($user['first_name']) ?>" required>
         </div>
         
         <div class="form-row">
-            <label>Middle Name</label>
+            <label>Second Name / Middle Name</label>
             <input type="text" id="middleName" class="setup-input" value="<?= htmlspecialchars($middleName) ?>" placeholder="Optional">
         </div>
         
         <div class="form-row">
-            <label>Last Name</label>
+            <label>Last Name <span style="color:#fbbf24">*</span></label>
             <input type="text" id="lastName" class="setup-input" value="<?= htmlspecialchars($user['last_name']) ?>" required>
         </div>
         
         <div class="form-row">
-            <label>Teacher ID</label>
-            <input type="text" id="teacherId" class="setup-input" value="<?= htmlspecialchars($user['id_number']) ?>" readonly style="background: rgba(255,255,255,0.05); cursor: not-allowed; color: rgba(255,255,255,0.6);">
+            <label>Employee ID / DepEd Employee Number <span style="color:#fbbf24">*</span></label>
+            <input type="text" id="teacherId" class="setup-input" value="<?= htmlspecialchars($user['id_number']) ?>" placeholder="e.g. EMP-2024-001" required>
+        </div>
+
+        <div class="form-row">
+            <label>Faculty Position / Designation <span style="color:#fbbf24">*</span></label>
+            <select id="teacherPosition" class="setup-input" style="background: rgba(0,0,0,0.4); color:#fff;" required>
+                <option value="" style="background:#222;color:#fff">Select your teaching position</option>
+                <option value="Teacher I" <?= (($user['position']??'')==='Teacher I'?'selected':'') ?> style="background:#222;color:#fff">Teacher I</option>
+                <option value="Teacher II" <?= (($user['position']??'')==='Teacher II'?'selected':'') ?> style="background:#222;color:#fff">Teacher II</option>
+                <option value="Teacher III" <?= (($user['position']??'')==='Teacher III'?'selected':'') ?> style="background:#222;color:#fff">Teacher III</option>
+                <option value="Master Teacher I" <?= (($user['position']??'')==='Master Teacher I'?'selected':'') ?> style="background:#222;color:#fff">Master Teacher I</option>
+                <option value="Master Teacher II" <?= (($user['position']??'')==='Master Teacher II'?'selected':'') ?> style="background:#222;color:#fff">Master Teacher II</option>
+                <option value="Head Teacher" <?= (($user['position']??'')==='Head Teacher'?'selected':'') ?> style="background:#222;color:#fff">Head Teacher</option>
+                <option value="Special Education Teacher" <?= (($user['position']??'')==='Special Education Teacher'?'selected':'') ?> style="background:#222;color:#fff">Special Education Teacher</option>
+            </select>
+        </div>
+
+        <div class="form-row">
+            <label>Contact Number <span style="color:#fbbf24">*</span></label>
+            <input type="tel" id="contactNumber" class="setup-input" value="<?= htmlspecialchars($user['contact_number'] ?? '') ?>" placeholder="e.g. 09171234567" pattern="[0-9]{11}" maxlength="11" required>
+            <span style="font-size: 11px; color: rgba(255,255,255,0.6);">11-digit mobile number for guidance coordination</span>
         </div>
         
-        <div class="form-row" style="margin-bottom: 20px;">
-            <label>Advisory Class (Optional)</label>
+        <div class="form-row" style="margin-bottom: 22px;">
+            <label>Advisory Class / Section</label>
             <input type="text" id="advisoryClass" class="setup-input" value="<?= htmlspecialchars($user['advisory_class'] ?? '') ?>" placeholder="e.g. Grade 10 - Diamond">
-            <span style="font-size: 11px; color: rgba(255,255,255,0.5);">Leave blank if you do not handle an advisory class yet.</span>
+            <span style="font-size: 11px; color: rgba(255,255,255,0.6);">Leave blank if you do not handle an advisory class yet.</span>
         </div>
         
         <button type="submit" class="glass-btn" id="submitBtn" style="padding: 12px; font-size: 15px;">Save and Continue</button>
@@ -116,11 +136,27 @@ async function completeSetup(e) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
     err.style.display = 'none';
 
+    const empId = document.getElementById('teacherId').value.trim();
+    const pos = document.getElementById('teacherPosition').value.trim();
+    const contact = document.getElementById('contactNumber').value.trim();
+
+    if (!empId || !pos || !contact) {
+        err.style.display = 'block';
+        err.textContent = 'Please fill all required personal and faculty details.';
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.innerHTML = 'Save and Continue';
+        return;
+    }
+
     const data = {
-        first_name: document.getElementById('firstName').value,
-        middle_name: document.getElementById('middleName').value,
-        last_name: document.getElementById('lastName').value,
-        advisory_class: document.getElementById('advisoryClass').value
+        first_name: document.getElementById('firstName').value.trim(),
+        middle_name: document.getElementById('middleName').value.trim(),
+        last_name: document.getElementById('lastName').value.trim(),
+        id_number: empId,
+        position: pos,
+        contact_number: contact,
+        advisory_class: document.getElementById('advisoryClass').value.trim()
     };
 
     try {

@@ -388,382 +388,99 @@ async function finishOtpSignup() {
   }
 }
 
-// ── Student / User Counselor-Assisted Reset Password ──
-let _resetUserData = null;
-let _pendingStatusCheckData = null;
+// ── Forgot Password Self-Service Flow (Email 6-Digit OTP & Password Reset) ──
+let _resetFlowState = {
+  identifier: '',
+  email: '',
+  resetToken: ''
+};
 
-function openResetPasswordModal(mode = 'request') {
+function openResetPasswordModal() {
   hideEl('login-msg');
   hideEl('forgot-msg');
-  hideEl('status-check-msg');
-  _resetUserData = null;
-  _pendingStatusCheckData = null;
+  _resetFlowState = { identifier: '', email: '', resetToken: '' };
+
+  const st1 = $('forgot-stage-1');
+  const st2 = $('forgot-stage-2');
+  const st3 = $('forgot-stage-3');
+  if (st1) st1.style.display = 'block';
+  if (st2) st2.style.display = 'none';
+  if (st3) st3.style.display = 'none';
+
+  if ($('forgot-modal-title')) $('forgot-modal-title').textContent = 'Reset Password';
+  if ($('forgot-modal-sub')) $('forgot-modal-sub').textContent = 'Enter your registered Email or Student ID / LRN to receive a 6-digit confirmation code.';
+
+  const emailInput = $('forgot-email-input');
+  if (emailInput) {
+    const loginVal = $('login-email-input')?.value?.trim() || '';
+    if (loginVal) emailInput.value = loginVal;
+  }
+  if ($('forgot-code-input')) $('forgot-code-input').value = '';
+  if ($('forgot-new-password')) $('forgot-new-password').value = '';
+  if ($('forgot-confirm-password')) $('forgot-confirm-password').value = '';
 
   showStep('step-forgot');
-  switchResetTab(mode);
+  setTimeout(() => emailInput?.focus(), 80);
 }
 
 function openForgotModal() {
-  openResetPasswordModal('request');
+  openResetPasswordModal();
 }
 
-function switchResetTab(mode) {
-  const btnReq = $('tabBtnRequestReset');
-  const btnStatus = $('tabBtnCheckStatus');
-  const paneReq = $('paneResetRequest');
-  const paneStatus = $('paneResetStatus');
-
+function editResetEmail() {
   hideEl('forgot-msg');
-  hideEl('status-check-msg');
-
-  if (mode === 'status') {
-    btnReq?.classList.remove('active');
-    btnStatus?.classList.add('active');
-    paneReq?.classList.add('hidden');
-    paneStatus?.classList.remove('hidden');
-    setTimeout(() => $('status-email')?.focus(), 80);
-  } else {
-    btnReq?.classList.add('active');
-    btnStatus?.classList.remove('active');
-    paneReq?.classList.remove('hidden');
-    paneStatus?.classList.add('hidden');
-    setTimeout(() => $('forgot-email')?.focus(), 80);
-  }
+  const st1 = $('forgot-stage-1');
+  const st2 = $('forgot-stage-2');
+  const st3 = $('forgot-stage-3');
+  if (st1) st1.style.display = 'block';
+  if (st2) st2.style.display = 'none';
+  if (st3) st3.style.display = 'none';
+  if ($('forgot-modal-title')) $('forgot-modal-title').textContent = 'Reset Password';
+  if ($('forgot-modal-sub')) $('forgot-modal-sub').textContent = 'Enter your registered Email or Student ID / LRN to receive a 6-digit confirmation code.';
+  $('forgot-email-input')?.focus();
 }
 
-async function handleCheckResetStatus() {
-  const identifier = $('status-email')?.value.trim();
+async function sendResetEmailCode(isResend = false) {
+  let identifier = isResend ? _resetFlowState.identifier : $('forgot-email-input')?.value?.trim();
   if (!identifier) {
-    showMsg('status-check-msg', 'Please enter your registered Student ID / LRN or Email.');
-    $('status-email')?.focus();
+    showMsg('forgot-msg', 'Please enter your registered Email, LRN, or Employee ID.');
+    $('forgot-email-input')?.focus();
     return;
   }
 
-  const btn = $('btnCheckResetStatus');
+  const btn = isResend ? $('btnResendResetCode') : $('btnSendResetCode');
   setLoading(btn, true);
-  hideEl('status-check-msg');
-
-  try {
-    const apiUrl = window.location.pathname.includes('/gnhs-guidance/gnhs-guidance/')
-      ? '/gnhs-guidance/gnhs-guidance/api/check_reset_status.php'
-      : '/gnhs-guidance/api/check_reset_status.php';
-
-    const res = await apiPost(apiUrl, { identifier });
-    setLoading(btn, false);
-
-    if (res.success) {
-      renderResetStatusResult(res, identifier);
-    } else {
-      showMsg('status-check-msg', res.message || 'Unable to find reset requests.');
-    }
-  } catch (e) {
-    setLoading(btn, false);
-    showMsg('status-check-msg', 'Network error. Please try again.');
-  }
-}
-
-async function cancelPendingRequestAndLogin(identifier) {
-  identifier = decodeURIComponent(identifier || '');
-  const btn = event?.currentTarget;
-  if (btn) setLoading(btn, true);
+  hideEl('forgot-msg');
 
   try {
     const isNested = window.location.pathname.includes('/gnhs-guidance/gnhs-guidance/');
-    const apiUrl = isNested ? '/gnhs-guidance/gnhs-guidance/api/cancel_reset_request.php' : '/gnhs-guidance/api/cancel_reset_request.php';
-    const res = await apiPost(apiUrl, { identifier });
-    
-    showStep('step-login');
-    const emailInput = document.getElementById('login-email-input') || document.querySelector('#step-login input[type="text"]');
-    if (emailInput && (res?.email || identifier)) {
-      emailInput.value = res?.email || identifier;
-    }
-    const passInput = $('login-pass');
-    if (passInput) {
-      passInput.value = '';
-      passInput.focus();
-    }
-    showToast('Reset request cancelled! You can now enter your password to sign in.', 'success');
-  } catch (e) {
-    showStep('step-login');
-    const emailInput = document.getElementById('login-email-input') || document.querySelector('#step-login input[type="text"]');
-    if (emailInput && identifier) emailInput.value = identifier;
-    $('login-pass')?.focus();
-  }
-}
-
-function renderResetStatusResult(res, identifier) {
-  _pendingStatusCheckData = { res, identifier };
-  const container = $('statusResultContainer');
-  if (!container) return;
-
-  if (!res.has_request) {
-    container.innerHTML = `
-      <div class="modal-logo" style="background:var(--bg2);color:var(--text-3);margin:0 auto 12px auto"><i class="fas fa-inbox"></i></div>
-      <h2 class="modal-title">No Request Found</h2>
-      <p class="modal-sub">No active password reset requests on record for <strong>${res.full_name || identifier}</strong>.</p>
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;margin:16px 0;font-size:12.5px;color:var(--text-2);line-height:1.5;text-align:left">
-        If you forgot your password or cannot access your account, you can submit a reset request right now.
-      </div>
-      <button class="btn-submit" onclick="switchResetTab('request');showStep('step-forgot');if($('forgot-email'))$('forgot-email').value='${identifier}';">
-        Submit Reset Request Now &nbsp;<i class="fas fa-arrow-right"></i>
-      </button>
-    `;
-    showStep('step-status-result');
-    return;
-  }
-
-  // PENDING STATUS
-  if (res.status === 'pending') {
-    const safeId = encodeURIComponent(identifier || res.email || res.id_number || '');
-    container.innerHTML = `
-      <div class="modal-logo" style="background:#fef3c7;color:#d97706;margin:0 auto 12px auto"><i class="fas fa-clock"></i></div>
-      <h2 class="modal-title">Request Under Review ⏳</h2>
-      <p class="modal-sub">${res.message || 'Your password reset request is currently pending review by Guidance Counselor.'}</p>
-      
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;margin:16px 0;text-align:left;font-size:12.5px;color:var(--text-2);line-height:1.6">
-        <div><strong>Name:</strong> ${res.full_name}</div>
-        <div><strong>Email Address:</strong> ${res.email}</div>
-        <div><strong>ID / LRN:</strong> <span style="color:var(--maroon);font-weight:700">${res.id_number || '—'}</span></div>
-        <div><strong>Submitted On:</strong> ${res.created_at_fmt || res.created_at || 'Recently'}</div>
-        <div style="margin-top:6px"><strong>Status:</strong> <span style="background:#fef3c7;color:#92400e;padding:3px 8px;border-radius:10px;font-weight:700;font-size:11px">Pending Counselor Action</span></div>
-      </div>
-
-      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px;margin-bottom:16px;font-size:12px;color:#1e40af;text-align:left;line-height:1.5">
-        <i class="fas fa-shield-halved" style="color:var(--maroon);margin-right:4px"></i> <strong>Current Password Status:</strong> Your current password was <strong>NOT invalidated</strong>! If you remember your password, you can cancel this request and sign in immediately.
-      </div>
-
-      <button class="btn-submit" onclick="cancelPendingRequestAndLogin('${safeId}')" style="margin-bottom:8px">
-        <i class="fas fa-key"></i> I Remembered My Password — Cancel Request &amp; Log In
-      </button>
-      <button class="btn-submit" onclick="showStep('step-login')" style="background:var(--bg2);color:var(--text);border:1px solid var(--border)">
-        Back to Login &nbsp;<i class="fas fa-arrow-left"></i>
-      </button>
-    `;
-    showStep('step-status-result');
-    return;
-  }
-
-  // REJECTED STATUS
-  if (res.status === 'rejected') {
-    container.innerHTML = `
-      <div class="modal-logo" style="background:#fee2e2;color:#dc2626;margin:0 auto 12px auto"><i class="fas fa-circle-xmark"></i></div>
-      <h2 class="modal-title">Request Update: Rejected</h2>
-      <p class="modal-sub">Your password reset request could not be approved online.</p>
-      
-      <div style="background:#fee2e2;border:1px solid #fecaca;border-radius:10px;padding:14px;margin:16px 0;text-align:left;font-size:12.5px;color:#991b1b;line-height:1.5">
-        <strong>Counselor Remarks:</strong><br/>
-        ${res.admin_notes || 'Please visit the Guidance Office personally for manual identity verification.'}
-        <div style="margin-top:8px;font-size:11.5px;color:#b91c1c">Reviewed by: ${res.counselor_name || 'Guidance Counselor'} (${res.reviewed_at_fmt || 'Recently'})</div>
-      </div>
-
-      <button class="btn-submit" onclick="switchResetTab('request');showStep('step-forgot');">
-        Submit New Request &nbsp;<i class="fas fa-redo"></i>
-      </button>
-    `;
-    showStep('step-status-result');
-    return;
-  }
-
-  // COMPLETED STATUS
-  if (res.status === 'completed') {
-    container.innerHTML = `
-      <div class="modal-logo" style="background:var(--maroon-pale);color:var(--maroon);margin:0 auto 12px auto"><i class="fas fa-check-circle"></i></div>
-      <h2 class="modal-title">Request Already Completed</h2>
-      <p class="modal-sub">${res.message}</p>
-      
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;margin:16px 0;text-align:left;font-size:12.5px;color:var(--text-2);line-height:1.5">
-        Your account password was already updated. If you forgot your password again, you can submit a new reset request.
-      </div>
-
-      <div style="display:flex;gap:10px">
-        <button class="btn-secondary" style="flex:1" onclick="showStep('step-login')">Go to Login</button>
-        <button class="btn-primary" style="flex:1" onclick="switchResetTab('request');showStep('step-forgot');">New Request</button>
-      </div>
-    `;
-    showStep('step-status-result');
-    return;
-  }
-
-  // APPROVED STATUS
-  if (res.status === 'approved') {
-    if (res.requires_security_check && !res.verified) {
-      // Need security check to reveal the password
-      container.innerHTML = `
-        <div class="modal-logo" style="background:var(--maroon-pale);color:var(--maroon);margin:0 auto 12px auto"><i class="fas fa-shield-check"></i></div>
-        <h2 class="modal-title">Password Reset Approved! 🎉</h2>
-        <p class="modal-sub">Guidance Counselor ${res.counselor_name || 'Milena Jacob'} has changed your password on ${res.reviewed_at_fmt || 'recently'}.</p>
-        
-        <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px;margin:14px 0;font-size:12.5px;color:#1e40af;text-align:left">
-          <i class="fas fa-lock"></i> <strong>Identity Verification:</strong> To protect your account security, please answer your security recovery question to view your new password:
-        </div>
-
-        <div id="status-sec-msg" style="display:none"></div>
-
-        <div class="form-group" style="text-align:left;margin-bottom:14px">
-          <label style="font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:4px;display:block">
-            <i class="fas fa-question-circle" style="color:var(--maroon)"></i> Security Question
-          </label>
-          <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px">
-            ${res.question_1 || 'Security Question'}
-          </div>
-          <div class="input-wrap">
-            <i class="fas fa-key"></i>
-            <input type="text" id="statusSecAnswer" placeholder="Type your answer to reveal password" autocomplete="off" onkeydown="if(event.key==='Enter') submitStatusSecurityCheck()" />
-          </div>
-        </div>
-
-        <button class="btn-submit" id="btnRevealPass" onclick="submitStatusSecurityCheck()">
-          Verify &amp; Reveal Changed Password &nbsp;<i class="fas fa-unlock"></i>
-        </button>
-      `;
-      showStep('step-status-result');
-      setTimeout(() => $('statusSecAnswer')?.focus(), 80);
-      return;
-    }
-
-    // Password revealed! Show the changed password
-    showRevealedPasswordResult(res);
-  }
-}
-
-async function submitStatusSecurityCheck() {
-  if (!_pendingStatusCheckData) return;
-  const ans = $('statusSecAnswer')?.value.trim();
-  if (!ans) {
-    showMsg('status-sec-msg', 'Please enter your answer to verify identity.');
-    $('statusSecAnswer')?.focus();
-    return;
-  }
-
-  const btn = $('btnRevealPass');
-  setLoading(btn, true);
-  hideEl('status-sec-msg');
-
-  try {
-    const apiUrl = window.location.pathname.includes('/gnhs-guidance/gnhs-guidance/')
-      ? '/gnhs-guidance/gnhs-guidance/api/check_reset_status.php'
-      : '/gnhs-guidance/api/check_reset_status.php';
-
-    const res = await apiPost(apiUrl, {
-      identifier: _pendingStatusCheckData.identifier,
-      answer_1: ans
-    });
-    setLoading(btn, false);
-
-    if (res.success && res.verified) {
-      showRevealedPasswordResult(res);
-    } else {
-      showMsg('status-sec-msg', res.message || 'Verification failed. Answer does not match.');
-    }
-  } catch (e) {
-    setLoading(btn, false);
-    showMsg('status-sec-msg', 'Network error. Please try again.');
-  }
-}
-
-function showRevealedPasswordResult(res) {
-  const container = $('statusResultContainer');
-  if (!container) return;
-
-  const tempPass = res.temp_password || '';
-  const email = res.email || '';
-  const counselor = res.counselor_name || 'Guidance Counselor Milena Jacob';
-  const reviewedAt = res.reviewed_at_fmt || 'Recently';
-  const remarks = res.admin_notes || 'Temporary password issued by Guidance Office.';
-
-  container.innerHTML = `
-    <div class="modal-logo" style="background:var(--maroon-pale);color:var(--maroon);margin:0 auto 12px auto"><i class="fas fa-key"></i></div>
-    <h2 class="modal-title">Password Reset Complete!</h2>
-    <p class="modal-sub">Guidance Counselor ${counselor} has updated your account password.</p>
-    
-    <div class="issued-password-card">
-      <span style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--maroon);display:block;margin-bottom:6px">
-        <i class="fas fa-key"></i> Changed Password Issued by Guidance
-      </span>
-      <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:12px">
-        <input type="text" id="revealedTempPass" readonly value="${tempPass}" class="issued-pwd-val" style="flex:1;width:100%;margin-bottom:0" />
-        <button type="button" class="btn-sm-primary" onclick="copyStatusPassword()" style="background:var(--maroon);color:#fff;padding:10px 16px;border-radius:8px">
-          <i class="fas fa-copy"></i> Copy
-        </button>
-      </div>
-      <div style="font-size:12px;color:var(--text-2);text-align:left;background:rgba(255,255,255,0.7);padding:10px 12px;border-radius:8px;line-height:1.5">
-        <div><strong>Student:</strong> ${res.full_name} (${email})</div>
-        <div><strong>Approved By:</strong> ${counselor} (${reviewedAt})</div>
-        <div><strong>Counselor Remarks:</strong> ${remarks}</div>
-      </div>
-    </div>
-    
-    <div style="background:#fefce8;border:1px solid #fef08a;border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:12px;color:#854d0e;text-align:left">
-      <i class="fas fa-info-circle"></i> <strong>Important:</strong> You can log in using this password immediately. Once logged in, you can change it to your own personal password in your <strong>Profile Details</strong>.
-    </div>
-
-    <button class="btn-submit" onclick="proceedToLoginWithCredentials('${email}', '${tempPass}')">
-      Proceed to Login with This Password &nbsp;<i class="fas fa-arrow-right"></i>
-    </button>
-  `;
-  showStep('step-status-result');
-}
-
-function copyStatusPassword() {
-  const input = $('revealedTempPass');
-  if (input) {
-    input.select();
-    navigator.clipboard.writeText(input.value);
-    showToast('Changed password copied to clipboard!', 'success');
-  }
-}
-
-function proceedToLoginWithCredentials(email, pass) {
-  showStep('step-login');
-  if ($('login-email')) $('login-email').value = email;
-  if ($('login-pass')) $('login-pass').value = pass;
-  showToast('Credentials filled! Click Login to continue.', 'info');
-  $('login-pass')?.focus();
-}
-
-async function handleForgot() {
-  const identifier = $('forgot-email')?.value.trim();
-  if (!identifier) {
-    showMsg('forgot-msg', 'Please enter your registered Student ID / LRN or Email.');
-    return;
-  }
-
-  const btn = $('btnLookupAccount') || document.querySelector('#step-forgot .btn-submit');
-  setLoading(btn, true);
-  hideEl('forgot-msg');
-
-  try {
-    const apiUrl = window.location.pathname.includes('/gnhs-guidance/gnhs-guidance/')
-      ? '/gnhs-guidance/gnhs-guidance/api/get_security_questions.php'
-      : '/gnhs-guidance/api/get_security_questions.php';
+    const apiUrl = isNested ? '/gnhs-guidance/gnhs-guidance/api/forgot_password.php' : '/gnhs-guidance/api/forgot_password.php';
 
     const res = await apiPost(apiUrl, { identifier });
     setLoading(btn, false);
 
     if (res.success) {
-      _resetUserData = res;
-      if ($('dispQuestion1')) $('dispQuestion1').textContent = res.question_1 || 'Security Question 1';
-      if ($('secTestAnswer1')) $('secTestAnswer1').value = '';
-      
-      const q2Group = $('secQ2Group');
-      if (res.question_2) {
-        if (q2Group) q2Group.style.display = 'block';
-        if ($('dispQuestion2')) $('dispQuestion2').textContent = res.question_2;
-        if ($('secTestAnswer2')) $('secTestAnswer2').value = '';
-      } else {
-        if (q2Group) q2Group.style.display = 'none';
+      _resetFlowState.identifier = identifier;
+      _resetFlowState.email = res.email;
+
+      const st1 = $('forgot-stage-1');
+      const st2 = $('forgot-stage-2');
+      const st3 = $('forgot-stage-3');
+      if (st1) st1.style.display = 'none';
+      if (st2) st2.style.display = 'block';
+      if (st3) st3.style.display = 'none';
+
+      if ($('forgot-modal-title')) $('forgot-modal-title').textContent = 'Verify Confirmation Code';
+      if ($('forgot-modal-sub')) $('forgot-modal-sub').textContent = 'Check your email inbox or spam folder for the 6-digit verification code.';
+      if ($('forgot-target-email-label')) $('forgot-target-email-label').textContent = res.masked_email || res.email;
+
+      if (isResend) {
+        showToast('A new 6-digit verification code has been sent!', 'success');
       }
 
-      if ($('secTestSubtitle')) {
-        $('secTestSubtitle').textContent = `Account: ${res.full_name} (${res.email}). Please answer your security test questions to proceed.`;
-      }
-      if ($('secTestAdminNotice')) {
-        $('secTestAdminNotice').style.display = (res.role === 'admin') ? 'block' : 'none';
-      }
-      hideEl('sec-test-msg');
-      showStep('step-security-test');
+      setTimeout(() => $('forgot-code-input')?.focus(), 80);
     } else {
-      showMsg('forgot-msg', res.message || 'Account not found.');
+      showMsg('forgot-msg', res.message || 'Unable to process reset request.');
     }
   } catch (e) {
     setLoading(btn, false);
@@ -771,59 +488,126 @@ async function handleForgot() {
   }
 }
 
-async function submitSecurityTest() {
-  if (!_resetUserData) {
-    showStep('step-forgot');
+async function verifyResetEmailCode() {
+  const code = $('forgot-code-input')?.value?.trim();
+  if (!code || code.length !== 6) {
+    showMsg('forgot-msg', 'Please enter the 6-digit verification code.');
+    $('forgot-code-input')?.focus();
     return;
   }
 
-  const ans1 = $('secTestAnswer1')?.value.trim();
-  const ans2 = $('secTestAnswer2')?.value.trim();
-
-  if (!ans1) {
-    showMsg('sec-test-msg', 'Please answer Question 1 to verify your identity.');
-    $('secTestAnswer1')?.focus();
-    return;
-  }
-
-  if (_resetUserData.question_2 && !ans2) {
-    showMsg('sec-test-msg', 'Please answer Question 2 to verify your identity.');
-    $('secTestAnswer2')?.focus();
-    return;
-  }
-
-  const btn = $('btnSubmitSecTest');
+  const btn = $('btnVerifyResetCode');
   setLoading(btn, true);
-  hideEl('sec-test-msg');
+  hideEl('forgot-msg');
 
   try {
-    const apiUrl = window.location.pathname.includes('/gnhs-guidance/gnhs-guidance/')
-      ? '/gnhs-guidance/gnhs-guidance/api/submit_reset_request.php'
-      : '/gnhs-guidance/api/submit_reset_request.php';
+    const isNested = window.location.pathname.includes('/gnhs-guidance/gnhs-guidance/');
+    const apiUrl = isNested ? '/gnhs-guidance/gnhs-guidance/api/verify_reset_code.php' : '/gnhs-guidance/api/verify_reset_code.php';
 
     const res = await apiPost(apiUrl, {
-      identifier: _resetUserData.email || _resetUserData.id_number,
-      answer_1: ans1,
-      answer_2: ans2
+      email: _resetFlowState.email || _resetFlowState.identifier,
+      code: code
     });
-
     setLoading(btn, false);
 
-    if (res.success) {
-      if (res.status === 'approved' || res.already_approved) {
-        showRevealedPasswordResult(res);
-        return;
-      }
-      if ($('secSuccessSubtitle')) {
-        $('secSuccessSubtitle').textContent = res.message;
-      }
-      showStep('step-reset-submitted');
+    if (res.success && res.reset_token) {
+      _resetFlowState.resetToken = res.reset_token;
+
+      const st1 = $('forgot-stage-1');
+      const st2 = $('forgot-stage-2');
+      const st3 = $('forgot-stage-3');
+      if (st1) st1.style.display = 'none';
+      if (st2) st2.style.display = 'none';
+      if (st3) st3.style.display = 'block';
+
+      if ($('forgot-modal-title')) $('forgot-modal-title').textContent = 'Set New Password';
+      if ($('forgot-modal-sub')) $('forgot-modal-sub').textContent = 'Create a new secure password that meets all standards.';
+
+      validateResetPasswordStrength();
+      setTimeout(() => $('forgot-new-password')?.focus(), 80);
     } else {
-      showMsg('sec-test-msg', res.message || 'Security verification failed.');
+      showMsg('forgot-msg', res.message || 'Invalid or expired confirmation code.');
     }
   } catch (e) {
     setLoading(btn, false);
-    showMsg('sec-test-msg', 'Network error. Please try again.');
+    showMsg('forgot-msg', 'Network error. Please try again.');
+  }
+}
+
+function validateResetPasswordStrength() {
+  const pass = $('forgot-new-password')?.value || '';
+  const confirm = $('forgot-confirm-password')?.value || '';
+
+  const lenOk = pass.length >= 8;
+  const upperOk = /[A-Z]/.test(pass);
+  const numOk = /[0-9]/.test(pass);
+  const specialOk = /[^A-Za-z0-9]/.test(pass);
+  const matchOk = pass.length > 0 && pass === confirm;
+
+  const updateItem = (id, ok, text) => {
+    const el = $(id);
+    if (!el) return;
+    el.style.color = ok ? '#16a34a' : '#94a3b8';
+    el.innerHTML = `<i class="fas ${ok ? 'fa-check-circle' : 'fa-circle-xmark'}"></i> ${text}`;
+  };
+
+  updateItem('pwReqLen', lenOk, 'At least 8 characters');
+  updateItem('pwReqUpper', upperOk, '1 uppercase letter');
+  updateItem('pwReqNum', numOk, '1 number (0-9)');
+  updateItem('pwReqSpecial', specialOk, '1 special char (!@#$)');
+  updateItem('pwReqMatch', matchOk, 'Passwords must match');
+
+  return lenOk && upperOk && numOk && specialOk && matchOk;
+}
+
+async function submitNewPasswordReset() {
+  if (!_resetFlowState.resetToken) {
+    showMsg('forgot-msg', 'Session expired. Please restart the reset process.');
+    openResetPasswordModal();
+    return;
+  }
+
+  const pass = $('forgot-new-password')?.value || '';
+  const confirm = $('forgot-confirm-password')?.value || '';
+
+  if (!validateResetPasswordStrength()) {
+    showMsg('forgot-msg', 'Please ensure all password standards are met and passwords match.');
+    return;
+  }
+
+  const btn = $('btnSaveNewPassword');
+  setLoading(btn, true);
+  hideEl('forgot-msg');
+
+  try {
+    const isNested = window.location.pathname.includes('/gnhs-guidance/gnhs-guidance/');
+    const apiUrl = isNested ? '/gnhs-guidance/gnhs-guidance/api/reset_password.php' : '/gnhs-guidance/api/reset_password.php';
+
+    const res = await apiPost(apiUrl, {
+      reset_token: _resetFlowState.resetToken,
+      new_password: pass,
+      confirm_password: confirm
+    });
+    setLoading(btn, false);
+
+    if (res.success) {
+      showToast('Password reset successfully! You can now log in.', 'success');
+      showStep('step-login');
+      const emailInput = $('login-email-input') || document.querySelector('#step-login input[type="text"]');
+      if (emailInput && _resetFlowState.email) {
+        emailInput.value = _resetFlowState.email;
+      }
+      const passInput = $('login-pass');
+      if (passInput) {
+        passInput.value = '';
+        passInput.focus();
+      }
+    } else {
+      showMsg('forgot-msg', res.message || 'Failed to update password.');
+    }
+  } catch (e) {
+    setLoading(btn, false);
+    showMsg('forgot-msg', 'Network error. Please try again.');
   }
 }
 

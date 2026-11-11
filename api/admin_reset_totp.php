@@ -34,6 +34,15 @@ try {
         $updateStmt = $db->prepare("UPDATE users SET totp_reset_requested = 0 WHERE id = ?");
         $updateStmt->execute([$userId]);
         
+        try {
+            $notifStmt = $db->prepare("INSERT INTO notifications (user_id, title, message, type, is_read, created_at) VALUES (?, ?, ?, 'system', 0, NOW())");
+            $notifStmt->execute([
+                $userId,
+                '2FA Reset Request Update',
+                "Your 2FA reset request was reviewed by Counselor $itAdminName. If you still require assistance, please visit the Guidance Office."
+            ]);
+        } catch (Exception $e) {}
+
         jsonOut([
             'success' => true,
             'message' => '2FA reset request for ' . $targetUser['first_name'] . ' ' . $targetUser['last_name'] . ' was dismissed.'
@@ -45,11 +54,11 @@ try {
         
         // Add in-app notification for the target user
         try {
-            $notifStmt = $db->prepare("INSERT INTO notifications (user_id, title, message, type, is_read) VALUES (?, ?, ?, 'system', 0)");
+            $notifStmt = $db->prepare("INSERT INTO notifications (user_id, title, message, type, is_read, created_at) VALUES (?, ?, ?, 'system', 0, NOW())");
             $notifStmt->execute([
                 $userId,
-                '2FA Authenticator Reset',
-                "Your Two-Factor Authenticator (2FA) was reset by School IT Administrator $itAdminName. You can scan a new QR code on your next login."
+                '2FA Authenticator Reset Approved',
+                "Your Two-Factor Authenticator (2FA) was reset by Guidance Counselor $itAdminName. You can scan a fresh QR code upon your next login."
             ]);
         } catch (Exception $e) {}
         

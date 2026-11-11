@@ -42,28 +42,37 @@ try {
         }
         
         $stmt = $db->prepare("UPDATE users SET first_name=?, middle_name=?, last_name=?, age=?, grade_section=?, 
-            security_question_1=COALESCE(?, security_question_1),
-            security_answer_1=COALESCE(?, security_answer_1),
-            security_question_2=COALESCE(?, security_question_2),
-            security_answer_2=COALESCE(?, security_answer_2),
             is_setup_complete=1 
             WHERE id=?");
-        $stmt->execute([$firstName, $middleName, $lastName, $age, $gradeSection, $q1 ?: null, $hashedA1, $q2 ?: null, $hashedA2, $userId]);
+        $stmt->execute([$firstName, $middleName, $lastName, $age, $gradeSection, $userId]);
         
         $_SESSION['user']['age'] = $age;
         $_SESSION['user']['grade_section'] = $gradeSection;
     } else if ($role === 'teacher') {
         $advisoryClass = trim($raw['advisory_class'] ?? '');
+        $employeeId    = trim($raw['id_number'] ?? $raw['employee_id'] ?? '');
+        $position      = trim($raw['position'] ?? '');
+        $contactNumber = trim($raw['contact_number'] ?? '');
         
-        $stmt = $db->prepare("UPDATE users SET first_name=?, middle_name=?, last_name=?, advisory_class=?, 
-            security_question_1=COALESCE(?, security_question_1),
-            security_answer_1=COALESCE(?, security_answer_1),
-            security_question_2=COALESCE(?, security_question_2),
-            security_answer_2=COALESCE(?, security_answer_2),
+        // If employeeId is provided and different, check uniqueness
+        if ($employeeId && $employeeId !== ($_SESSION['user']['id_number'] ?? '')) {
+            $chkEmp = $db->prepare("SELECT id FROM users WHERE id_number = ? AND id != ? LIMIT 1");
+            $chkEmp->execute([$employeeId, $userId]);
+            if ($chkEmp->fetch()) {
+                jsonOut(['success'=>false,'message'=>'Employee ID number is already registered to another account.']);
+            }
+        }
+        
+        $stmt = $db->prepare("UPDATE users SET first_name=?, middle_name=?, last_name=?, 
+            id_number=COALESCE(NULLIF(?,''), id_number),
+            position=?, contact_number=?, advisory_class=?, 
             is_setup_complete=1 
             WHERE id=?");
-        $stmt->execute([$firstName, $middleName, $lastName, $advisoryClass ?: null, $q1 ?: null, $hashedA1, $q2 ?: null, $hashedA2, $userId]);
+        $stmt->execute([$firstName, $middleName, $lastName, $employeeId, $position ?: null, $contactNumber ?: null, $advisoryClass ?: null, $userId]);
         
+        if ($employeeId) $_SESSION['user']['id_number'] = $employeeId;
+        $_SESSION['user']['position'] = $position ?: null;
+        $_SESSION['user']['contact_number'] = $contactNumber ?: null;
         $_SESSION['user']['advisory_class'] = $advisoryClass ?: null;
     }
     

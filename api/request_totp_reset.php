@@ -28,7 +28,7 @@ try {
         $uRole = ucfirst($_SESSION['pending_user']['role'] ?? 'User');
         $admins = $db->query("SELECT id FROM users WHERE role = 'admin' AND is_active = 1")->fetchAll();
         
-        $notifStmt = $db->prepare("INSERT INTO notifications (user_id, title, message, type, is_read) VALUES (?, ?, ?, 'system', 0)");
+        $notifStmt = $db->prepare("INSERT INTO notifications (user_id, title, message, type, is_read, created_at) VALUES (?, ?, ?, 'system', 0, NOW())");
         foreach ($admins as $adm) {
             $notifStmt->execute([
                 $adm['id'],
@@ -36,6 +36,13 @@ try {
                 "$uName ($uRole) requested assistance resetting their Two-Factor Authenticator (2FA)."
             ]);
         }
+
+        // Send explicit in-app notification to the requesting user/student
+        $notifStmt->execute([
+            $userId,
+            '2FA Reset Request Submitted',
+            'Your request to reset your Two-Factor Authenticator (2FA) has been logged and submitted to the Guidance Office. Please visit the Guidance Office or wait for counselor approval.'
+        ]);
     } catch (Exception $e) {}
 
     jsonOut([

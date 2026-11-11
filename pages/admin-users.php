@@ -296,7 +296,7 @@ $bannerHtml
 <!-- Add User Modal -->
 <div class="modal-overlay hidden" id="addUserModal" onclick="closeAddUser(event)">
   <div class="modal-box" style="max-width:520px">
-    <button class="modal-close" onclick="document.getElementById('addUserModal').classList.add('hidden')"><i class="fas fa-times"></i></button>
+    <button class="modal-close" onclick="closeAddUser(event)"><i class="fas fa-times"></i></button>
     <div class="modal-logo"><i class="fas fa-user-plus"></i></div>
     <h2 class="modal-title">Add New User</h2>
     <div id="nuMsg" style="display:none"></div>
@@ -352,10 +352,10 @@ $bannerHtml
           <button type="button" onclick="document.getElementById('nu-pass').value='Student@2026'" style="font-size:11px;color:var(--maroon);background:none;border:none;cursor:pointer;font-weight:700">Preset: Student@2026</button>
         </div>
         <div class="input-wrap"><i class="fas fa-lock"></i><input type="text" id="nu-pass" placeholder="Min 8 chars, 1 uppercase, 1 number, 1 special char"/></div>
-        <small style="font-size:11px;color:var(--text-3);margin-top:4px;display:block;">Walk-in students will be prompted to configure their security recovery questions upon their first sign-in.</small>
+        <small style="font-size:11px;color:var(--text-3);margin-top:4px;display:block;">Students will complete initial 2FA authenticator setup on their first sign-in.</small>
       </div>
       <div class="form-actions">
-        <button class="btn-secondary" onclick="document.getElementById('addUserModal').classList.add('hidden')">Cancel</button>
+        <button type="button" class="btn-secondary" onclick="closeAddUser(event)">Cancel</button>
         <button class="btn-primary" id="saveUserBtn" onclick="saveNewUser()"><i class="fas fa-save"></i> Create User</button>
       </div>
     </div>
@@ -810,6 +810,13 @@ function closeAddUser(e) {
       m.classList.add('hidden');
       m.style.display = 'none';
       document.body.style.overflow = '';
+    }
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('action') === 'add_student') {
+      history.replaceState(null, '', 'admin-users.php');
+      document.querySelectorAll('.sb-link').forEach(el => el.classList.remove('active'));
+      const uLink = document.getElementById('sb-link-users');
+      if (uLink) uLink.classList.add('active');
     }
   }
 }
@@ -1330,7 +1337,25 @@ function filterUsersClient(val) {
     noMatch.style.display = 'none';
   }
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('action') === 'add_student') {
+    openAddStudentModal();
+  }
+  const sbAddStudent = document.getElementById('sb-link-add_student');
+  if (sbAddStudent) {
+    sbAddStudent.addEventListener('click', function(e) {
+      e.preventDefault();
+      history.pushState(null, '', 'admin-users.php?action=add_student');
+      document.querySelectorAll('.sb-link').forEach(function(el){ el.classList.remove('active'); });
+      sbAddStudent.classList.add('active');
+      openAddStudentModal();
+    });
+  }
+});
 </script>
 HTML;
 
-renderLayout($user, 'User Management', 'users', $content);
+$activeNav = (($_GET['action'] ?? '') === 'add_student') ? 'add_student' : 'users';
+renderLayout($user, 'User Management', $activeNav, $content);

@@ -836,6 +836,13 @@ function openTeacherAddStudentModal() {
 
 function closeTeacherAddStudentModal() {
   document.getElementById("teacherAddStudentModal").classList.add("hidden");
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("action") === "add_student") {
+    history.replaceState(null, "", "teacher-advisory.php");
+    document.querySelectorAll(".sb-link").forEach(function(el){ el.classList.remove("active"); });
+    const adLink = document.getElementById("sb-link-advisory");
+    if (adLink) adLink.classList.add("active");
+  }
 }
 
 async function saveTeacherNewStudent(e) {
@@ -927,7 +934,25 @@ async function saveTeacherNewStudent(e) {
   btn.disabled = false;
   btn.innerHTML = "<i class=\"fas fa-save\"></i> Create Student Account";
 }
+
+document.addEventListener("DOMContentLoaded", function() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("action") === "add_student") {
+    openTeacherAddStudentModal();
+  }
+  const sbAddStudent = document.getElementById("sb-link-add_student");
+  if (sbAddStudent) {
+    sbAddStudent.addEventListener("click", function(e) {
+      e.preventDefault();
+      history.pushState(null, "", "teacher-advisory.php?action=add_student");
+      document.querySelectorAll(".sb-link").forEach(function(el){ el.classList.remove("active"); });
+      sbAddStudent.classList.add("active");
+      openTeacherAddStudentModal();
+    });
+  }
+});
 </script>
 ';
 
-renderLayout($user, 'My Advisory Class', 'advisory', $content);
+$activeNav = (($_GET['action'] ?? '') === 'add_student') ? 'add_student' : 'advisory';
+renderLayout($user, 'My Advisory Class', $activeNav, $content);

@@ -25,7 +25,7 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
         'teacher' => [
             ['icon'=>'fa-home',         'label'=>'Dashboard',       'href'=>'teacher-dashboard.php', 'key'=>'dashboard'],
             ['icon'=>'fa-users',        'label'=>'Advisory Class',  'href'=>'teacher-advisory.php',  'key'=>'advisory'],
-            ['icon'=>'fa-user-plus',    'label'=>'Add Student',     'href'=>'teacher-advisory.php?action=add_student', 'key'=>'add_student'],
+            ['icon'=>'fa-user-plus',    'label'=>'Add Student',     'href'=>'teacher-add-student.php', 'key'=>'add_student'],
             ['icon'=>'fa-paper-plane',  'label'=>'Submit Referral', 'href'=>'teacher-referral.php',  'key'=>'referral'],
             ['icon'=>'fa-list-alt',     'label'=>'My Referrals',    'href'=>'teacher-referrals.php', 'key'=>'referrals'],
             ['icon'=>'fa-comments',     'label'=>'Referrals Chat',  'href'=>'teacher-referrals-chat.php', 'key'=>'referrals_chat'],
@@ -52,7 +52,7 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
             ['icon'=>'fa-calendar-alt', 'label'=>'Sessions',        'href'=>'admin-sessions.php',    'key'=>'sessions'],
             ['icon'=>'fa-chart-bar',    'label'=>'Analytics',       'href'=>'admin-analytics.php',   'key'=>'analytics'],
             ['icon'=>'fa-users-cog',    'label'=>'User Accounts',   'href'=>'admin-users.php',          'key'=>'users'],
-            ['icon'=>'fa-user-plus',    'label'=>'Add Student',     'href'=>'admin-users.php?action=add_student', 'key'=>'add_student'],
+            ['icon'=>'fa-user-plus',    'label'=>'Add Student',     'href'=>'admin-add-student.php', 'key'=>'add_student'],
             ['icon'=>'fa-shield-alt',   'label'=>'2FA Requests',    'href'=>'admin-2fa-requests.php',   'key'=>'2fa_requests'],
         ],
     ];
@@ -63,10 +63,6 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
             $db = getDB();
             $pending2faCount = (int)$db->query("SELECT COUNT(*) FROM users WHERE totp_reset_requested = 1")->fetchColumn();
         } catch(Exception $e){}
-    }
-
-    if (isset($_GET['action']) && $_GET['action'] === 'add_student') {
-        $activeNav = 'add_student';
     }
 
     $links = $navLinks[$role] ?? [];

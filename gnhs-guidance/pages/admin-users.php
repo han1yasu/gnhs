@@ -811,13 +811,6 @@ function closeAddUser(e) {
       m.style.display = 'none';
       document.body.style.overflow = '';
     }
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('action') === 'add_student') {
-      history.replaceState(null, '', 'admin-users.php');
-      document.querySelectorAll('.sb-link').forEach(el => el.classList.remove('active'));
-      const uLink = document.getElementById('sb-link-users');
-      if (uLink) uLink.classList.add('active');
-    }
   }
 }
 window.openAddUserModal = openAddUserModal;
@@ -1337,25 +1330,7 @@ function filterUsersClient(val) {
     noMatch.style.display = 'none';
   }
 }
-
-document.addEventListener('DOMContentLoaded', function() {
-  const params = new URLSearchParams(window.location.search);
-  if (params.get('action') === 'add_student') {
-    openAddStudentModal();
-  }
-  const sbAddStudent = document.getElementById('sb-link-add_student');
-  if (sbAddStudent) {
-    sbAddStudent.addEventListener('click', function(e) {
-      e.preventDefault();
-      history.pushState(null, '', 'admin-users.php?action=add_student');
-      document.querySelectorAll('.sb-link').forEach(function(el){ el.classList.remove('active'); });
-      sbAddStudent.classList.add('active');
-      openAddStudentModal();
-    });
-  }
-});
 </script>
 HTML;
 
-$activeNav = (($_GET['action'] ?? '') === 'add_student') ? 'add_student' : 'users';
-renderLayout($user, 'User Management', $activeNav, $content);
+renderLayout($user, 'User Management', 'users', $content);

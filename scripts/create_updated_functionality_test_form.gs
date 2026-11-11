@@ -261,3 +261,4 @@ function createUpdatedGNHSFunctionalityTestForm() {
   Logger.log("Shareable Fill-in Form URL (for testers): " + form.getPublishedUrl());
   Logger.log("=================================================================================");
 }
+

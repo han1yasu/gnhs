@@ -1800,21 +1800,35 @@ html.theme-transitioning *::after {
 
 
 
-/* ── FEATURES MARQUEE ── */
+/* ── FEATURES MARQUEE & INTERACTIVE SLIDER ── */
 .features-marquee-wrapper {
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   position: relative;
   width: 100%;
   padding: 20px 0;
   max-width: 1200px;
   margin: 0 auto;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  box-sizing: border-box;
+}
+.features-marquee-wrapper::-webkit-scrollbar {
+  display: none;
+}
+.features-marquee-wrapper.is-dragging {
+  cursor: grabbing !important;
+  scroll-behavior: auto !important;
 }
 .features-marquee-wrapper::before,
 .features-marquee-wrapper::after {
   content: '';
   position: absolute;
   top: 0;
-  width: 150px;
+  width: 80px;
   height: 100%;
   z-index: 2;
   pointer-events: none;
@@ -1832,19 +1846,167 @@ html.theme-transitioning *::after {
   display: flex;
   gap: 24px;
   width: max-content;
-  animation: featuresMarquee 40s linear infinite;
-}
-.features-marquee-content:hover {
-  animation-play-state: paused;
-}
-@keyframes featuresMarquee {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(calc(-50% - 12px)); }
+  will-change: transform, scroll-position;
+  animation: none !important; /* Seamlessly managed by JS for auto-scroll + swipe/drag */
 }
 .features-marquee-content .feature-card {
   width: 320px;
   flex-shrink: 0;
   white-space: normal;
+  user-select: none;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.features-marquee-content .feature-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(85,0,0,0.12);
+}
+@media (max-width: 640px) {
+  .features-marquee-content .feature-card {
+    width: 280px;
+  }
+}
+
+/* ── ABOUT SECTION & ROLE CARDS (MOBILE CENTERED) ── */
+.about-section {
+  padding: 80px 24px;
+  background: var(--bg);
+  width: 100%;
+  box-sizing: border-box;
+}
+.about-roles-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  max-width: 960px;
+  margin: 40px auto 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+.about-role-card {
+  text-align: center;
+  padding: 32px 24px;
+  background: var(--maroon-pale);
+  border-radius: 16px;
+  border: 1px solid var(--maroon-tint);
+  box-sizing: border-box;
+  transition: transform 0.2s, box-shadow 0.2s;
+  width: 100%;
+}
+.about-role-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px rgba(85,0,0,0.1);
+}
+.about-role-card i {
+  font-size: 32px;
+  color: var(--maroon);
+  margin-bottom: 14px;
+  display: block;
+}
+.about-role-card strong {
+  display: block;
+  font-size: 16.5px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.about-role-card p {
+  font-size: 13.5px;
+  color: var(--text-2);
+  line-height: 1.5;
+  margin: 0;
+}
+
+@media (max-width: 900px) {
+  .about-section {
+    padding: 60px 20px;
+  }
+  .about-roles-grid {
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 18px;
+    max-width: 700px;
+  }
+}
+
+@media (max-width: 640px) {
+  .about-section {
+    padding: 44px 16px !important;
+  }
+  .about-roles-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+    max-width: 340px !important;
+    margin: 28px auto 0 !important;
+    justify-items: center !important;
+  }
+  .about-role-card {
+    max-width: 340px !important;
+    padding: 24px 20px !important;
+  }
+}
+
+/* ── TEACHER DASHBOARD ADVISORY GRID (RESPONSIVE STACK) ── */
+.teacher-dashboard-advisory-grid {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 22px;
+  margin-bottom: 22px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.teacher-dashboard-advisory-grid > .content-card {
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+@media (max-width: 992px) {
+  .teacher-dashboard-advisory-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+}
+
+/* ── SIDEBAR & TOPBAR BRAND CLICKABLE ── */
+a.sb-brand {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 22px 18px 18px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, .12) !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+  transition: background 0.2s !important;
+}
+a.sb-brand:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+a.topbar-brand {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+  color: inherit !important;
+  transition: opacity 0.2s !important;
+}
+a.topbar-brand:hover {
+  opacity: 0.85 !important;
+}
+
+/* ── NAVBAR ACTIVE TAB (LIGHT & DARK MODE) ── */
+.nav-link.active {
+  color: var(--maroon) !important;
+  background: var(--maroon-pale) !important;
+  font-weight: 700 !important;
+}
+[data-theme="dark"] .nav-link.active {
+  color: #ff9999 !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+[data-theme="dark"] .about-role-card {
+  background: var(--bg2);
+  border-color: var(--border);
 }
 
 

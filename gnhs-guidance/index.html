@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GNHS — Guidance Case Management System</title>
-  <link rel="stylesheet" href="style.css?v=20261111_06" />
+  <link rel="stylesheet" href="style.css?v=20261111_07" />
   <link
     href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,600;1,400&display=swap"
     rel="stylesheet" />
@@ -187,33 +187,27 @@
       </div>
     </div>
   </section>
-  <section id="about" style="padding:80px 60px;background:var(--bg);">
+  <section id="about" class="about-section">
     <div class="section-header">
       <div class="section-tag">About</div>
       <h2>Built for Guinayang NHS</h2>
       <p>Developed in compliance with the Data Privacy Act of 2012, keeping all student records secure.</p>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px;max-width:900px;margin:40px auto 0;">
-      <div
-        style="text-align:center;padding:28px 20px;background:var(--maroon-pale);border-radius:16px;border:1px solid var(--maroon-tint)">
-        <i class="fas fa-user-graduate" style="font-size:32px;color:var(--maroon);margin-bottom:12px;display:block"></i>
-        <strong style="display:block;font-size:16px;margin-bottom:6px">For Students</strong>
-        <p style="font-size:13px;color:var(--text-2)">Submit concerns and track counseling progress in a safe
-          environment.</p>
+    <div class="about-roles-grid">
+      <div class="about-role-card">
+        <i class="fas fa-user-graduate"></i>
+        <strong>For Students</strong>
+        <p>Submit concerns and track counseling progress in a safe environment.</p>
       </div>
-      <div
-        style="text-align:center;padding:28px 20px;background:var(--maroon-pale);border-radius:16px;border:1px solid var(--maroon-tint)">
-        <i class="fas fa-chalkboard-teacher"
-          style="font-size:32px;color:var(--maroon);margin-bottom:12px;display:block"></i>
-        <strong style="display:block;font-size:16px;margin-bottom:6px">For Teachers</strong>
-        <p style="font-size:13px;color:var(--text-2)">Refer students who need guidance support quickly and easily.</p>
+      <div class="about-role-card">
+        <i class="fas fa-chalkboard-teacher"></i>
+        <strong>For Teachers</strong>
+        <p>Refer students who need guidance support quickly and easily.</p>
       </div>
-      <div
-        style="text-align:center;padding:28px 20px;background:var(--maroon-pale);border-radius:16px;border:1px solid var(--maroon-tint)">
-        <i class="fas fa-user-tie" style="font-size:32px;color:var(--maroon);margin-bottom:12px;display:block"></i>
-        <strong style="display:block;font-size:16px;margin-bottom:6px">For Counselors</strong>
-        <p style="font-size:13px;color:var(--text-2)">Manage all cases, schedule sessions, and view analytics in one
-          place.</p>
+      <div class="about-role-card">
+        <i class="fas fa-user-tie"></i>
+        <strong>For Counselors</strong>
+        <p>Manage all cases, schedule sessions, and view analytics in one place.</p>
       </div>
     </div>
   </section>
@@ -1470,7 +1464,201 @@
           loginMsg.innerHTML = '<i class="fas fa-clock" style="margin-right:6px"></i> Your session has expired due to 15 minutes of inactivity. Please log in again to continue.';
         }
       }
+
+      // Initialize interactive features slider and navbar scrollspy
+      initFeaturesMarqueeSlider();
+      initNavbarScrollspy();
     });
+
+    // ── INTERACTIVE FEATURES MARQUEE SLIDER (DRAGGABLE, SWIPEABLE & AUTO-DRIFT) ──
+    function initFeaturesMarqueeSlider() {
+      const wrapper = document.querySelector('.features-marquee-wrapper');
+      const content = document.querySelector('.features-marquee-content');
+      if (!wrapper || !content) return;
+
+      let isDown = false;
+      let startX = 0;
+      let scrollLeftStart = 0;
+      let isDragging = false;
+      let autoScrollActive = true;
+      let resumeTimer = null;
+      const speed = 0.85; // Smooth drift speed
+
+      function step() {
+        if (autoScrollActive && !isDown) {
+          wrapper.scrollLeft += speed;
+          const half = content.scrollWidth / 2;
+          if (half > 0 && wrapper.scrollLeft >= half) {
+            wrapper.scrollLeft -= half;
+          }
+        }
+        requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+
+      function pauseAuto() {
+        autoScrollActive = false;
+        clearTimeout(resumeTimer);
+      }
+
+      function scheduleResume() {
+        clearTimeout(resumeTimer);
+        resumeTimer = setTimeout(() => {
+          autoScrollActive = true;
+        }, 2200);
+      }
+
+      // Mouse Dragging on Desktop/Laptop
+      wrapper.addEventListener('mousedown', (e) => {
+        isDown = true;
+        isDragging = false;
+        wrapper.classList.add('is-dragging');
+        startX = e.pageX - wrapper.offsetLeft;
+        scrollLeftStart = wrapper.scrollLeft;
+        pauseAuto();
+      });
+
+      window.addEventListener('mouseup', () => {
+        if (!isDown) return;
+        isDown = false;
+        wrapper.classList.remove('is-dragging');
+        scheduleResume();
+        setTimeout(() => { isDragging = false; }, 80);
+      });
+
+      wrapper.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.pageX - wrapper.offsetLeft;
+        const walk = (x - startX) * 1.4;
+        if (Math.abs(walk) > 4) isDragging = true;
+        wrapper.scrollLeft = scrollLeftStart - walk;
+
+        const half = content.scrollWidth / 2;
+        if (half > 0) {
+          if (wrapper.scrollLeft >= half) {
+            wrapper.scrollLeft -= half;
+            scrollLeftStart -= half;
+          } else if (wrapper.scrollLeft <= 0) {
+            wrapper.scrollLeft += half;
+            scrollLeftStart += half;
+          }
+        }
+      });
+
+      // Touch Swiping on Mobile & Tablets
+      wrapper.addEventListener('touchstart', () => {
+        pauseAuto();
+      }, { passive: true });
+
+      wrapper.addEventListener('touchmove', () => {
+        pauseAuto();
+        const half = content.scrollWidth / 2;
+        if (half > 0) {
+          if (wrapper.scrollLeft >= half) {
+            wrapper.scrollLeft -= half;
+          } else if (wrapper.scrollLeft <= 0) {
+            wrapper.scrollLeft += half;
+          }
+        }
+      }, { passive: true });
+
+      wrapper.addEventListener('touchend', () => {
+        scheduleResume();
+      }, { passive: true });
+
+      // Hover controls
+      wrapper.addEventListener('mouseenter', () => {
+        pauseAuto();
+      });
+      wrapper.addEventListener('mouseleave', () => {
+        if (!isDown) scheduleResume();
+      });
+
+      // Clickable cards without firing when dragging
+      wrapper.querySelectorAll('.feature-card').forEach(card => {
+        card.addEventListener('click', (e) => {
+          if (isDragging) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+        });
+      });
+    }
+
+    // ── NAVBAR ACTIVE TAB & SCROLLSPY (SHADED TAB FOLLOWS ON CLICK & SCROLL) ──
+    function initNavbarScrollspy() {
+      const navLinks = document.querySelectorAll('.nav-links a.nav-link');
+      if (!navLinks.length) return;
+
+      function setActiveLink(targetId) {
+        navLinks.forEach(link => {
+          const href = link.getAttribute('href');
+          if (href === '#' + targetId || (targetId === 'home' && href === '#home')) {
+            link.classList.add('active');
+          } else {
+            link.classList.remove('active');
+          }
+        });
+      }
+
+      // Smooth click navigation & instant shaded tab update
+      navLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+          const href = this.getAttribute('href');
+          if (href && href.startsWith('#')) {
+            e.preventDefault();
+            const targetId = href.substring(1);
+            const targetEl = document.getElementById(targetId);
+            if (targetEl) {
+              navLinks.forEach(l => l.classList.remove('active'));
+              this.classList.add('active');
+              targetEl.scrollIntoView({ behavior: 'smooth' });
+
+              // Close mobile dropdown menu if open
+              const navContainer = document.getElementById('navLinks');
+              if (navContainer) {
+                navContainer.classList.remove('active');
+                navContainer.classList.remove('open');
+              }
+            }
+          }
+        });
+      });
+
+      // Scroll listener to update shaded tab dynamically as user scrolls
+      const sectionIds = ['home', 'features', 'about', 'contact'];
+      let scrollTicking = false;
+
+      window.addEventListener('scroll', () => {
+        if (!scrollTicking) {
+          requestAnimationFrame(() => {
+            const scrollPos = window.scrollY + 140;
+            let current = 'home';
+
+            sectionIds.forEach(id => {
+              const el = document.getElementById(id);
+              if (el) {
+                const top = el.offsetTop;
+                const height = el.offsetHeight;
+                if (scrollPos >= top && scrollPos < top + height) {
+                  current = id;
+                }
+              }
+            });
+
+            // At very bottom of page, highlight contact
+            if ((window.innerHeight + window.scrollY) >= (document.body.offsetHeight - 60)) {
+              current = 'contact';
+            }
+
+            setActiveLink(current);
+            scrollTicking = false;
+          });
+          scrollTicking = true;
+        }
+      }, { passive: true });
+    }
   </script>
 </body>
 

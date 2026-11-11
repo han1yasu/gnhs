@@ -125,6 +125,10 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
         }
     }
 
+    $dashboardUrl = ($role === 'teacher') 
+        ? 'teacher-dashboard.php' 
+        : (($role === 'admin') ? 'admin-dashboard.php' : 'student-dashboard.php');
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -177,13 +181,13 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
 
 <!-- SIDEBAR -->
 <aside class="sidebar" id="sidebar">
-  <div class="sb-brand">
+  <a href="<?= $dashboardUrl ?>" class="sb-brand" title="Go to Dashboard">
     <img src="/gnhs-guidance/gnhs.jpg" alt="GNHS Logo" class="sb-logo-img"/>
     <div>
       <div class="sb-school">GNHS</div>
       <div class="sb-sub">Guidance System</div>
     </div>
-  </div>
+  </a>
   <nav class="sb-nav">
     <?= $sidebarLinks ?>
   </nav>
@@ -216,13 +220,13 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
       <button class="topbar-toggle" onclick="toggleSidebar()">
         <i class="fas fa-bars"></i>
       </button>
-      <div class="topbar-brand" id="topbarBrand">
+      <a href="<?= $dashboardUrl ?>" class="topbar-brand" id="topbarBrand" title="Go to Dashboard">
         <img src="/gnhs-guidance/gnhs.jpg" alt="GNHS Logo" class="topbar-logo-img"/>
         <div class="topbar-school-info">
           <span class="topbar-school-name">Guinayang National High School</span>
           <span class="topbar-page-title"><?= htmlspecialchars($pageTitle) ?></span>
         </div>
-      </div>
+      </a>
     </div>
     <div class="topbar-right">
       <button type="button" class="help-tour-btn" id="tourTriggerBtn" onclick="startSystemTour()" title="Walk Me Through the System">

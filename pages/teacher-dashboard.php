@@ -250,7 +250,7 @@ if ($advisoryClass) {
     if (!$casesRows) $casesRows = "<tr><td colspan='6' style='text-align:center;color:var(--text-3);padding:24px'>No active guidance concerns from your advisory class.</td></tr>";
 
     $advisoryHtml = "
-    <div style='display:grid;grid-template-columns:300px 1fr;gap:22px;margin-bottom:22px'>
+    <div class='teacher-dashboard-advisory-grid'>
       <div class='content-card'>
         <div class='card-header'>
           <h3><i class='fas fa-users'></i> My Advisory Class</h3>

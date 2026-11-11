@@ -56,18 +56,17 @@ function showStep(id) {
   $(id)?.classList.remove('hidden');
 }
 
-function goToRoleSelect(action) {
-  _action = action;
+function goToRoleSelect(action = 'login') {
+  _action = 'login';
   const sub = $('role-sub-text');
-  if (sub) sub.textContent = action==='login' ? 'Who are you logging in as?' : 'Create an account as:';
+  if (sub) sub.textContent = 'Who are you logging in as?';
   showStep('step-role');
 }
 
 function goBack(stepId) { showStep(stepId); }
 function switchToRegister() { 
-  _action='register'; 
-  if (_role) selectRole(_role);
-  else showStep('step-role'); 
+  showToast('Student accounts are provisioned by your Advisory Teacher or Guidance Counselor.', 'info');
+  switchToLogin();
 }
 function switchToLogin() { 
   _action='login'; 
@@ -77,9 +76,10 @@ function switchToLogin() {
 
 function selectRole(role) {
   _role = role;
+  _action = 'login';
   const icons  = { student:'fa-user-graduate', teacher:'fa-chalkboard-teacher', admin:'fa-user-tie' };
   const labels = { student:'Student', teacher:'Teacher', admin:'Guidance Counselor' };
-  const step   = _action==='login' ? 'step-login' : 'step-register';
+  const step   = 'step-login';
 
   const badgeId = _action==='login' ? 'login-role-badge' : 'reg-role-badge';
   const labelId = _action==='login' ? 'login-role-label' : 'reg-role-label';

@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GNHS — Guidance Case Management System</title>
-  <link rel="stylesheet" href="style.css?v=3.0" />
+  <link rel="stylesheet" href="style.css?v=20261111_02" />
   <link
     href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,600;1,400&display=swap"
     rel="stylesheet" />
@@ -256,14 +256,14 @@
         <div id="timeoutAlertBanner" style="display:none;margin-bottom:16px;background:#fef2f2;border:1px solid #f87171;color:#991b1b;padding:12px 14px;border-radius:10px;font-size:13px;font-weight:600;text-align:left">
           <i class="fas fa-clock" style="color:#dc2626;margin-right:6px"></i> Your session expired due to 15 minutes of inactivity. Please log in again.
         </div>
-        <div class="action-cards" style="grid-template-columns:1fr;">
-          <div class="action-card" onclick="goToRoleSelect('login')" style="padding:18px 22px;display:flex;align-items:center;justify-content:center;gap:14px;text-align:left;width:100%">
-            <i class="fas fa-sign-in-alt" style="font-size:24px;margin-bottom:0"></i>
-            <div>
-              <strong style="font-size:16px;display:block">Login to System</strong>
-              <small style="font-size:12px;color:var(--text-3)">Sign in with LRN, Employee ID, or Email</small>
+        <div class="action-cards" style="display:flex;flex-direction:column;width:100%;gap:12px;">
+          <div class="action-card" onclick="goToRoleSelect('login')" style="padding:16px 20px;display:flex;align-items:center;justify-content:center;gap:14px;text-align:left;width:100%;background:linear-gradient(135deg,var(--maroon),var(--maroon-mid));color:#fff;border-radius:14px;box-shadow:0 8px 20px rgba(85,0,0,0.22);cursor:pointer;">
+            <i class="fas fa-sign-in-alt" style="font-size:22px;color:#fff;margin-bottom:0"></i>
+            <div style="flex:1">
+              <strong style="font-size:16px;display:block;color:#fff">Login to System</strong>
+              <small style="font-size:12px;color:rgba(255,255,255,0.85)">Sign in with LRN, Employee ID, or Email</small>
             </div>
-            <i class="fas fa-arrow-right" style="margin-left:auto;font-size:14px;opacity:0.6"></i>
+            <i class="fas fa-arrow-right" style="font-size:14px;color:rgba(255,255,255,0.85)"></i>
           </div>
         </div>
 
@@ -665,145 +665,27 @@
           </a>
         </div>
       </div>
+      <!-- NOTICE FOR ACCOUNT CREATION (STUDENT SELF-REGISTRATION DISABLED) -->
       <div class="modal-step hidden" id="step-register">
         <div class="modal-top-nav">
           <button type="button" class="modal-back" onclick="goBack('step-role')"><i class="fas fa-arrow-left"></i> Back</button>
           <button type="button" class="modal-close" onclick="closeLoginModal()"><i class="fas fa-times"></i></button>
         </div>
-        <div class="modal-logo" id="reg-role-badge"><i class="fas fa-user-graduate"></i></div>
-        <div class="modal-tab-header tab-register">
-          <div class="modal-tab-indicator"></div>
-          <div class="modal-tab-btn" onclick="switchToLogin()">Login</div>
-          <div class="modal-tab-btn active" onclick="switchToRegister()">Create Account</div>
-        </div>
-        <p class="modal-sub" id="reg-role-label" style="margin-top:-10px;">Student Registration</p>
-        <div id="reg-msg" style="display:none"></div>
-
-        <!-- STAGE 1: EMAIL LEGITIMACY VERIFICATION -->
-        <div id="reg-stage-verify">
-          <div class="form-group">
-            <label>Email Address <span class="req">*</span></label>
-            <div class="input-wrap">
-              <i class="fas fa-envelope"></i>
-              <input type="email" id="reg-email" placeholder="e.g. name@gmail.com or name@deped.gov.ph" required onkeydown="if(event.key==='Enter')sendRegEmailCode()" />
-            </div>
-            <span style="font-size:11.5px;color:var(--text-3);margin-top:4px;display:block;">A 6-digit confirmation code will be sent to confirm your email legitimacy.</span>
-          </div>
-
-          <div id="reg-code-box" style="display:none;margin-top:14px">
-            <div class="form-group">
-              <label>Enter 6-Digit Verification Code <span class="req">*</span></label>
-              <div class="input-wrap">
-                <i class="fas fa-key"></i>
-                <input type="text" id="reg-verify-code" placeholder="000000" maxlength="6" pattern="[0-9]*" inputmode="numeric" style="letter-spacing:6px;font-size:18px;font-weight:800;text-align:center" onkeydown="if(event.key==='Enter')verifyRegEmailCode()" />
-              </div>
-              <span style="font-size:11.5px;color:var(--text-3);margin-top:4px;display:block;">Check your inbox or spam folder. Code expires in 10 minutes.</span>
-            </div>
-
-            <button type="button" class="btn-submit" id="btnVerifyRegCode" onclick="verifyRegEmailCode()">
-              <i class="fas fa-check-circle"></i> Verify Code & Continue Setup
-            </button>
-
-            <div style="text-align:center;margin-top:10px">
-              <button type="button" onclick="sendRegEmailCode(true)" style="background:none;border:none;color:var(--text-3);font-size:12px;font-weight:700;cursor:pointer">
-                Didn't receive code? Resend
-              </button>
-            </div>
-          </div>
-
-          <div id="reg-send-btn-wrap" style="margin-top:14px">
-            <button type="button" class="btn-submit" id="btnSendRegCode" onclick="sendRegEmailCode()">
-              <i class="fas fa-paper-plane"></i> Send Verification Code
-            </button>
-          </div>
+        <div class="modal-logo" style="background:var(--maroon-pale);color:var(--maroon)"><i class="fas fa-id-card-clip"></i></div>
+        <h2 class="modal-title">Account Creation Notice</h2>
+        <p class="modal-sub">Student accounts are provisioned directly by the school.</p>
+        
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:18px;text-align:left;font-size:13px;color:var(--text-2);line-height:1.6">
+          <strong style="color:var(--text);display:block;margin-bottom:6px"><i class="fas fa-info-circle" style="color:var(--maroon);margin-right:6px"></i> How accounts are issued:</strong>
+          <ul style="margin:0 0 0 18px;padding:0">
+            <li><strong>Students:</strong> Your account is created by your <strong>Advisory Teacher</strong> or the <strong>Guidance Office</strong> using your 12-digit LRN.</li>
+            <li><strong>Teachers &amp; Staff:</strong> Accounts are configured and issued by the <strong>Guidance Counselor</strong>.</li>
+          </ul>
         </div>
 
-        <!-- STAGE 2: ACCOUNT SETUP (UNLOCKED AFTER EMAIL IS CONFIRMED) -->
-        <div id="reg-stage-setup" style="display:none">
-          <div style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);padding:10px 14px;border-radius:10px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between">
-            <div style="display:flex;align-items:center;gap:8px">
-              <i class="fas fa-circle-check" style="color:#10b981;font-size:16px"></i>
-              <div>
-                <span style="font-size:10.5px;color:var(--text-3);display:block">Verified Email:</span>
-                <strong style="font-size:12.5px;color:var(--text)" id="regVerifiedEmailBadge"></strong>
-              </div>
-            </div>
-            <button type="button" onclick="resetRegEmailVerification()" style="background:none;border:none;color:var(--maroon);font-size:11.5px;font-weight:700;cursor:pointer">Change</button>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group"><label>First Name <span class="req">*</span></label>
-              <div class="input-wrap"><i class="fas fa-user"></i><input type="text" id="reg-fname" placeholder="Juan" required /></div>
-            </div>
-            <div class="form-group"><label>Middle Name</label>
-              <div class="input-wrap"><i class="fas fa-user"></i><input type="text" id="reg-mname" placeholder="Optional" /></div>
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group"><label>Last Name <span class="req">*</span></label>
-              <div class="input-wrap"><i class="fas fa-user"></i><input type="text" id="reg-lname" placeholder="Dela Cruz" required /></div>
-            </div>
-            <div class="form-group"><label>Suffix</label>
-              <div class="input-wrap"><i class="fas fa-user"></i><input type="text" id="reg-suffix" placeholder="e.g. Jr., III" /></div>
-            </div>
-          </div>
-          <div class="form-group" id="reg-lrn-field">
-            <label id="reg-lrn-label">LRN (12 Digits) <span class="req">*</span></label>
-            <div class="input-wrap"><i class="fas fa-id-card"></i>
-              <input type="text" id="reg-lrn-input" inputmode="numeric" maxlength="12" pattern="[0-9]{12}" placeholder="Enter 12-digit LRN (Numbers only)" required />
-            </div>
-            <small id="reg-lrn-help" style="font-size:11px;color:var(--text-3);margin-top:4px;display:block;">Must be strictly 12 numeric digits.</small>
-          </div>
-          <div id="reg-grade-field">
-            <div class="form-row">
-              <div class="form-group">
-                <label>Grade <span class="req">*</span></label>
-                <div class="select-wrap"><i class="fas fa-layer-group"></i>
-                  <select id="reg-grade-level" onchange="regUpdateSections()">
-                    <option value="">Select Grade</option>
-                    <option value="7">Grade 7</option>
-                    <option value="8">Grade 8</option>
-                    <option value="9">Grade 9</option>
-                    <option value="10">Grade 10</option>
-                  </select>
-                </div>
-              </div>
-              <div class="form-group">
-                <label>Section <span class="req">*</span></label>
-                <div class="select-wrap"><i class="fas fa-users"></i>
-                  <select id="reg-section">
-                    <option value="">Select Grade First</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="form-group"><label>Password <span class="req">*</span></label>
-            <div class="input-wrap"><i class="fas fa-lock"></i><input type="password" id="reg-pass"
-                placeholder="Minimum 8 characters" required oninput="checkRegPassStrength()" /><button class="toggle-pass" type="button"
-                onclick="togglePass('reg-pass')"><i class="fas fa-eye"></i></button></div>
-            <div id="regPassRules" style="margin-top:7px;padding:8px 12px;background:rgba(0,0,0,0.03);border-radius:8px;border:1px solid var(--border);font-size:11.5px;display:flex;flex-direction:column;gap:3px">
-              <div id="reg-rule-len" style="color:var(--text-3);display:flex;align-items:center;gap:6px">
-                <i class="fas fa-circle-xmark" style="font-size:11px"></i> Minimum 8 characters
-              </div>
-              <div id="reg-rule-upper" style="color:var(--text-3);display:flex;align-items:center;gap:6px">
-                <i class="fas fa-circle-xmark" style="font-size:11px"></i> At least 1 uppercase letter (Caps Lock)
-              </div>
-              <div id="reg-rule-num" style="color:var(--text-3);display:flex;align-items:center;gap:6px">
-                <i class="fas fa-circle-xmark" style="font-size:11px"></i> At least 1 number (0-9)
-              </div>
-              <div id="reg-rule-sym" style="color:var(--text-3);display:flex;align-items:center;gap:6px">
-                <i class="fas fa-circle-xmark" style="font-size:11px"></i> At least 1 special character (e.g. !@#$%^&*)
-              </div>
-            </div>
-          </div>
-          <div class="form-group"><label>Confirm Password <span class="req">*</span></label>
-            <div class="input-wrap"><i class="fas fa-lock"></i><input type="password" id="reg-confirm"
-                placeholder="Re-enter your password" required /></div>
-          </div>
-          <button class="btn-submit" onclick="handleRegister()">Complete Account Setup &nbsp;<i
-              class="fas fa-arrow-right"></i></button>
-        </div>
+        <button type="button" class="btn-submit" onclick="showStep('step-login')">
+          <i class="fas fa-arrow-left"></i> Return to Login
+        </button>
       </div>
     </div>
   </div>
@@ -812,7 +694,7 @@
   </div>
 
   <script src="theme.js?v=1.1"></script>
-  <script src="app.js?v=20261110_05"></script>
+  <script src="app.js?v=20261111_02"></script>
   <script>
     const GNHS_GRADE_SECTIONS = {
       '7':  ['Bonifacio', 'Burgos', 'Del Pilar', 'Diego Silang', 'Luna', 'Mabini', 'Malvar', 'Rizal'],

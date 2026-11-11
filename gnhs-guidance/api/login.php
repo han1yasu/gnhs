@@ -80,7 +80,7 @@ try {
         jsonOut([
             'success' => false,
             'not_registered' => true,
-            'message' => 'No GNHS Guidance account found for "' . htmlspecialchars($email) . '". Please click Create Account to register with your LRN and Grade.'
+            'message' => 'No GNHS Guidance account found for "' . htmlspecialchars($email) . '". Please contact your Advisory Teacher or the Guidance Office to have your account issued.'
         ]);
     }
 

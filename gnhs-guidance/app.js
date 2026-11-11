@@ -474,6 +474,13 @@ async function sendResetEmailCode(isResend = false) {
       if ($('forgot-modal-sub')) $('forgot-modal-sub').textContent = 'Check your email inbox or spam folder for the 6-digit verification code.';
       if ($('forgot-target-email-label')) $('forgot-target-email-label').textContent = res.masked_email || res.email;
 
+      let msg = res.message;
+      if (res.code_hint) {
+        msg += ' [Testing Code: ' + res.code_hint + ']';
+        if ($('forgot-code-input')) $('forgot-code-input').value = res.code_hint;
+      }
+      showMsg('forgot-msg', msg, 'info');
+
       if (isResend) {
         showToast('A new 6-digit verification code has been sent!', 'success');
       }

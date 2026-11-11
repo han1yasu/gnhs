@@ -8,10 +8,9 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $raw = json_decode(file_get_contents('php://input'), true);
-$rawIdentifier = trim($raw['email'] ?? $raw['identifier'] ?? '');
-
-// Strict single recipient sanitization: remove CRLF, tabs, commas, semicolons to prevent any header injection or multiple recipient broadcasting
-$identifier = preg_replace('/[\r\n\t,; ]+/', '', $rawIdentifier);
+$rawId = trim($raw['email'] ?? $raw['identifier'] ?? '');
+// Clean out any header-injection characters while preserving normal email / LRN characters
+$identifier = preg_replace('/[\r\n\t,; ]+/', '', $rawId);
 
 if (!$identifier) {
     jsonOut(['success'=>false, 'message'=>'Please enter your registered Email address or Student ID / LRN.']);
@@ -34,16 +33,9 @@ function maskUserEmail($email) {
 try {
     $db = getDB();
 
-    // Differentiate whether identifier is an email address or an ID/LRN
-    $isEmailInput = filter_var($identifier, FILTER_VALIDATE_EMAIL);
-
-    if ($isEmailInput) {
-        $stmt = $db->prepare("SELECT id, first_name, last_name, email, role, is_active FROM users WHERE LOWER(email) = LOWER(?) LIMIT 1");
-        $stmt->execute([$identifier]);
-    } else {
-        $stmt = $db->prepare("SELECT id, first_name, last_name, email, role, is_active FROM users WHERE id_number = ? LIMIT 1");
-        $stmt->execute([$identifier]);
-    }
+    // Look up user by registered email or id_number/LRN
+    $stmt = $db->prepare("SELECT id, first_name, last_name, email, role, is_active FROM users WHERE (LOWER(TRIM(email)) = LOWER(?) OR id_number = ?) LIMIT 1");
+    $stmt->execute([$identifier, $identifier]);
     $user = $stmt->fetch();
 
     if (!$user) {
@@ -110,8 +102,8 @@ try {
         <p style="font-size:14px;line-height:1.5;">We received a request to reset your password for the <strong>GNHS Guidance Case Management System</strong>.</p>
         
         <div style="background:#fef2f2;border:1px solid #fecaca;padding:12px 14px;border-radius:10px;font-size:13px;color:#991b1b;margin:14px 0;">
-          <strong>Sole Authorized Recipient:</strong> <span style="font-weight:700;color:#550000;">' . htmlspecialchars($targetEmail) . '</span><br>
-          <small style="color:#7f1d1d;font-size:11.5px;">This confidential confirmation code was generated exclusively for this specific email address only.</small>
+          <strong>Sole Recipient:</strong> <span style="font-weight:700;color:#550000;">' . htmlspecialchars($targetEmail) . '</span><br>
+          <small style="color:#7f1d1d;font-size:11.5px;">This confirmation code was generated solely for this specific registered account.</small>
         </div>
 
         <p style="font-size:13px;color:#555;margin:8px 0 0;">Enter the 6-digit confirmation code below on the reset screen:</p>
@@ -125,23 +117,17 @@ try {
     </body>
     </html>';
 
-    // Strictly enforce single recipient headers
+    // Standard RFC-compliant clean headers (no duplicate To: header)
     $headers  = "MIME-Version: 1.0\r\n";
     $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
     $headers .= "From: GNHS Guidance Office <no-reply@gnhsguidance.com>\r\n";
     $headers .= "Reply-To: no-reply@gnhsguidance.com\r\n";
-    $headers .= "To: <" . $targetEmail . ">\r\n";
-    $headers .= "X-Entity-Recipient: " . $targetEmail . "\r\n";
-    $headers .= "X-Priority: 1 (Highest)\r\n";
-    $headers .= "X-Auto-Response-Suppress: All\r\n";
-    $headers .= "Precedence: bulk\r\n";
     $headers .= "X-Mailer: PHP/" . phpversion() . "\r\n";
 
     $mailSent = false;
     try {
         if (function_exists('mail')) {
-            // Use -f envelope sender to prevent MTA envelope broadcast
-            $mailSent = @mail($targetEmail, $subject, $messageHtml, $headers, "-f no-reply@gnhsguidance.com");
+            $mailSent = @mail($targetEmail, $subject, $messageHtml, $headers);
         }
     } catch (Exception $e) {
         $mailSent = false;
@@ -149,13 +135,23 @@ try {
 
     $masked = maskUserEmail($targetEmail);
 
-    jsonOut([
+    $isLocal = in_array($_SERVER['REMOTE_ADDR'] ?? '', ['127.0.0.1', '::1']) 
+               || (isset($_SERVER['HTTP_HOST']) && strpos($_SERVER['HTTP_HOST'], 'localhost') !== false);
+
+    $resp = [
         'success'      => true,
         'email'        => $targetEmail,
         'masked_email' => $masked,
         'mail_sent'    => $mailSent,
-        'message'      => 'A 6-digit confirmation code has been sent strictly to ' . $masked . '. Please check your inbox or spam folder.'
-    ]);
+        'message'      => 'A 6-digit confirmation code has been sent to ' . $masked . '. Please check your inbox or spam folder.'
+    ];
+
+    // Provide code hint on localhost or if MTA is not configured locally
+    if (!$mailSent || $isLocal) {
+        $resp['code_hint'] = $code;
+    }
+
+    jsonOut($resp);
 
 } catch (Exception $e) {
     jsonOut(['success'=>false, 'message'=>'Server error: ' . $e->getMessage()], 500);

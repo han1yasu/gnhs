@@ -102,11 +102,11 @@ $qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" . urle
                 </button>
             </div>
         </div>
-        <button type="button" class="glass-setup-link" id="lostAuthBtn" style="display:none" onclick="requestTotpReset()">
+        <button type="button" class="glass-setup-link" id="lostAuthBtn" style="display:none" onclick="openTotpResetModal()">
             <i class="fas fa-question-circle"></i> Lost your authenticator app? Request 2FA Reset
         </button>
         <?php else: ?>
-        <button type="button" class="glass-setup-link" id="lostAuthBtn" onclick="requestTotpReset()">
+        <button type="button" class="glass-setup-link" id="lostAuthBtn" onclick="openTotpResetModal()">
             <i class="fas fa-question-circle"></i> Lost your authenticator app? Request 2FA Reset
         </button>
         <div id="resetRequestedBadge" style="display:none; background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 10px; padding: 12px; color: #a7f3d0; font-size: 13px; line-height: 1.4; text-align: left;">
@@ -125,8 +125,36 @@ $qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" . urle
     <?php endif; ?>
 
     <div style="margin-top: 24px; text-align: center;">
-        <a href="/gnhs-guidance/index.html" style="color: rgba(255,255,255,0.8); font-size: 13px; text-decoration: none; display: inline-block; padding: 8px;"><i class="fas fa-arrow-left"></i> Go back to login page</a>
+        <a href="../index.html" style="color: rgba(255,255,255,0.8); font-size: 13px; text-decoration: none; display: inline-block; padding: 8px;"><i class="fas fa-arrow-left"></i> Go back to login page</a>
     </div>
+</div>
+
+<!-- 2FA RESET CONFIRMATION MODAL (POPUP IN THE MIDDLE) -->
+<div id="totpResetModal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.72); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); align-items:center; justify-content:center; padding:16px;">
+  <div id="totpResetModalCard" style="background:#1e1e24; border:1px solid rgba(255,255,255,0.18); border-radius:22px; max-width:440px; width:100%; padding:30px 24px; text-align:center; box-shadow:0 24px 50px rgba(0,0,0,0.6); transform:scale(0.95); transition:transform 0.2s cubic-bezier(0.16, 1, 0.3, 1); color:#fff; position:relative;">
+    <button type="button" onclick="closeTotpResetModal()" style="position:absolute; top:16px; right:16px; background:none; border:none; color:rgba(255,255,255,0.6); font-size:16px; cursor:pointer; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; transition:0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)';this.style.color='#fff'" onmouseout="this.style.background='none';this.style.color='rgba(255,255,255,0.6)'">
+      <i class="fas fa-times"></i>
+    </button>
+    <div style="width:64px; height:64px; border-radius:50%; background:rgba(245, 158, 11, 0.18); border:2px solid rgba(245, 158, 11, 0.4); color:#fbbf24; font-size:26px; display:flex; align-items:center; justify-content:center; margin:0 auto 16px;">
+      <i class="fas fa-shield-alt"></i>
+    </div>
+    
+    <h3 style="font-size:20px; font-weight:800; margin:0 0 10px; color:#fff; letter-spacing:-0.3px;">Reset 2FA Authenticator?</h3>
+    <p style="font-size:13.5px; line-height:1.55; color:rgba(255,255,255,0.75); margin:0 0 22px;">
+      Did you lose access to your authenticator app? This will submit an official request to your Guidance Counselor to reset your Two-Factor Authentication so you can scan a new QR code.
+    </p>
+
+    <div id="totpResetModalMsg" style="display:none; padding:10px 14px; border-radius:10px; font-size:12.5px; margin-bottom:16px; text-align:left;"></div>
+
+    <div style="display:flex; gap:10px;">
+      <button type="button" onclick="closeTotpResetModal()" style="flex:1; padding:12px 16px; border-radius:12px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); color:#fff; font-size:13.5px; font-weight:700; cursor:pointer; transition:0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.15)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'">
+        Cancel
+      </button>
+      <button type="button" id="btnConfirmTotpReset" onclick="executeTotpResetRequest()" style="flex:1.2; padding:12px 16px; border-radius:12px; background:linear-gradient(135deg, #7f1d1d, #991b1b); border:1px solid rgba(255,255,255,0.25); color:#fff; font-size:13.5px; font-weight:800; cursor:pointer; box-shadow:0 4px 14px rgba(127,29,29,0.4); display:inline-flex; align-items:center; justify-content:center; gap:8px; transition:0.2s;" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform='none'">
+        <i class="fas fa-paper-plane"></i> Submit Request
+      </button>
+    </div>
+  </div>
 </div>
 
 <script src="../theme.js?v=1.1"></script>
@@ -158,7 +186,7 @@ async function verifyOTP() {
     btn.style.opacity = '0.7';
 
     try {
-        const res = await fetch('/gnhs-guidance/api/verify_totp.php', {
+        const res = await fetch('../api/verify_totp.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ code: code })
@@ -189,47 +217,93 @@ async function verifyOTP() {
     }
 }
 
-async function requestTotpReset() {
-    if (!confirm("Did you lose access to your authenticator app?\n\nThis will send an official request to your Guidance Counselor to reset your Two-Factor Authentication so you can scan a new QR code.")) {
-        return;
+function openTotpResetModal() {
+    const modal = document.getElementById('totpResetModal');
+    const card = document.getElementById('totpResetModalCard');
+    const msg = document.getElementById('totpResetModalMsg');
+    if (msg) msg.style.display = 'none';
+    if (modal) {
+        modal.style.display = 'flex';
+        setTimeout(() => {
+            if (card) card.style.transform = 'scale(1)';
+        }, 10);
     }
-    const btn = document.getElementById('lostAuthBtn');
-    if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting request...';
+}
+
+function closeTotpResetModal() {
+    const modal = document.getElementById('totpResetModal');
+    const card = document.getElementById('totpResetModalCard');
+    if (card) card.style.transform = 'scale(0.95)';
+    setTimeout(() => {
+        if (modal) modal.style.display = 'none';
+    }, 150);
+}
+
+// Close when clicking modal backdrop
+document.getElementById('totpResetModal')?.addEventListener('click', function(e) {
+    if (e.target === this) closeTotpResetModal();
+});
+
+// Close with Escape key
+window.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeTotpResetModal();
+});
+
+async function executeTotpResetRequest() {
+    const submitBtn = document.getElementById('btnConfirmTotpReset');
+    const msg = document.getElementById('totpResetModalMsg');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting request...';
     }
+    if (msg) msg.style.display = 'none';
     
     try {
-        const res = await fetch('/gnhs-guidance/api/request_totp_reset.php', {
+        const res = await fetch('../api/request_totp_reset.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' }
         });
         const data = await res.json();
         if (data.success) {
-            if (btn) btn.style.display = 'none';
+            closeTotpResetModal();
+            const lostBtn = document.getElementById('lostAuthBtn');
+            if (lostBtn) lostBtn.style.display = 'none';
             const badge = document.getElementById('resetRequestedBadge');
             if (badge) badge.style.display = 'block';
         } else {
-            alert(data.message || 'Failed to submit request.');
-            if (btn) {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-question-circle"></i> Lost your authenticator app? Request 2FA Reset';
+            if (msg) {
+                msg.style.display = 'block';
+                msg.style.background = 'rgba(239, 68, 68, 0.2)';
+                msg.style.border = '1px solid rgba(239, 68, 68, 0.4)';
+                msg.style.color = '#fca5a5';
+                msg.textContent = data.message || 'Failed to submit reset request.';
+            }
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Request';
             }
         }
     } catch (e) {
-        alert('Network error. Please try again.');
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-question-circle"></i> Lost your authenticator app? Request 2FA Reset';
+        if (msg) {
+            msg.style.display = 'block';
+            msg.style.background = 'rgba(239, 68, 68, 0.2)';
+            msg.style.border = '1px solid rgba(239, 68, 68, 0.4)';
+            msg.style.color = '#fca5a5';
+            msg.textContent = 'Network error. Please try again.';
+        }
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Request';
         }
     }
 }
 
 async function cancelTotpReset() {
     try {
-        const isNested = window.location.pathname.includes('/gnhs-guidance/gnhs-guidance/');
-        const apiUrl = isNested ? '/gnhs-guidance/gnhs-guidance/api/cancel_totp_reset.php' : '/gnhs-guidance/api/cancel_totp_reset.php';
-        const res = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+        const res = await fetch('../api/cancel_totp_reset.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
         const data = await res.json();
         if (data.success) {
             const badge = document.getElementById('resetRequestedBadge');

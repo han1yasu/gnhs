@@ -48,7 +48,15 @@ function showToast(msg, type = 'success') {
 function openLoginModal() {
   const m = $('loginModal'); if (m) { m.classList.remove('hidden'); showStep('step-choose'); }
 }
-function closeLoginModal() { $('loginModal')?.classList.add('hidden'); }
+function closeLoginModal() {
+  const m = document.getElementById('loginModal');
+  if (m) {
+    m.classList.add('hidden');
+    m.style.display = 'none';
+  }
+  document.body.style.overflow = '';
+}
+window.closeLoginModal = closeLoginModal;
 function closeOnOverlay(e) { if (e.target.id==='loginModal') closeLoginModal(); }
 
 function showStep(id) {

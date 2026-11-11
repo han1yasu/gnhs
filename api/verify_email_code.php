@@ -62,55 +62,54 @@ try {
     $user = $userStmt->fetch();
 
     if ($user) {
-        // User exists! Setup pending user for 2FA process
-        $secret = $user['totp_secret'] ?? '';
-        if (empty($secret)) {
-            require_once __DIR__ . '/../src/PureOTP.php';
-            $secret = PureOTP::generateSecret();
-            $db->prepare("UPDATE users SET totp_secret = ? WHERE id = ?")->execute([$secret, $user['id']]);
-        }
-
-        $_SESSION['pending_user'] = [
-            'id'              => $user['id'],
+        // User exists! Google/Gmail code verified: Log directly in to dashboard (no 2FA required for Gmail code login)
+        $role = $user['role'];
+        $_SESSION['user'] = [
+            'id'              => (int)$user['id'],
             'email'           => $user['email'],
             'first_name'      => $user['first_name'],
             'last_name'       => $user['last_name'],
             'id_number'       => $user['id_number'],
-            'role'            => $user['role'],
+            'role'            => $role,
             'grade_section'   => $user['grade_section'],
             'department'      => $user['department'] ?? null,
             'avatar_initials' => $user['avatar_initials'] ?? strtoupper($user['first_name'][0].($user['last_name'][0]??'')),
             'avatar_photo'    => $user['avatar_photo'] ?? null,
             'advisory_class'  => $user['advisory_class'] ?? null,
-            'is_setup_complete' => $user['is_setup_complete'] ?? 0,
+            'is_setup_complete' => (int)($user['is_setup_complete'] ?? 0),
             'age'             => $user['age'] ?? null,
-            'totp_secret'     => $secret,
         ];
+        $_SESSION['last_activity'] = time();
+        unset($_SESSION['pending_user']);
+        unset($_SESSION['pending_email_otp']);
+
+        $homeMap = [
+            'student' => '/gnhs-guidance/pages/student-dashboard.php',
+            'teacher' => '/gnhs-guidance/pages/teacher-dashboard.php',
+            'admin'   => '/gnhs-guidance/pages/admin-dashboard.php'
+        ];
+        $dest = $homeMap[$role] ?? '/gnhs-guidance/index.html';
+
+        if ($role === 'student' && empty($user['is_setup_complete'])) {
+            $dest = '/gnhs-guidance/pages/student-setup.php';
+        } elseif ($role === 'teacher' && empty($user['is_setup_complete'])) {
+            $dest = '/gnhs-guidance/pages/teacher-setup.php';
+        }
 
         jsonOut([
             'success'     => true,
             'is_new'      => false,
-            'require_2fa' => true,
-            'redirect'    => '/gnhs-guidance/pages/totp_verify.php',
+            'require_2fa' => false,
+            'redirect'    => $dest,
             'user_name'   => trim($user['first_name'] . ' ' . $user['last_name']),
-            'role'        => $user['role'],
-            'message'     => 'Email verified! Redirecting to Two-Factor Authentication...'
+            'role'        => $role,
+            'message'     => 'Gmail verified! Logging you in to your dashboard...'
         ]);
     } else {
-        // New user! They need to complete their profile (name, grade/section or dept)
-        // Store verification token in session
-        $_SESSION['verified_email_signup'] = [
-            'email' => $email,
-            'role'  => $detectedRole,
-            'verified_at' => time()
-        ];
-
         jsonOut([
-            'success'   => true,
-            'is_new'    => true,
-            'email'     => $email,
-            'role'      => $detectedRole,
-            'message'   => 'Email verified! Please complete your name to continue.'
+            'success' => false,
+            'is_new'  => false,
+            'message' => 'No GNHS Guidance account found for "' . htmlspecialchars($email) . '". Please contact your Advisory Teacher or Guidance Counselor to create your account.'
         ]);
     }
 } catch (Exception $e) {

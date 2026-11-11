@@ -351,6 +351,9 @@
       <!-- SHOPEE-STYLE GOOGLE ACCOUNT CHOOSER STEP -->
       <div class="modal-step hidden" id="step-google-chooser">
         <div class="google-top-bar">
+          <button type="button" class="modal-back" onclick="goBackFromGoogle()" title="Go back">
+            <i class="fas fa-arrow-left"></i> <span>Back</span>
+          </button>
           <div class="google-brand">
             <svg width="18" height="18" viewBox="0 0 48 48">
               <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
@@ -360,7 +363,7 @@
             </svg>
             <span>Sign in with Google</span>
           </div>
-          <button type="button" class="modal-close" onclick="closeLoginModal()"><i class="fas fa-times"></i></button>
+          <button type="button" class="modal-close" onclick="closeLoginModal()" title="Close"><i class="fas fa-times"></i></button>
         </div>
 
         <!-- STAGE A: CHOOSE ACCOUNT LIST -->
@@ -370,6 +373,8 @@
           </div>
           <h2 class="google-chooser-title">Choose an account</h2>
           <p class="google-chooser-sub">to continue to <strong>GNHS Guidance</strong></p>
+
+          <div id="google-list-msg" style="display:none;margin-bottom:14px"></div>
 
           <div id="googleAccountsList" class="google-accounts-list">
             <!-- Rendered dynamically -->
@@ -759,8 +764,48 @@
     // Replace with your Google OAuth Web Client ID (100% Free, zero payment) to show native Google popup
     const GOOGLE_CLIENT_ID = '';
     let _selectedGoogleAccount = null;
+    let _previousStepBeforeGoogle = 'step-choose';
+
+    window.closeLoginModal = function() {
+      const m = document.getElementById('loginModal');
+      if (m) {
+        m.classList.add('hidden');
+        m.style.display = 'none';
+      }
+      document.body.style.overflow = '';
+    };
+
+    window.goBackFromGoogle = function() {
+      const sList = document.getElementById('googleStageList');
+      const sEmail = document.getElementById('googleStageEmail');
+      const sOtp = document.getElementById('googleStageOtp');
+
+      if (sOtp && sOtp.style.display !== 'none') {
+        showGoogleAccountList();
+        return;
+      }
+      if (sEmail && sEmail.style.display !== 'none') {
+        showGoogleAccountList();
+        return;
+      }
+      const targetStep = _previousStepBeforeGoogle || 'step-choose';
+      if (typeof showStep === 'function') {
+        showStep(targetStep);
+      } else {
+        document.querySelectorAll('.modal-step').forEach(s => s.classList.add('hidden'));
+        document.getElementById(targetStep)?.classList.remove('hidden');
+      }
+    };
 
     window.openGoogleAccountChooser = function() {
+      // Remember which step the user came from
+      const visible = Array.from(document.querySelectorAll('.modal-step:not(.hidden)')).pop();
+      if (visible && visible.id !== 'step-google-chooser') {
+        _previousStepBeforeGoogle = visible.id;
+      } else {
+        _previousStepBeforeGoogle = 'step-choose';
+      }
+
       // If a real Google Client ID is configured, trigger Google's native popup (Image 3)
       if (GOOGLE_CLIENT_ID && window.google && google.accounts && google.accounts.id) {
         google.accounts.id.initialize({
@@ -775,6 +820,7 @@
 
       const lm = document.getElementById('login-msg'); if (lm) lm.style.display = 'none';
       const em = document.getElementById('google-email-msg'); if (em) em.style.display = 'none';
+      const gm = document.getElementById('google-list-msg'); if (gm) gm.style.display = 'none';
       _selectedGoogleAccount = null;
 
       showGoogleAccountList();
@@ -794,6 +840,7 @@
       if (sEmail) sEmail.style.display = 'none';
       if (sOtp) sOtp.style.display = 'none';
 
+      const gm = document.getElementById('google-list-msg'); if (gm) gm.style.display = 'none';
       renderGoogleAccountsList();
     };
 
@@ -881,8 +928,6 @@
       const initials = decodeURIComponent(rawInitials);
 
       _selectedGoogleAccount = { email, name, role, initials };
-
-      // Immediately send 6-digit code to Gmail and route straight to 2FA (NO PASSWORD NEEDED)
       loginWithGoogleCode();
     };
 
@@ -891,33 +936,51 @@
       const email = _selectedGoogleAccount.email;
       const role = _selectedGoogleAccount.role || (email.endsWith('deped.gov.ph') ? 'teacher' : 'student');
 
-      const sList = document.getElementById('googleStageList');
-      const sEmail = document.getElementById('googleStageEmail');
-      const sOtp = document.getElementById('googleStageOtp');
-      if (sList) sList.style.display = 'none';
-      if (sEmail) sEmail.style.display = 'none';
-      if (sOtp) sOtp.style.display = 'block';
+      const msgListEl = document.getElementById('google-list-msg');
+      const msgEmailEl = document.getElementById('google-email-msg');
+      const msgOtpEl = document.getElementById('google-otp-msg');
 
-      const avatarEl = document.getElementById('googleOtpAvatar');
-      const emailEl = document.getElementById('googleOtpEmail');
-      if (avatarEl) avatarEl.textContent = _selectedGoogleAccount.initials || 'G';
-      if (emailEl) emailEl.textContent = email;
-
-      const msgEl = document.getElementById('google-otp-msg');
-      if (msgEl) {
-        msgEl.textContent = 'Sending 6-digit verification code to ' + email + '…';
-        msgEl.className = 'success-msg';
-        msgEl.style.display = 'block';
+      if (!isResend) {
+        if (msgListEl && document.getElementById('googleStageList')?.style.display !== 'none') {
+          msgListEl.textContent = 'Checking account & sending verification code to ' + email + '…';
+          msgListEl.className = 'success-msg';
+          msgListEl.style.display = 'block';
+        }
+        if (msgEmailEl && document.getElementById('googleStageEmail')?.style.display !== 'none') {
+          msgEmailEl.textContent = 'Checking account & sending verification code to ' + email + '…';
+          msgEmailEl.className = 'success-msg';
+          msgEmailEl.style.display = 'block';
+        }
+      } else {
+        if (msgOtpEl) {
+          msgOtpEl.textContent = 'Resending verification code to ' + email + '…';
+          msgOtpEl.className = 'success-msg';
+          msgOtpEl.style.display = 'block';
+        }
       }
 
       try {
         const caller = typeof apiPost === 'function' ? apiPost : window._apiPost;
         const res = await caller('/gnhs-guidance/api/send_email_code.php', { email, role });
+
         if (res && res.success) {
-          if (msgEl) {
-            msgEl.textContent = res.message || 'A 6-digit verification code has been sent. Please check your inbox or spam folder.';
-            msgEl.className = 'success-msg';
-            msgEl.style.display = 'block';
+          // Transition to OTP stage now that email is confirmed to exist
+          const sList = document.getElementById('googleStageList');
+          const sEmail = document.getElementById('googleStageEmail');
+          const sOtp = document.getElementById('googleStageOtp');
+          if (sList) sList.style.display = 'none';
+          if (sEmail) sEmail.style.display = 'none';
+          if (sOtp) sOtp.style.display = 'block';
+
+          const avatarEl = document.getElementById('googleOtpAvatar');
+          const emailEl = document.getElementById('googleOtpEmail');
+          if (avatarEl) avatarEl.textContent = _selectedGoogleAccount.initials || 'G';
+          if (emailEl) emailEl.textContent = email;
+
+          if (msgOtpEl) {
+            msgOtpEl.textContent = res.message || 'A 6-digit verification code has been sent. Please check your Gmail.';
+            msgOtpEl.className = 'success-msg';
+            msgOtpEl.style.display = 'block';
           }
           const codeInput = document.getElementById('google-otp-code-input');
           if (codeInput) {
@@ -925,18 +988,28 @@
             setTimeout(() => codeInput.focus(), 150);
           }
         } else {
-          if (msgEl) {
-            msgEl.textContent = (res && res.message) || 'Failed to send verification code.';
-            msgEl.className = 'error-msg';
-            msgEl.style.display = 'block';
+          // Email not found or send error: STAY on the current list/email screen and display error
+          const errMsg = (res && res.message) || 'No GNHS account found with this email.';
+          if (msgListEl && document.getElementById('googleStageList')?.style.display !== 'none') {
+            msgListEl.textContent = errMsg;
+            msgListEl.className = 'error-msg';
+            msgListEl.style.display = 'block';
+          }
+          if (msgEmailEl && document.getElementById('googleStageEmail')?.style.display !== 'none') {
+            msgEmailEl.textContent = errMsg;
+            msgEmailEl.className = 'error-msg';
+            msgEmailEl.style.display = 'block';
+          }
+          if (msgOtpEl && document.getElementById('googleStageOtp')?.style.display !== 'none') {
+            msgOtpEl.textContent = errMsg;
+            msgOtpEl.className = 'error-msg';
+            msgOtpEl.style.display = 'block';
           }
         }
       } catch(e) {
-        if (msgEl) {
-          msgEl.textContent = 'Network error. Please try again.';
-          msgEl.className = 'error-msg';
-          msgEl.style.display = 'block';
-        }
+        const errText = 'Server connection error. Please try again.';
+        if (msgListEl) { msgListEl.textContent = errText; msgListEl.className = 'error-msg'; msgListEl.style.display = 'block'; }
+        if (msgEmailEl) { msgEmailEl.textContent = errText; msgEmailEl.className = 'error-msg'; msgEmailEl.style.display = 'block'; }
       }
     };
 
@@ -950,16 +1023,11 @@
         });
 
         if (res && res.success) {
-          if (!res.is_new) {
-            if (res.user) saveAccountToDevice(res.user);
-            document.body.classList.add('page-exiting');
-            setTimeout(() => {
-              window.location.href = res.redirect || '/gnhs-guidance/pages/totp_verify.php';
-            }, 300);
-          } else {
-            // First time user: open registration pre-filled with verified Google identity
-            goToRegisterFromGoogle(res.email, res.first_name, res.last_name);
-          }
+          if (res.user) saveAccountToDevice(res.user);
+          document.body.classList.add('page-exiting');
+          setTimeout(() => {
+            window.location.href = res.redirect || '/gnhs-guidance/pages/student-dashboard.php';
+          }, 300);
         } else {
           alert((res && res.message) || 'Google sign in failed.');
         }
@@ -1002,27 +1070,23 @@
         }
 
         if (res && res.success) {
-          if (!res.is_new) {
-            saveAccountToDevice({
-              email: email,
-              name: res.user_name || _selectedGoogleAccount.name,
-              role: res.role || _selectedGoogleAccount.role,
-              initials: _selectedGoogleAccount.initials
-            });
+          saveAccountToDevice({
+            email: email,
+            name: res.user_name || _selectedGoogleAccount.name,
+            role: res.role || _selectedGoogleAccount.role,
+            initials: _selectedGoogleAccount.initials
+          });
 
-            if (msgEl) {
-              msgEl.textContent = 'Gmail verified! Redirecting to Two-Factor Authentication…';
-              msgEl.className = 'success-msg';
-              msgEl.style.display = 'block';
-            }
-
-            document.body.classList.add('page-exiting');
-            setTimeout(() => {
-              window.location.href = res.redirect || '/gnhs-guidance/pages/totp_verify.php';
-            }, 300);
-          } else {
-            goToRegisterFromGoogle(email);
+          if (msgEl) {
+            msgEl.textContent = 'Gmail verified! Logging you in to your dashboard…';
+            msgEl.className = 'success-msg';
+            msgEl.style.display = 'block';
           }
+
+          document.body.classList.add('page-exiting');
+          setTimeout(() => {
+            window.location.href = res.redirect || '/gnhs-guidance/pages/student-dashboard.php';
+          }, 350);
         } else {
           if (msgEl) {
             msgEl.textContent = (res && res.message) || 'Invalid or expired code. Please try again.';

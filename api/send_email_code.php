@@ -23,9 +23,34 @@ if (str_ends_with($email, 'deped.gov.ph')) {
     $role = 'teacher';
 }
 
-// Ensure database table exists
+// Ensure database table exists and verify user is registered in GNHS
 try {
     $db = getDB();
+
+    // Check if the user exists in the database records
+    $stmtUser = $db->prepare("SELECT id, email, first_name, last_name, role, is_active FROM users WHERE LOWER(email) = ? LIMIT 1");
+    $stmtUser->execute([$email]);
+    $uRecord = $stmtUser->fetch();
+
+    if (!$uRecord) {
+        jsonOut([
+            'success' => false,
+            'not_registered' => true,
+            'message' => 'No GNHS Guidance account found for "' . htmlspecialchars($email) . '". Please contact your Advisory Teacher or the Guidance Office to have your account issued.'
+        ]);
+    }
+
+    if (isset($uRecord['is_active']) && (int)$uRecord['is_active'] === 0) {
+        jsonOut([
+            'success' => false,
+            'message' => 'This account has been deactivated. Please contact the Guidance Office.'
+        ]);
+    }
+
+    if (!empty($uRecord['role'])) {
+        $role = $uRecord['role'];
+    }
+
     $db->exec("CREATE TABLE IF NOT EXISTS `email_verification_codes` (
         `id` INT AUTO_INCREMENT PRIMARY KEY,
         `email` VARCHAR(255) NOT NULL,

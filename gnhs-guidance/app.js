@@ -512,6 +512,7 @@ async function verifyResetEmailCode() {
 
     if (res.success && res.reset_token) {
       _resetFlowState.resetToken = res.reset_token;
+      if (res.email) _resetFlowState.email = res.email;
 
       const st1 = $('forgot-stage-1');
       const st2 = $('forgot-stage-2');
@@ -584,7 +585,10 @@ async function submitNewPasswordReset() {
     const apiUrl = isNested ? '/gnhs-guidance/gnhs-guidance/api/reset_password.php' : '/gnhs-guidance/api/reset_password.php';
 
     const res = await apiPost(apiUrl, {
+      email: _resetFlowState.email,
       reset_token: _resetFlowState.resetToken,
+      token: _resetFlowState.resetToken,
+      password: pass,
       new_password: pass,
       confirm_password: confirm
     });

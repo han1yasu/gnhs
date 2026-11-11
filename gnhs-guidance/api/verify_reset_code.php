@@ -51,6 +51,7 @@ try {
 
     jsonOut([
         'success'     => true,
+        'email'       => $email,
         'reset_token' => $resetToken,
         'message'     => 'Verification code confirmed! You can now set your new password.'
     ]);
@@ -58,4 +59,3 @@ try {
 } catch (Exception $e) {
     jsonOut(['success'=>false, 'message'=>'Server error: ' . $e->getMessage()], 500);
 }
-

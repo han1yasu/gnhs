@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GNHS — Guidance Case Management System</title>
-  <link rel="stylesheet" href="style.css?v=20261111_02" />
+  <link rel="stylesheet" href="style.css?v=20261111_06" />
   <link
     href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,600;1,400&display=swap"
     rel="stylesheet" />
@@ -350,20 +350,25 @@
 
       <!-- SHOPEE-STYLE GOOGLE ACCOUNT CHOOSER STEP -->
       <div class="modal-step hidden" id="step-google-chooser">
-        <div class="google-top-bar">
-          <button type="button" class="modal-back" onclick="goBackFromGoogle()" title="Go back">
-            <i class="fas fa-arrow-left"></i> <span>Back</span>
-          </button>
-          <div class="google-brand">
-            <svg width="18" height="18" viewBox="0 0 48 48">
-              <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-              <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-              <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-              <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-            </svg>
-            <span>Sign in with Google</span>
+        <div class="google-top-bar" style="display:flex;align-items:center;justify-content:space-between;width:100%;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid var(--border);position:relative;box-sizing:border-box;">
+          <div class="google-top-left" style="display:flex;align-items:center;gap:10px;min-width:0;">
+            <button type="button" class="modal-back google-back-btn" onclick="goBackFromGoogle()" title="Go back to previous step" style="position:static !important;top:auto !important;right:auto !important;margin:0 !important;display:inline-flex;align-items:center;gap:6px;background:rgba(0,0,0,0.04);border:1px solid var(--border);border-radius:8px;color:var(--text-2);font-weight:700;font-size:12.5px;cursor:pointer;padding:5px 9px;transition:.2s;line-height:1.2;">
+              <i class="fas fa-arrow-left" style="font-size:11px;"></i> <span>Back</span>
+            </button>
+            <div style="width:1px;height:16px;background:var(--border);flex-shrink:0;"></div>
+            <div class="google-brand" style="display:inline-flex;align-items:center;gap:8px;font-size:13.5px;font-weight:700;color:var(--text);margin:0;white-space:nowrap;">
+              <svg width="18" height="18" viewBox="0 0 48 48" style="flex-shrink:0;">
+                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+              </svg>
+              <span>Sign in with Google</span>
+            </div>
           </div>
-          <button type="button" class="modal-close" onclick="closeLoginModal()" title="Close"><i class="fas fa-times"></i></button>
+          <button type="button" class="modal-close" onclick="closeLoginModal()" title="Close" style="position:static !important;top:auto !important;right:auto !important;margin:0 !important;cursor:pointer;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,0.05);color:var(--text-2);display:inline-flex;align-items:center;justify-content:center;border:none;flex-shrink:0;">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
 
         <!-- STAGE A: CHOOSE ACCOUNT LIST -->
@@ -383,6 +388,11 @@
           <p class="google-privacy-footer">
             Before using this app, you can review GNHS Guidance's <a href="#">Privacy Policy</a> and <a href="#">Terms of Service</a>.
           </p>
+          <div style="text-align:center;margin-top:14px;padding-top:12px;border-top:1px dashed var(--border);">
+            <button type="button" onclick="goBackFromGoogle()" style="background:none;border:none;color:var(--text-2);font-weight:700;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:6px;transition:.2s;">
+              <i class="fas fa-arrow-left"></i> <span>Back to Login Options</span>
+            </button>
+          </div>
         </div>
 
         <!-- STAGE B: USE ANOTHER ACCOUNT (EMAIL INPUT) -->

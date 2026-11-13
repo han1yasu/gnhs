@@ -1604,8 +1604,18 @@ function onCaseStatusSelectChange(sel) {
   }
 }
 
+let _reviewModalWasOpen = false;
+
 function openCaseResolutionModal() {
   const modal = ensureCaseResolutionModal();
+
+  // Hide Review Case popup so Case Resolution replaces it cleanly
+  const reviewModal = document.getElementById('caseReviewModal');
+  if (reviewModal && !reviewModal.classList.contains('hidden')) {
+    reviewModal.classList.add('hidden');
+    _reviewModalWasOpen = true;
+  }
+
   // Ensure DOM position is topmost by appending to body
   if (modal.parentNode !== document.body) {
     document.body.appendChild(modal);
@@ -1693,6 +1703,16 @@ function closeCaseResolutionModal() {
     modal.classList.add('hidden');
     modal.style.display = 'none';
   }
+
+  // Re-open Review Case popup so counselor seamlessly returns to reviewing the case
+  if (_reviewModalWasOpen) {
+    const reviewModal = document.getElementById('caseReviewModal');
+    if (reviewModal) {
+      reviewModal.classList.remove('hidden');
+    }
+    _reviewModalWasOpen = false;
+  }
+
   const sel = $('case-status-sel');
   if (sel && _currentReviewCase && _currentReviewCase.status !== 'resolved') {
     sel.value = _originalCaseStatus || 'under_review';
@@ -1740,6 +1760,7 @@ async function submitCaseResolution() {
     });
 
     if (res.success) {
+      _reviewModalWasOpen = false;
       closeCaseResolutionModal();
       $('caseReviewModal')?.classList.add('hidden');
       showToast('Case officially resolved and sessions archived!', 'success');
@@ -1752,6 +1773,7 @@ async function submitCaseResolution() {
       }
     }
   } catch (err) {
+    _reviewModalWasOpen = false;
     showToast('Case resolved and archived.', 'success');
     closeCaseResolutionModal();
     $('caseReviewModal')?.classList.add('hidden');

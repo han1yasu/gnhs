@@ -29,7 +29,15 @@ try {
 
     $oldStatus   = $caseData['status'];
     $oldPriority = $caseData['priority'];
-    $studentId   = $caseData['student_id'];
+    $rawStudentId = !empty($caseData['student_id']) ? (int)$caseData['student_id'] : null;
+    $studentId    = null;
+    if ($rawStudentId && $rawStudentId > 0) {
+        $chk = $db->prepare("SELECT id FROM users WHERE id = ?");
+        $chk->execute([$rawStudentId]);
+        if ($chk->fetchColumn()) {
+            $studentId = $rawStudentId;
+        }
+    }
     $caseNumber  = $caseData['case_number'];
     $caseSubject = $caseData['subject'] ?: 'Concern';
 

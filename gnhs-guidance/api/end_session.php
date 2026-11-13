@@ -17,19 +17,48 @@ try {
     $db = getDB();
 
     // Fetch session and case data
-    $stmt = $db->prepare("SELECT cs.*, c.case_number, c.subject AS case_subject, c.student_id AS case_student_id
-        FROM counseling_sessions cs
-        JOIN cases c ON cs.case_id = c.id
-        WHERE cs.id = ?");
-    $stmt->execute([$sessionId]);
-    $session = $stmt->fetch();
-
-    if (!$session) {
-        jsonOut(['success' => false, 'message' => 'Counseling session not found.'], 404);
+    $session = null;
+    if ($sessionId > 0) {
+        $stmt = $db->prepare("SELECT cs.*, c.case_number, c.subject AS case_subject, c.student_id AS case_student_id
+            FROM counseling_sessions cs
+            JOIN cases c ON cs.case_id = c.id
+            WHERE cs.id = ?");
+        $stmt->execute([$sessionId]);
+        $session = $stmt->fetch();
     }
 
-    $caseId     = (int)$session['case_id'];
-    $studentId  = (int)($session['student_id'] ?: $session['case_student_id']);
+    if (!$session && $caseId > 0) {
+        // Fallback: fetch case directly and most recent session if any
+        $stmt = $db->prepare("SELECT c.id AS case_id, c.case_number, c.subject AS case_subject, c.student_id AS case_student_id,
+            cs.id AS id, cs.student_id, cs.notes, cs.session_date, cs.session_type, cs.location
+            FROM cases c
+            LEFT JOIN counseling_sessions cs ON cs.case_id = c.id
+            WHERE c.id = ?
+            ORDER BY cs.id DESC LIMIT 1");
+        $stmt->execute([$caseId]);
+        $session = $stmt->fetch();
+        if ($session && !empty($session['id'])) {
+            $sessionId = (int)$session['id'];
+        }
+    }
+
+    if (!$session) {
+        jsonOut(['success' => false, 'message' => 'Counseling session or Case not found.'], 404);
+    }
+
+    $caseId = (int)$session['case_id'];
+
+    // Safely resolve student_id: NULL if empty/0 or not present in users table (prevents FK constraint violation)
+    $candidateStudentId = !empty($session['student_id']) ? (int)$session['student_id'] : (!empty($session['case_student_id']) ? (int)$session['case_student_id'] : null);
+    $studentId = null;
+    if ($candidateStudentId && $candidateStudentId > 0) {
+        $chk = $db->prepare("SELECT id FROM users WHERE id = ?");
+        $chk->execute([$candidateStudentId]);
+        if ($chk->fetchColumn()) {
+            $studentId = $candidateStudentId;
+        }
+    }
+
     $caseNumber = $session['case_number'];
     $caseSubj   = $session['case_subject'] ?: 'Concern';
     $counselorName = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')) ?: 'Guidance Counselor';
@@ -46,16 +75,18 @@ try {
             jsonOut(['success' => false, 'message' => 'Please provide the case resolution summary.'], 400);
         }
 
-        // Mark current session and all previous ongoing sessions for this case as completed
-        $updateSessionStmt = $db->prepare("UPDATE counseling_sessions 
-            SET status = 'completed', 
-                ended_at = NOW(), 
-                notes = ?,
-                recommendations = ?
-            WHERE id = ?");
-        $updateSessionStmt->execute([$endNotes, $guidanceRec ?: null, $sessionId]);
+        // Mark current session as completed if exists
+        if ($sessionId > 0) {
+            $updateSessionStmt = $db->prepare("UPDATE counseling_sessions 
+                SET status = 'completed', 
+                    ended_at = NOW(), 
+                    notes = ?,
+                    recommendations = ?
+                WHERE id = ?");
+            $updateSessionStmt->execute([$endNotes, $guidanceRec ?: null, $sessionId]);
+        }
 
-        $db->prepare("UPDATE counseling_sessions SET status = 'completed' WHERE case_id = ? AND status = 'ongoing'")
+        $db->prepare("UPDATE counseling_sessions SET status = 'completed' WHERE case_id = ? AND status IN ('ongoing', 'in_progress', 'scheduled')")
            ->execute([$caseId]);
 
         // Save final session notes into case_notes if provided (internal, not visible to student)
@@ -124,13 +155,15 @@ try {
         $guidanceRec = trim($raw['guidance_recommendations'] ?? '');
 
         // Mark current session as ongoing progress (continuous tracking)
-        $updateSessionStmt = $db->prepare("UPDATE counseling_sessions 
-            SET status = 'ongoing', 
-                ended_at = NOW(), 
-                notes = ?,
-                recommendations = ?
-            WHERE id = ?");
-        $updateSessionStmt->execute([$endNotes, $guidanceRec ?: null, $sessionId]);
+        if ($sessionId > 0) {
+            $updateSessionStmt = $db->prepare("UPDATE counseling_sessions 
+                SET status = 'ongoing', 
+                    ended_at = NOW(), 
+                    notes = ?,
+                    recommendations = ?
+                WHERE id = ?");
+            $updateSessionStmt->execute([$endNotes, $guidanceRec ?: null, $sessionId]);
+        }
 
         // Save session notes into case_notes if provided (internal, not visible to student)
         if ($sessionNotes) {

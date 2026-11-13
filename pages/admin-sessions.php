@@ -8,10 +8,12 @@ $statusFilter = $_GET['status'] ?? '';
 $search       = trim($_GET['q'] ?? '');
 
 $where = "WHERE 1=1";
-if ($statusFilter) {
-    $where .= " AND cs.status = '" . addslashes($statusFilter) . "'";
+if ($statusFilter === 'completed') {
+    $where .= " AND cs.status = 'completed'";
+} elseif ($statusFilter === 'cancelled') {
+    $where .= " AND cs.status = 'cancelled'";
 } else {
-    // Show active sessions by default — completed sessions are kept in Sessions Archive!
+    // Keep active sessions loaded so user can click between Total, Scheduled, In Progress, and Ongoing with zero latency
     $where .= " AND cs.status != 'completed'";
 }
 if ($search) {
@@ -98,7 +100,30 @@ foreach ($sessions as $s) {
             . "<div style='font-size:11px;color:#be185d'><i class='fas fa-user-tag'></i> Rep by: ".htmlspecialchars($s['student_name']??'Anon')."</div>";
     }
 
-    $rows .= "<tr style='cursor:pointer' onclick='if(!event.target.closest(\"select\") && !event.target.closest(\"button\")) openSessionConsole({$s['id']})'>
+    // Rich search tokens for instant client-side auto filtering
+    $searchTokens = [
+        $s['case_number'],
+        $s['student_name'] ?? '',
+        $s['grade_section'] ?? '',
+        $dt->format('M d, Y'),
+        $dt->format('F d, Y'),
+        $dt->format('m/d/Y'),
+        $dt->format('Y-m-d'),
+        $dt->format('h:i A'),
+        $dt->format('H:i'),
+        $s['location'] ?? 'Guidance Office',
+        $s['session_type'] ?? 'in-person',
+        str_replace('-', ' ', $s['session_type'] ?? ''),
+        $s['status'],
+        str_replace('_', ' ', $s['status']),
+        $s['case_subject'] ?? '',
+        $s['concern_type'] ?? '',
+        str_replace('_', ' ', $s['concern_type'] ?? ''),
+        !empty($s['is_peer_report']) ? ($s['reported_student_name'] ?? '') : '',
+    ];
+    $searchData = htmlspecialchars(strtolower(implode(' ', array_filter($searchTokens))), ENT_QUOTES);
+
+    $rows .= "<tr class='session-row' data-search=\"$searchData\" data-status=\"{$s['status']}\" style='cursor:pointer' onclick='if(!event.target.closest(\"select\") && !event.target.closest(\"button\")) openSessionConsole({$s['id']})'>
         <td><strong style='color:var(--maroon);font-size:14px'>{$s['case_number']}</strong></td>
         <td>$studentCol</td>
         <td>".htmlspecialchars($s['grade_section']??'—')."</td>
@@ -138,23 +163,23 @@ $fCanc  = $statusFilter === 'cancelled' ? 'selected' : '';
 $content = <<<HTML
 <!-- Summary Metric Strip -->
 <div class="summary-cards" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-bottom: 22px;">
-  <div class="sum-card">
+  <div class="sum-card session-stat-card" id="cardStatTotal" onclick="filterSessionByCard('')" title="Click to view all active sessions">
     <div class="sum-icon" style="background:rgba(85,0,0,0.1);color:var(--maroon)"><i class="fas fa-calendar-check"></i></div>
     <div><div class="sum-num">$countTotal</div><div class="sum-label">Total Sessions</div></div>
   </div>
-  <div class="sum-card">
+  <div class="sum-card session-stat-card" id="cardStatScheduled" onclick="filterSessionByCard('scheduled')" title="Click to filter Appointed / Scheduled sessions">
     <div class="sum-icon" style="background:rgba(37,99,235,0.12);color:#2563eb"><i class="fas fa-clock"></i></div>
     <div><div class="sum-num">$countScheduled</div><div class="sum-label">Appointed / Scheduled</div></div>
   </div>
-  <div class="sum-card" style="border: 1px solid rgba(22,163,74,0.3); background: rgba(22,163,74,0.06);">
+  <div class="sum-card session-stat-card" id="cardStatInProgress" onclick="filterSessionByCard('in_progress')" style="border: 1px solid rgba(22,163,74,0.3); background: rgba(22,163,74,0.06);" title="Click to filter Live In-Session">
     <div class="sum-icon" style="background:rgba(22,163,74,0.15);color:#16a34a"><i class="fas fa-headset"></i></div>
     <div><div class="sum-num" style="color:#15803d">$countLive</div><div class="sum-label" style="font-weight:700;color:#166534">Live In-Session</div></div>
   </div>
-  <div class="sum-card" style="border: 1px solid rgba(217,119,6,0.3); background: rgba(254,243,199,0.5);">
+  <div class="sum-card session-stat-card" id="cardStatOngoing" onclick="filterSessionByCard('ongoing')" style="border: 1px solid rgba(217,119,6,0.3); background: rgba(254,243,199,0.5);" title="Click to filter Ongoing Progress sessions">
     <div class="sum-icon" style="background:rgba(217,119,6,0.15);color:#b45309"><i class="fas fa-clock-rotate-left"></i></div>
     <div><div class="sum-num" style="color:#b45309">$countOngoing</div><div class="sum-label" style="font-weight:700;color:#92400e">Ongoing Progress</div></div>
   </div>
-  <div class="sum-card" style="border: 1px solid rgba(22,163,74,0.3); background: rgba(240,253,244,0.6); cursor:pointer" onclick="window.location.href='admin-sessions-archive.php'" title="Click to open Sessions Archive">
+  <div class="sum-card session-stat-card" id="cardStatCompleted" onclick="window.location.href='admin-sessions-archive.php'" style="border: 1px solid rgba(22,163,74,0.3); background: rgba(240,253,244,0.6); cursor:pointer" title="Click to open Sessions Archive">
     <div class="sum-icon" style="background:rgba(22,163,74,0.15);color:#16a34a"><i class="fas fa-check-double"></i></div>
     <div>
       <div class="sum-num" style="color:#15803d">$countCompleted</div>
@@ -179,11 +204,11 @@ $content = <<<HTML
     <div style="display:flex;gap:8px;flex:1;min-width:240px">
       <div class="input-wrap" style="flex:1">
         <i class="fas fa-search"></i>
-        <input type="text" id="sessionSearchQ" value="$sqVal" placeholder="Search active sessions by case #, student name, concern, location…" onkeydown="if(event.key==='Enter') doSessionSearch()"/>
+        <input type="text" id="sessionSearchQ" value="$sqVal" placeholder="Search active sessions by case #, student name, concern, location…" oninput="filterSessionsLive(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();filterSessionsLive(this.value);}"/>
       </div>
-      <button class="btn-sm-primary" onclick="doSessionSearch()"><i class="fas fa-search"></i> Search</button>
+      <button class="btn-sm-primary" type="button" onclick="filterSessionsLive(document.getElementById('sessionSearchQ').value)"><i class="fas fa-search"></i> Search</button>
     </div>
-    <select class="status-select" onchange="filterSessionStatus(this.value)">
+    <select class="status-select" id="sessionStatusFilterSel" onchange="onSessionStatusSelectChange(this.value)">
       <option value="" $fAll>All Active Sessions</option>
       <option value="scheduled" $fSched>Scheduled (Appointed)</option>
       <option value="in_progress" $fProg>Live In-Session</option>
@@ -191,7 +216,7 @@ $content = <<<HTML
       <option value="completed" $fComp>Completed (Archived)</option>
       <option value="cancelled" $fCanc>Cancelled</option>
     </select>
-    <button class="btn-sm-outline" onclick="window.location='admin-sessions.php'"><i class="fas fa-times"></i> Reset</button>
+    <button class="btn-sm-outline" type="button" onclick="resetSessionFilters()"><i class="fas fa-times"></i> Reset</button>
   </div>
 
   <div class="table-wrap">
@@ -370,21 +395,114 @@ $content = <<<HTML
 let _currentSessionData = null;
 let _sessionTimerInterval = null;
 let _selectedEndDecision = null; // 'no' or 'yes'
+let _sessionSearchDebounce = null;
+let _currentStatusFilter = '$statusFilter';
+
+function filterSessionsLive(query, customStatus) {
+  const q = (query !== undefined ? query : (document.getElementById('sessionSearchQ')?.value || '')).trim().toLowerCase();
+  const status = (customStatus !== undefined ? customStatus : (document.getElementById('sessionStatusFilterSel')?.value || '')).trim().toLowerCase();
+  
+  _currentStatusFilter = status;
+  updateActiveStatCard(status);
+
+  const tokens = q ? q.split(/\s+/).filter(Boolean) : [];
+  const rows = document.querySelectorAll('tr.session-row');
+  let visibleCount = 0;
+
+  rows.forEach(r => {
+    const searchData = (r.getAttribute('data-search') || '').toLowerCase();
+    const rowStatus  = (r.getAttribute('data-status') || '').toLowerCase();
+
+    const matchesSearch = tokens.length === 0 || tokens.every(tok => searchData.includes(tok));
+    const matchesStatus = !status || rowStatus === status;
+
+    if (matchesSearch && matchesStatus) {
+      r.style.display = '';
+      visibleCount++;
+    } else {
+      r.style.display = 'none';
+    }
+  });
+
+  // Dynamic empty row handling
+  let emptyRow = document.getElementById('sessionNoMatchRow');
+  const tbody = document.querySelector('.data-table tbody');
+  if (visibleCount === 0) {
+    if (!emptyRow && tbody) {
+      emptyRow = document.createElement('tr');
+      emptyRow.id = 'sessionNoMatchRow';
+      emptyRow.innerHTML = '<td colspan="9" style="text-align:center;color:var(--text-3);padding:40px"><i class="fas fa-search" style="margin-right:8px;opacity:0.5;font-size:16px"></i>No counseling sessions match the filter.</td>';
+      tbody.appendChild(emptyRow);
+    } else if (emptyRow) {
+      emptyRow.style.display = '';
+    }
+  } else if (emptyRow) {
+    emptyRow.style.display = 'none';
+  }
+
+  // Sync URL debounced without full page reload
+  clearTimeout(_sessionSearchDebounce);
+  _sessionSearchDebounce = setTimeout(() => {
+    const url = new URL(window.location);
+    if (q) url.searchParams.set('q', q);
+    else url.searchParams.delete('q');
+    if (status) url.searchParams.set('status', status);
+    else url.searchParams.delete('status');
+    window.history.replaceState({}, '', url.toString());
+  }, 350);
+}
+
+function filterSessionByCard(status) {
+  const sel = document.getElementById('sessionStatusFilterSel');
+  if (sel) sel.value = status;
+  const input = document.getElementById('sessionSearchQ');
+  const q = input ? input.value : '';
+  filterSessionsLive(q, status);
+}
+
+function onSessionStatusSelectChange(status) {
+  const input = document.getElementById('sessionSearchQ');
+  const q = input ? input.value : '';
+  filterSessionsLive(q, status);
+}
+
+function updateActiveStatCard(status) {
+  document.querySelectorAll('.session-stat-card').forEach(c => c.classList.remove('active-card'));
+  if (status === 'scheduled') {
+    document.getElementById('cardStatScheduled')?.classList.add('active-card');
+  } else if (status === 'in_progress') {
+    document.getElementById('cardStatInProgress')?.classList.add('active-card');
+  } else if (status === 'ongoing') {
+    document.getElementById('cardStatOngoing')?.classList.add('active-card');
+  } else if (!status) {
+    document.getElementById('cardStatTotal')?.classList.add('active-card');
+  }
+}
+
+function resetSessionFilters() {
+  const input = document.getElementById('sessionSearchQ');
+  if (input) input.value = '';
+  const sel = document.getElementById('sessionStatusFilterSel');
+  if (sel) sel.value = '';
+  filterSessionsLive('', '');
+}
 
 function doSessionSearch() {
-  const q = document.getElementById('sessionSearchQ').value.trim();
-  const url = new URL(window.location);
-  if (q) url.searchParams.set('q', q);
-  else url.searchParams.delete('q');
-  window.location = url;
+  const q = document.getElementById('sessionSearchQ')?.value || '';
+  filterSessionsLive(q);
 }
 
 function filterSessionStatus(val) {
-  const url = new URL(window.location);
-  if (val) url.searchParams.set('status', val);
-  else url.searchParams.delete('status');
-  window.location = url;
+  onSessionStatusSelectChange(val);
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+  updateActiveStatCard(_currentStatusFilter);
+  const input = document.getElementById('sessionSearchQ');
+  if ((input && input.value.trim()) || _currentStatusFilter) {
+    filterSessionsLive(input ? input.value.trim() : '', _currentStatusFilter);
+  }
+});
 
 async function updateSessionStatus(id, status, ev) {
   if (ev) ev.stopPropagation();

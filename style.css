@@ -117,6 +117,8 @@ img{max-width:100%}
 /* ── MODAL SYSTEM ── */
 .modal-overlay{position:fixed;inset:0;top:0;left:0;right:0;bottom:0;width:100%;height:100%;z-index:99999;background:rgba(20,0,0,.7);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;overflow-y:auto;animation:fadeIn .25s ease}
 .modal-overlay.hidden{display:none!important}
+#caseResolutionModal.modal-overlay{z-index:100010!important}
+#caseResolutionModal .modal-box{z-index:100011!important;position:relative}
 .hidden{display:none!important}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 .modal-box{background:var(--bg2);border-radius:20px;padding:28px 32px;width:100%;max-width:480px;position:relative;box-shadow:0 24px 60px rgba(0,0,0,0.35);animation:slideUp .3s cubic-bezier(0.16, 1, 0.3, 1);max-height:calc(100vh - 40px);overflow-y:auto;margin:auto;box-sizing:border-box}
@@ -614,6 +616,9 @@ img{max-width:100%}
 .sum-card{background:#fff;border-radius:var(--radius);padding:20px;display:flex;align-items:center;gap:16px;box-shadow:var(--shadow-sm);border:1px solid var(--border);transition:.2s}
 .sum-card.clickable{cursor:pointer}
 .sum-card.clickable:hover{box-shadow:var(--shadow-md);transform:translateY(-2px);border-color:var(--maroon-tint)}
+.session-stat-card{cursor:pointer;user-select:none;transition:all .2s ease}
+.session-stat-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.08)}
+.session-stat-card.active-card{outline:2.5px solid var(--maroon)!important;box-shadow:0 6px 20px rgba(85,0,0,.2)!important;transform:translateY(-2px)}
 .sum-icon{width:52px;height:52px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
 .sum-num{font-size:30px;font-weight:900;display:block;line-height:1}
 .sum-label{font-size:12px;color:var(--text-3);font-weight:600}

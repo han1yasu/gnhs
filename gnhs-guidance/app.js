@@ -1437,7 +1437,7 @@ function ensureCaseResolutionModal() {
   modal = document.createElement('div');
   modal.id = 'caseResolutionModal';
   modal.className = 'modal-overlay hidden';
-  modal.style.zIndex = '10020';
+  modal.style.zIndex = '100010';
   modal.onclick = function(e) {
     if (e.target === modal) closeCaseResolutionModal();
   };
@@ -1606,6 +1606,14 @@ function onCaseStatusSelectChange(sel) {
 
 function openCaseResolutionModal() {
   const modal = ensureCaseResolutionModal();
+  // Ensure DOM position is topmost by appending to body
+  if (modal.parentNode !== document.body) {
+    document.body.appendChild(modal);
+  } else {
+    document.body.appendChild(modal);
+  }
+  modal.style.zIndex = '100010';
+
   const c = _currentReviewCase || {};
   const s = _currentReviewSession;
 
@@ -1630,6 +1638,7 @@ function openCaseResolutionModal() {
   }
 
   modal.classList.remove('hidden');
+  modal.style.display = 'flex';
 }
 
 function selectReviewProcess(processName) {
@@ -1680,7 +1689,10 @@ function applyCaseReviewRuleChip(chipText) {
 
 function closeCaseResolutionModal() {
   const modal = $('caseResolutionModal');
-  if (modal) modal.classList.add('hidden');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
+  }
   const sel = $('case-status-sel');
   if (sel && _currentReviewCase && _currentReviewCase.status !== 'resolved') {
     sel.value = _originalCaseStatus || 'under_review';

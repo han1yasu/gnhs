@@ -44,12 +44,16 @@ function callGeminiApiForCase(string $concernType, string $subject, string $desc
     }
 
     $typeLabel = ucfirst(str_replace('_', ' ', $concernType));
-    $prompt = "You are a guidance counselor at Guinayang National High School. "
-            . "Provide a concise, professional summary (maximum 40 words) of the student's concern. "
-            . "Be objective. Do not use bullet points or Markdown formatting.\n\n"
+    $prompt = "You are a professional school guidance counselor at Guinayang National High School (GNHS).\n"
+            . "Provide a concise, formal, and accurate guidance intake summary (1-2 sentences, maximum 45 words) of the student's concern.\n"
+            . "CRITICAL INSTRUCTIONS:\n"
+            . "1. ALWAYS refer to the student as 'The student' (or 'The student reports...'). NEVER use generic 'They' as an opening subject pronoun and NEVER say 'They are writing this concern'.\n"
+            . "2. Synthesize what actually happened, the emotional/social impact, and the guidance intervention needed into clean, objective counseling text.\n"
+            . "3. Do not include boilerplate preambles or filler phrases.\n"
+            . "4. Plain text only, no quotes, no markdown formatting.\n\n"
             . "Concern Type: {$typeLabel}\n"
             . "Subject: {$subject}\n"
-            . "Description:\n{$description}";
+            . "Student Concern Description:\n{$description}";
 
     return executeGeminiPrompt($apiKey, $prompt);
 }
@@ -112,21 +116,18 @@ function smartSummarizeCase(string $concernType, string $subject, string $descri
     $typeLabel = ucfirst(str_replace('_', ' ', $concernType));
     
     // Check if text is Tagalog/Filipino
-    $isTagalog = preg_match('/\b(po|nang|mga|dahil|nahihirapan|ko|sa|ng|aking|para)\b/i', $description);
+    $isTagalog = preg_match('/\b(po|nang|mga|dahil|nahihirapan|ko|sa|ng|aking|para|nag-aaway|inaapi|tinutukso)\b/i', $description);
 
-    // Clean up text
+    // Clean up excessive whitespace
     $clean = preg_replace('/\s+/', ' ', $description);
-    // Split into sentences
-    $sentences = preg_split('/(?<=[.?!])\s+/', $clean, -1, PREG_SPLIT_NO_EMPTY);
 
     if ($isTagalog) {
-        // Tagalog summarization
         $summaryParts = [];
         $summaryParts[] = "Ipinapaabot ng mag-aaral ang concern kaugnay sa " . strtolower($typeLabel) . ($subject && strtolower($subject) !== strtolower($typeLabel) ? " ({$subject})" : "") . ".";
         
-        // Find core sentence expressing struggle or difficulty
+        $sentences = preg_split('/(?<=[.?!])\s+/', $clean, -1, PREG_SPLIT_NO_EMPTY);
         foreach ($sentences as $s) {
-            if (preg_match('/(nahihirapan|bumababa|problema|puyat|di ko na alam|naguguluhan)/i', $s)) {
+            if (preg_match('/(nahihirapan|bumababa|problema|puyat|di ko na alam|naguguluhan|iwas|inaapi|tinutukso)/i', $s)) {
                 $trimmed = rtrim($s, '. ');
                 if (strlen($trimmed) < 180) {
                     $summaryParts[] = ucfirst($trimmed) . ".";
@@ -134,56 +135,113 @@ function smartSummarizeCase(string $concernType, string $subject, string $descri
                 }
             }
         }
-        $summaryParts[] = "Nangangailangan ng gabay at interbensyon mula sa Guidance Office.";
+        $summaryParts[] = "Nangangailangan ang mag-aaral ng gabay at interbensyon mula sa Guidance Office.";
         return implode(' ', $summaryParts);
     }
 
-    // English summarization
-    $keySentences = [];
-    
-    // 1. Identify primary problem statement
+    // English summarization:
+    // 1. Remove introductory boilerplate clauses
+    $normalized = $clean;
+    $boilerplatePatterns = [
+        '/^I\s+(am\s+)?(writing|submitting|filing|raising|sending)\s+(this\s+)?(concern|report|message|complaint|letter|request)\s+(because|to|about|regarding)?\s*/i',
+        '/^I\s+(want|would\s+like|wish)\s+to\s+(report|share|tell|inform|consult|seek\s+help\s+(about|regarding)?)\s*/i',
+        '/^(Good\s+day|Hello|Hi)\s*[,.-]?\s*/i',
+        '/^To\s+(the\s+)?guidance\s+(counselor|office)\s*[,.-]?\s*/i'
+    ];
+    foreach ($boilerplatePatterns as $bp) {
+        $normalized = preg_replace($bp, '', $normalized);
+    }
+    $normalized = trim($normalized);
+
+    // Split normalized text into sentences
+    $sentences = preg_split('/(?<=[.?!])\s+/', $normalized, -1, PREG_SPLIT_NO_EMPTY);
+
+    $problemSentence = '';
+    $impactSentence  = '';
+
+    // Identify primary problem sentence
     foreach ($sentences as $s) {
-        if (preg_match('/(experiencing|struggling|difficulty|declined|falling behind|bullied|bullying|problem|anxious|stressed|confused)/i', $s)) {
-            $cleanedSentence = cleanSentence($s);
-            if (strlen($cleanedSentence) > 25 && strlen($cleanedSentence) < 220) {
-                $keySentences[] = $cleanedSentence;
+        if (preg_match('/(problem|problems|struggl|difficult|experienc|misunderstanding|avoid|avoiding|leaving\s+out|ignor|bulli|bully|harass|teas|laugh|conflict|behind\s+my\s+back|fail|stress|anxious)/i', $s)) {
+            $cleaned = cleanSentence($s);
+            if (strlen($cleaned) > 20 && strlen($cleaned) < 240) {
+                $problemSentence = $cleaned;
+                break;
+            }
+        }
+    }
+    if (!$problemSentence && !empty($sentences[0])) {
+        $problemSentence = cleanSentence($sentences[0]);
+    }
+
+    // Identify impact, feeling, or request sentence
+    foreach ($sentences as $s) {
+        if ($s !== $problemSentence && preg_match('/(uncomfortable|affect|impact|feel|opinion|contribute|participat|isolat|hope|support|help|interven|resolv|guidance|safe|worry)/i', $s)) {
+            $cleaned = cleanSentence($s);
+            if (strlen($cleaned) > 20 && strlen($cleaned) < 240) {
+                $impactSentence = $cleaned;
                 break;
             }
         }
     }
 
-    // 2. Identify impact / request statement
-    foreach ($sentences as $s) {
-        if (preg_match('/(affect|impact|hope|support|addressed|safe|help|intervention|resolve)/i', $s)) {
-            $cleanedSentence = cleanSentence($s);
-            if (!in_array($cleanedSentence, $keySentences) && strlen($cleanedSentence) > 20 && strlen($cleanedSentence) < 200) {
-                $keySentences[] = $cleanedSentence;
-                break;
-            }
+    // Convert first-person phrasing into clinical third-person referring to "The student"
+    $toThirdPerson = function(string $text, bool $isFirstSentence = false): string {
+        $t = preg_replace('/^I\s+(am\s+)?(writing|submitting|filing|raising)\s+(this\s+)?(concern|report)\s+(because)?\s*/i', '', $text);
+        $t = preg_replace('/^(At\s+first,\s+)?I\s+(thought|felt|noticed|tried)\s+that\s+/i', '', $t);
+
+        $t = preg_replace('/\bI\s+have\s+been\s+having\b/i', 'The student has been experiencing', $t);
+        $t = preg_replace('/\bI\s+have\s+been\s+experiencing\b/i', 'The student reports experiencing', $t);
+        $t = preg_replace('/\bI\s+have\s+noticed\s+that\b/i', 'The student reports that', $t);
+        $t = preg_replace('/\bI\s+am\s+having\s+difficulty\b/i', 'The student is experiencing difficulty', $t);
+        $t = preg_replace('/\bI\s+do\s+not\s+know\s+how\s+to\b/i', 'the student is unsure how to', $t);
+        $t = preg_replace('/\bI\s+(do\s+not|don\'t)\s+know\b/i', 'the student is unsure', $t);
+        $t = preg_replace('/\bI\s+(do\s+not|don\'t)\b/i', 'the student does not', $t);
+        $t = preg_replace('/\bI\s+feel\s+like\b/i', 'the student feels that', $t);
+        $t = preg_replace('/\bI\s+feel\b/i', 'the student feels', $t);
+        $t = preg_replace('/\bI\s+try\s+to\b/i', 'the student attempts to', $t);
+        $t = preg_replace('/\bI\s+sometimes\s+feel\b/i', 'the student sometimes feels', $t);
+        $t = preg_replace('/\bI\s+started\b/i', 'the student started', $t);
+        $t = preg_replace('/\bI\s+have\s+started\b/i', 'the student has started', $t);
+        $t = preg_replace('/\bI\s+am\s+not\s+sure\b/i', 'the student is uncertain', $t);
+        $t = preg_replace('/\bI\s+am\b/i', 'the student is', $t);
+        $t = preg_replace('/\bI\s+was\b/i', 'the student was', $t);
+        $t = preg_replace('/\bI\s+have\b/i', 'the student has', $t);
+        $t = preg_replace('/\bI\s+(cannot|can\'t)\b/i', 'the student cannot', $t);
+        $t = preg_replace('/\bI\s+can\b/i', 'the student can', $t);
+        $t = preg_replace('/\bI\s+need\b/i', 'the student needs', $t);
+        $t = preg_replace('/\bI\s+want\b/i', 'the student wants', $t);
+        $t = preg_replace('/\bI\s+think\b/i', 'the student thinks', $t);
+
+        $t = preg_replace('/\bmy\s+classmates\b/i', 'their classmates', $t);
+        $t = preg_replace('/\bmy\s+friends\b/i', 'their friends', $t);
+        $t = preg_replace('/\bmy\s+suggestions\b/i', 'their suggestions', $t);
+        $t = preg_replace('/\bmy\s+opinions\b/i', 'their opinions', $t);
+        $t = preg_replace('/\bmy\s+grades\b/i', 'their academic performance', $t);
+        $t = preg_replace('/\bmy\b/i', "the student's", $t);
+        $t = preg_replace('/\bme\b/i', 'the student', $t);
+        $t = preg_replace('/\bmyself\b/i', 'themselves', $t);
+        $t = preg_replace('/\bI\b/', 'the student', $t);
+
+        $t = preg_replace('/\bthe\s+student\s+the\s+student\b/i', 'the student', $t);
+
+        $t = trim($t);
+        if (!preg_match('/^the\s+student/i', $t)) {
+            $t = ($isFirstSentence ? "The student reports that " : "Furthermore, ") . lcfirst($t);
+        } else {
+            $t = ucfirst($t);
         }
+
+        return cleanSentence($t);
+    };
+
+    $p1 = $toThirdPerson($problemSentence, true);
+    $p2 = !empty($impactSentence) ? $toThirdPerson($impactSentence, false) : '';
+
+    if ($p2 && strlen($p1 . ' ' . $p2) < 280) {
+        return $p1 . ' ' . $p2;
     }
 
-    if (!empty($keySentences)) {
-        $body = implode(' ', $keySentences);
-        // Normalize first-person phrasing to professional counselor summary phrasing
-        $body = preg_replace('/\bI am submitting this concern because I have been\b/i', 'Student has been', $body);
-        $body = preg_replace('/\bI have been experiencing\b/i', 'Student reports experiencing', $body);
-        $body = preg_replace('/\bI have noticed that\b/i', 'Student reports that', $body);
-        $body = preg_replace('/\bI am having difficulty\b/i', 'Student is having difficulty', $body);
-        $body = preg_replace('/\bI feel like I can no longer\b/i', 'Student feels unable to', $body);
-        $body = preg_replace('/\bI hope this concern can be addressed and that I can receive\b/i', 'Student requests', $body);
-        $body = preg_replace('/\bmy\b/i', 'their', $body);
-        $body = preg_replace('/\bme\b/i', 'them', $body);
-        $body = preg_replace('/\bI am\b/i', 'they are', $body);
-        $body = preg_replace('/\bI\b/', 'they', $body);
-
-        return ucfirst(trim($body));
-    }
-
-    // Fallback: take first 2 sentences if specific keywords weren't matched
-    $fallback = array_slice($sentences, 0, 2);
-    $text = implode(' ', $fallback);
-    return "Student reports concern regarding {$typeLabel}: " . cleanSentence($text);
+    return $p1;
 }
 
 /**
@@ -361,6 +419,10 @@ function analyzeSessionConclusion(string $concernType, string $subject, string $
         $sessionCount = count($existingSessions);
         $prompt = "You are a licensed school guidance counselor and clinical supervisor at Guinayang National High School (GNHS) in the Philippines.\n"
                 . "Analyze the following confidential counseling session notes and student behavioral observations to recommend whether this student needs another counseling session or if this case can be officially resolved.\n\n"
+                . "CRITICAL CLINICAL RULES:\n"
+                . "1. If the counselor's notes or observations state that the student is positive, feeling well, 100% ok/fine, not in bad shape, in good condition, emotionally stable, has fully recovered from trauma or distress, or that the dispute has been settled, you MUST recommend 'ready_to_resolve'. DO NOT recommend follow-up when observations indicate recovery, healthy functioning, or positive resolution.\n"
+                . "2. Recommend 'needs_follow_up' ONLY when the student displays active, ongoing emotional distress, severe anxiety, continuing peer/safety threats, or unfulfilled behavioral compliance terms.\n"
+                . "3. Recommend 'parent_conference' ONLY when parent/guardian presence or family intervention is explicitly necessary.\n\n"
                 . "Student Name: {$studentName}\n"
                 . "Concern Type: {$typeLabel}\n"
                 . "Case Subject: {$subject}\n"
@@ -369,23 +431,23 @@ function analyzeSessionConclusion(string $concernType, string $subject, string $
                 . "Counselor's Live Session Notes & Observations:\n\"\"\"\n{$counselorNotes}\n\"\"\"\n\n"
                 . "Instructions:\n"
                 . "1. Evaluate student emotional stability, remorse, fear/anxiety, safety risks, behavioral compliance, mutual agreements, and accountability.\n"
-                . "2. Decide the primary recommendation: 'needs_follow_up' (if student needs more support, monitoring, is anxious/distressed, or needs check-in), 'ready_to_resolve' (if student reached mutual reconciliation, agreements fulfilled, problem settled), or 'parent_conference' (if parent/guardian involvement is critically required).\n"
+                . "2. Decide the primary recommendation: 'ready_to_resolve', 'needs_follow_up', or 'parent_conference'.\n"
                 . "3. Provide 2-3 concise, factual bullet points explaining why, directly citing or referencing observations from the notes.\n"
-                . "4. Provide a suggested next action, suggested follow-up interval in days (e.g. 5, 7, 14), suggested remarks for the next session (if follow-up) or resolution summary (if ready to resolve).\n\n"
+                . "4. Provide a suggested next action, suggested follow-up interval in days (0 if ready_to_resolve, 5-7 if follow-up), suggested remarks (if follow-up) or resolution summary (if ready to resolve).\n\n"
                 . "Respond ONLY with a valid JSON object in this exact schema without markdown backticks:\n"
                 . "{\n"
-                . "  \"recommendation\": \"needs_follow_up\",\n"
+                . "  \"recommendation\": \"ready_to_resolve\",\n"
                 . "  \"confidence\": \"High\",\n"
-                . "  \"headline\": \"Follow-Up Session Recommended for Continuous Monitoring\",\n"
+                . "  \"headline\": \"Case Ready for Official Resolution\",\n"
                 . "  \"reasons\": [\n"
                 . "    \"Point 1 citing notes observation\",\n"
                 . "    \"Point 2 citing notes observation\"\n"
                 . "  ],\n"
-                . "  \"suggested_action\": \"Schedule a follow-up counseling session in 1 week to evaluate progress.\",\n"
-                . "  \"suggested_followup_days\": 7,\n"
-                . "  \"suggested_remarks\": \"Follow-up on student adjustment, monitor peer relationship, and verify behavioral agreement.\",\n"
-                . "  \"suggested_resolution\": \"\",\n"
-                . "  \"suggested_sanctions\": \"\"\n"
+                . "  \"suggested_action\": \"Conclude counseling, record formal resolution summary, and mark case as resolved.\",\n"
+                . "  \"suggested_followup_days\": 0,\n"
+                . "  \"suggested_remarks\": \"\",\n"
+                . "  \"suggested_resolution\": \"Counseling session successfully conducted. The student demonstrated emotional recovery and accountability.\",\n"
+                . "  \"suggested_sanctions\": \"No Sanctions (Resolved through Guidance Counseling Only)\"\n"
                 . "}";
 
         $rawResponse = executeGeminiPrompt($apiKey, $prompt);
@@ -425,6 +487,15 @@ function smartAnalyzeSessionConclusion(string $concernType, string $subject, str
     $notesClean = trim($counselorNotes);
     $typeLower  = strtolower($concernType);
 
+    // ── 1. DETECT EXPLICIT RECOVERY & WELLNESS INDICATORS ──
+    $recoveryMatches = [];
+    $isExplicitRecovery = (bool)preg_match('/\b(fully\s+recovered|recovered\s+(from|na)|complete\s+recovery|overcame|healed(\s+from)?|recovering\s+well|100%\s*(ok|okay)?|all\s+good|completely\s+fine|doing\s+great|doing\s+very\s+well|in\s+good\s+shape|not\s+in\s+(a\s+)?bad\s+shape|stable\s+condition|emotionally\s+stable|stable\s+mindset|high\s+spirits|no\s+(longer|more|further)\s+(trauma|distress|anxiety|fear|pain|struggles?|issues?|problems?|concerns?)|no\s+(lingering|present|observed)\s+(trauma|distress|symptoms?|issues?|problems?)|ready\s+to\s+(resolve|conclude|close)|case\s+(can\s+be\s+)?resolved|concern\s+(is\s+)?settled|fully\s+settled|nagkaayos\s+na|nagkasundo\s+na|walang\s+problema|maayos\s+na|ligtas\s+na|nakabawi\s+na)\b/i', $notesClean, $recoveryMatches);
+
+    // Mask out past/negated trauma or distress from triggering false distress alerts
+    // E.g., "recovered from trauma", "not in a bad shape", "no longer anxious"
+    $maskedNotes = preg_replace('/\b(recovered\s+from|healed\s+from|overcame|no\s+longer|no\s+more|not\s+in\s+a?)\s+(trauma|distress|fear|anxiety|bad\s+shape|pain|sadness)\b/i', 'healthy_state', $notesClean);
+    $maskedNotes = preg_replace('/\b100%\s*(ok|okay)?\b/i', 'healthy_state', $maskedNotes);
+
     $followUpScore = 0;
     $resolveScore  = 0;
     $parentScore   = 0;
@@ -433,38 +504,47 @@ function smartAnalyzeSessionConclusion(string $concernType, string $subject, str
     $resolveReasons  = [];
     $parentReasons   = [];
 
-    // Signals of Ongoing Distress / Bullying / Conflict / Academic
-    if (preg_match('/(fear|scared|anxious|anxiety|nervous|cry|crying|distress|depress|sad|overwhelm|withdrawn|trauma)/i', $notesClean)) {
-        $followUpScore += 3;
-        $followUpReasons[] = "Emotional vulnerability, stress, or anxiety was observed during the interview.";
+    // Signals of Parent involvement needed
+    if (preg_match('/\b(parent|guardian|mother|father|nanay|tatay|magulang|family\s+problem|home\s+issue|call\s+parent|conference\s+with\s+parent)\b/i', $maskedNotes)) {
+        $parentScore += 4;
+        $parentReasons[] = "Observations indicate family factors or a formal need for parent/guardian conference.";
     }
-    if (preg_match('/(bully|bullied|threat|retaliat|fight|hostil|anger|harass|physical|rumor|tense|tension|revenge)/i', $notesClean)) {
+
+    // Signals of Ongoing Active Distress / Bullying / Conflict (evaluated on masked notes)
+    if (preg_match('/\b(fear|scared|anxious|anxiety|nervous|cry|crying|distress|depress|sad|overwhelm|withdrawn|active\s+trauma|panic)\b/i', $maskedNotes)) {
+        $followUpScore += 3;
+        $followUpReasons[] = "Active emotional distress or anxiety was observed during the counseling session.";
+    }
+    if (preg_match('/\b(bully|bullied|threat|retaliat|fight|hostil|anger|harass|physical|rumor|tense|tension|revenge|danger)\b/i', $maskedNotes)) {
         $followUpScore += 4;
-        $followUpReasons[] = "Interpersonal tension, peer conflict, or safety/retaliation concerns remain present.";
+        $followUpReasons[] = "Interpersonal tension, peer conflict, or safety/retaliation risks remain active.";
     }
-    if (preg_match('/(monitor|monitoring|contract|agreement|follow up|follow-up|trial|observe|check-in|check in|next time|continue)/i', $notesClean)) {
-        $followUpScore += 3;
-        $followUpReasons[] = "Student agreed to guidance goals or behavioral terms requiring active monitoring.";
+    if (preg_match('/\b(monitor|monitoring|contract|agreement|follow\s*up|trial|observe|check-in|check\s+in|next\s+time|continue)\b/i', $maskedNotes)) {
+        if (!$isExplicitRecovery) {
+            $followUpScore += 3;
+            $followUpReasons[] = "Student agreed to guidance goals or behavioral terms requiring follow-up check-in.";
+        }
     }
-    if (preg_match('/(fail|failing|grades|absent|absenteeism|cutting|tardy|truan)/i', $notesClean)) {
+    if (preg_match('/\b(fail|failing|grades|absent|absenteeism|cutting|tardy|truan)\b/i', $maskedNotes)) {
         $followUpScore += 2;
         $followUpReasons[] = "Academic performance or attendance concerns require verification in coming days.";
     }
 
-    // Signals of Parent involvement needed
-    if (preg_match('/(parent|guardian|mother|father|nanay|tatay|magulang|family problem|home issue|call parent)/i', $notesClean)) {
-        $parentScore += 4;
-        $parentReasons[] = "Observations indicate family factors or a need for direct parent/guardian conference.";
+    // Signals of Resolution & Recovery
+    if ($isExplicitRecovery) {
+        $resolveScore += 8;
+        $matchedPhrase = !empty($recoveryMatches[0]) ? strtolower(trim($recoveryMatches[0])) : 'fully recovered';
+        $resolveReasons[] = "Student is in good emotional stability and healthy condition ({$matchedPhrase}).";
+        $resolveReasons[] = "Counselor observations confirm student has recovered with no lingering trauma or distress.";
     }
 
-    // Signals of Resolution
-    if (preg_match('/(resolved|reconciled|settled|peace|forgave|forgiven|mutual agreement|handshake|apologized|sincere apology|admitted fault|remorseful|understood mistake)/i', $notesClean)) {
+    if (preg_match('/\b(resolved|reconciled|settled|peace|forgave|forgiven|mutual\s+agreement|handshake|apologized|sincere\s+apology|admitted\s+fault|remorseful|understood\s+mistake)\b/i', $notesClean)) {
         $resolveScore += 4;
         $resolveReasons[] = "Student demonstrated reflective accountability, remorse, and reached mutual agreement.";
     }
-    if (preg_match('/(good conduct pledge|willing to change|cooperative|satisfaction|calm|relieved|positive outlook|concluded successfully)/i', $notesClean)) {
+    if (preg_match('/\b(good\s+conduct\s+pledge|willing\s+to\s+change|cooperative|satisfaction|calm|relieved|positive\s+outlook|concluded\s+successfully|doing\s+well|feeling\s+better|smiling|stable)\b/i', $notesClean)) {
         $resolveScore += 3;
-        $resolveReasons[] = "Student exhibited cooperative conduct and positive receptiveness to guidance advice.";
+        $resolveReasons[] = "Student exhibited cooperative conduct, emotional stability, and positive responsiveness.";
     }
 
     // Default weight if notes are neutral
@@ -473,13 +553,13 @@ function smartAnalyzeSessionConclusion(string $concernType, string $subject, str
             $followUpScore += 2;
             $followUpReasons[] = "Case concern type ({$concernType}) benefits from an active check-in session.";
         } else {
-            $resolveScore += 1;
+            $resolveScore += 2;
             $resolveReasons[] = "Counseling interview established clear guidance reminders and mutual understanding.";
         }
     }
 
     // Decision Logic
-    if ($parentScore >= 4 && $parentScore >= $resolveScore) {
+    if ($parentScore >= 4 && $parentScore > $resolveScore && !$isExplicitRecovery) {
         $headline = "Parent / Guardian Conference Advised";
         $suggestedAction = "Schedule a follow-up counseling session and invite the student's parent/guardian to the Guidance Office.";
         $remarks = "Parent-Guardian guidance conference regarding {$subject}; discuss cooperative student support plan.";
@@ -498,7 +578,37 @@ function smartAnalyzeSessionConclusion(string $concernType, string $subject, str
         ];
     }
 
-    if ($followUpScore >= $resolveScore) {
+    if ($isExplicitRecovery || $resolveScore >= $followUpScore) {
+        $headline = $isExplicitRecovery 
+            ? "Case Ready for Official Resolution (Student Fully Recovered)"
+            : "Case is Suitable for Official Resolution";
+        $suggestedAction = "Record formal resolution summary, confirm student commitments, and conclude the case.";
+        if (empty($resolveReasons)) {
+            $resolveReasons[] = "Student demonstrated positive accountability and agreements were satisfactorily established.";
+        }
+
+        $resolution = "Counseling session successfully conducted with {$studentName}. The student demonstrated positive reflection, emotional stability, and cooperative accountability. The guidance concern is settled under official monitoring.";
+        $sanctions  = "No Sanctions (Resolved through Guidance Counseling Only)";
+        if (stripos($notesClean, 'apolog') !== false) {
+            $sanctions = "Written Apology & Good Conduct Pledge";
+        } elseif (stripos($notesClean, 'service') !== false || stripos($typeLower, 'bullying') !== false) {
+            $sanctions = "Restorative Campus / Community Service";
+        }
+
+        return [
+            'success'                 => true,
+            'recommendation'          => 'ready_to_resolve',
+            'confidence'              => ($isExplicitRecovery || $resolveScore >= 5) ? 'High' : 'Moderate',
+            'headline'                => $headline,
+            'reasons'                 => array_slice(array_unique($resolveReasons), 0, 3),
+            'suggested_action'        => $suggestedAction,
+            'suggested_followup_days' => 0,
+            'suggested_remarks'       => '',
+            'suggested_resolution'    => $resolution,
+            'suggested_sanctions'     => $sanctions,
+            'source'                  => 'guidance_engine'
+        ];
+    } else {
         $headline = "Follow-Up Counseling Session Recommended";
         $suggestedAction = "Set another session in 5–7 days to assess compliance, emotional well-being, and adjustment.";
         $remarks = "Follow-up counseling session: check progress on agreed guidance goals and emotional well-being.";
@@ -516,34 +626,6 @@ function smartAnalyzeSessionConclusion(string $concernType, string $subject, str
             'suggested_remarks'       => $remarks,
             'suggested_resolution'    => '',
             'suggested_sanctions'     => 'Behavioral Monitoring Agreement (2 Weeks)',
-            'source'                  => 'guidance_engine'
-        ];
-    } else {
-        $headline = "Case is Suitable for Official Resolution";
-        $suggestedAction = "Record formal resolution summary, confirm student commitments, and conclude the case.";
-        if (empty($resolveReasons)) {
-            $resolveReasons[] = "Student demonstrated positive accountability and agreements were satisfactorily established.";
-        }
-
-        $resolution = "Counseling session successfully conducted with {$studentName}. The student demonstrated positive reflection, cooperative accountability, and committed to sustained good school conduct. The guidance concern is settled under official monitoring.";
-        $sanctions  = "No Sanctions (Resolved through Guidance Counseling Only)";
-        if (stripos($notesClean, 'apolog') !== false) {
-            $sanctions = "Written Apology & Good Conduct Pledge";
-        } elseif (stripos($notesClean, 'service') !== false || stripos($typeLower, 'bullying') !== false) {
-            $sanctions = "Restorative Campus / Community Service";
-        }
-
-        return [
-            'success'                 => true,
-            'recommendation'          => 'ready_to_resolve',
-            'confidence'              => $resolveScore >= 5 ? 'High' : 'Moderate',
-            'headline'                => $headline,
-            'reasons'                 => array_slice($resolveReasons, 0, 3),
-            'suggested_action'        => $suggestedAction,
-            'suggested_followup_days' => 0,
-            'suggested_remarks'       => '',
-            'suggested_resolution'    => $resolution,
-            'suggested_sanctions'     => $sanctions,
             'source'                  => 'guidance_engine'
         ];
     }

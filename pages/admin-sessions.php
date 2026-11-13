@@ -18,21 +18,18 @@ if ($statusFilter === 'completed') {
 }
 if ($search) {
     $sq = addslashes($search);
-    $sqUnderscore = addslashes(str_replace(' ', '_', $search));
+    $sqDigits = preg_replace('/[^0-9]/', '', $search);
+    $caseNumClause = "LOWER(c.case_number) LIKE LOWER('%$sq%')";
+    if (!empty($sqDigits)) {
+        $caseNumClause .= " OR c.case_number LIKE '%" . addslashes($sqDigits) . "%'";
+    }
+
     $where .= " AND (
-        LOWER(c.case_number) LIKE LOWER('%$sq%')
-        OR LOWER(c.subject) LIKE LOWER('%$sq%')
-        OR LOWER(c.description) LIKE LOWER('%$sq%')
-        OR LOWER(c.concern_type) LIKE LOWER('%$sq%')
-        OR LOWER(c.concern_type) LIKE LOWER('%$sqUnderscore%')
-        OR LOWER(REPLACE(c.concern_type, '_', ' ')) LIKE LOWER('%$sq%')
+        $caseNumClause
         OR LOWER(s.first_name) LIKE LOWER('%$sq%')
         OR LOWER(s.last_name) LIKE LOWER('%$sq%')
         OR LOWER(CONCAT(s.first_name, ' ', s.last_name)) LIKE LOWER('%$sq%')
-        OR LOWER(s.grade_section) LIKE LOWER('%$sq%')
         OR LOWER(COALESCE(c.reported_student_name, '')) LIKE LOWER('%$sq%')
-        OR LOWER(COALESCE(c.reported_student_grade, '')) LIKE LOWER('%$sq%')
-        OR LOWER(cs.location) LIKE LOWER('%$sq%')
         OR (c.is_anonymous=1 AND LOWER('anonymous') LIKE LOWER('%$sq%'))
     )";
 }
@@ -100,28 +97,22 @@ foreach ($sessions as $s) {
             . "<div style='font-size:11px;color:#be185d'><i class='fas fa-user-tag'></i> Rep by: ".htmlspecialchars($s['student_name']??'Anon')."</div>";
     }
 
-    // Rich search tokens for instant client-side auto filtering
-    $searchTokens = [
-        $s['case_number'],
-        $s['student_name'] ?? '',
-        $s['grade_section'] ?? '',
-        $dt->format('M d, Y'),
-        $dt->format('F d, Y'),
-        $dt->format('m/d/Y'),
-        $dt->format('Y-m-d'),
-        $dt->format('h:i A'),
-        $dt->format('H:i'),
-        $s['location'] ?? 'Guidance Office',
-        $s['session_type'] ?? 'in-person',
-        str_replace('-', ' ', $s['session_type'] ?? ''),
-        $s['status'],
-        str_replace('_', ' ', $s['status']),
-        $s['case_subject'] ?? '',
-        $s['concern_type'] ?? '',
-        str_replace('_', ' ', $s['concern_type'] ?? ''),
-        !empty($s['is_peer_report']) ? ($s['reported_student_name'] ?? '') : '',
-    ];
-    $searchData = htmlspecialchars(strtolower(implode(' ', array_filter($searchTokens))), ENT_QUOTES);
+    // Filtering tokens: strictly the Case # (with variations) and Student Name
+    $caseNum           = trim($s['case_number']);
+    $caseDigits        = preg_replace('/[^0-9]/', '', $caseNum);
+    $caseDigitsTrimmed = ltrim($caseDigits, '0');
+    $studentName       = trim($s['student_name'] ?? '');
+    $reportedName      = !empty($s['is_peer_report']) ? trim($s['reported_student_name'] ?? '') : '';
+
+    $searchTokens = array_unique(array_filter([
+        $caseNum,
+        $caseDigits,
+        $caseDigitsTrimmed,
+        $caseDigitsTrimmed ? ('c-' . $caseDigitsTrimmed) : '',
+        $studentName,
+        $reportedName
+    ]));
+    $searchData = htmlspecialchars(strtolower(implode(' ', $searchTokens)), ENT_QUOTES);
 
     $rows .= "<tr class='session-row' data-search=\"$searchData\" data-status=\"{$s['status']}\" style='cursor:pointer' onclick='if(!event.target.closest(\"select\") && !event.target.closest(\"button\")) openSessionConsole({$s['id']})'>
         <td><strong style='color:var(--maroon);font-size:14px'>{$s['case_number']}</strong></td>
@@ -204,7 +195,7 @@ $content = <<<HTML
     <div style="display:flex;gap:8px;flex:1;min-width:240px">
       <div class="input-wrap" style="flex:1">
         <i class="fas fa-search"></i>
-        <input type="text" id="sessionSearchQ" value="$sqVal" placeholder="Search active sessions by case #, student name, concern, location…" oninput="filterSessionsLive(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();filterSessionsLive(this.value);}"/>
+        <input type="text" id="sessionSearchQ" value="$sqVal" placeholder="Filter by Case # (e.g. C-0022, 022) or Student Name…" oninput="filterSessionsLive(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();filterSessionsLive(this.value);}"/>
       </div>
       <button class="btn-sm-primary" type="button" onclick="filterSessionsLive(document.getElementById('sessionSearchQ').value)"><i class="fas fa-search"></i> Search</button>
     </div>

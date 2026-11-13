@@ -245,24 +245,24 @@ $reopenedBannerHtml
   </a>
 </div>
 
-<!-- Notched Outline Filter Card (matching reference image) -->
+<!-- Filter Card (6 Equal-Sized Filter Boxes divided by 2 on Mobile) -->
 <div class="cases-filter-card">
-  <!-- Search Field -->
-  <div class="filter-notched-box">
-    <label class="filter-notched-label"><i class="fas fa-search"></i> Search Cases</label>
-    <div class="filter-input-content">
+  <!-- Search Row -->
+  <div class="filter-search-row">
+    <div class="filter-search-box-wrap">
       <i class="fas fa-search filter-search-ico"></i>
-      <input type="text" class="filter-text-input" id="searchQ" value="$sqVal" placeholder="Search by student name, case #, type, grade, status…"
+      <input type="text" class="filter-search-input-field" id="searchQ" value="$sqVal" placeholder="Search by name, case #, type, grade, status…"
         autocomplete="off"
         onkeydown="if(event.key==='Enter'){event.preventDefault();doSearch();}"/>
     </div>
+    <button type="button" class="btn-search-trigger" onclick="doSearch()"><i class="fas fa-search"></i> Search</button>
   </div>
 
-  <!-- Filter Dropdowns Grid -->
-  <div class="filter-dropdowns-grid">
-    <div class="filter-notched-box">
-      <label class="filter-notched-label">Status</label>
-      <select class="filter-select-input" onchange="applyFilter('status',this.value)">
+  <!-- 6 Equal-Sized Filter Boxes (Divided by 2) -->
+  <div class="filter-six-grid">
+    <!-- 1. Status -->
+    <div class="filter-equal-box">
+      <select class="filter-equal-control" onchange="applyFilter('status',this.value)">
         <option value="">All Status</option>
         <option value="pending"      $ss1>Pending</option>
         <option value="under_review" $ss2>Under Review</option>
@@ -270,9 +270,9 @@ $reopenedBannerHtml
       </select>
     </div>
 
-    <div class="filter-notched-box">
-      <label class="filter-notched-label">Priority</label>
-      <select class="filter-select-input" onchange="applyFilter('priority',this.value)">
+    <!-- 2. Priority -->
+    <div class="filter-equal-box">
+      <select class="filter-equal-control" onchange="applyFilter('priority',this.value)">
         <option value="">All Priority</option>
         <option value="high"   $sp1>High</option>
         <option value="medium" $sp2>Medium</option>
@@ -280,9 +280,9 @@ $reopenedBannerHtml
       </select>
     </div>
 
-    <div class="filter-notched-box">
-      <label class="filter-notched-label">Concern Type</label>
-      <select class="filter-select-input" onchange="applyFilter('type',this.value)">
+    <!-- 3. Types -->
+    <div class="filter-equal-box">
+      <select class="filter-equal-control" onchange="applyFilter('type',this.value)">
         <option value="">All Types</option>
         <option value="bullying"        $st1>Bullying</option>
         <option value="academic_stress" $st2>Academic Stress</option>
@@ -294,9 +294,9 @@ $reopenedBannerHtml
       </select>
     </div>
 
-    <div class="filter-notched-box">
-      <label class="filter-notched-label">Grade Level</label>
-      <select class="filter-select-input" id="gradeFilterSel" onchange="gradeFilterChange()">
+    <!-- 4. Grades -->
+    <div class="filter-equal-box">
+      <select class="filter-equal-control" id="gradeFilterSel" onchange="gradeFilterChange()">
         <option value="">All Grades</option>
         <option value="7"  $sg7>Grade 7</option>
         <option value="8"  $sg8>Grade 8</option>
@@ -305,18 +305,19 @@ $reopenedBannerHtml
       </select>
     </div>
 
-    <div class="filter-notched-box">
-      <label class="filter-notched-label">Section</label>
-      <select class="filter-select-input" id="sectionFilterSel" onchange="applyFilter('section',this.value)">
+    <!-- 5. Section -->
+    <div class="filter-equal-box">
+      <select class="filter-equal-control" id="sectionFilterSel" onchange="applyFilter('section',this.value)">
         <option value="">All Sections</option>
       </select>
     </div>
-  </div>
 
-  <!-- Actions Bar -->
-  <div class="filter-actions-bar">
-    <button type="button" class="btn-filter-submit" onclick="doSearch()"><i class="fas fa-search"></i> Search Cases</button>
-    <button type="button" class="btn-filter-reset" onclick="clearFilters()"><i class="fas fa-rotate-left"></i> Reset</button>
+    <!-- 6. Reset -->
+    <div class="filter-equal-box">
+      <button type="button" class="filter-equal-control filter-equal-reset" onclick="clearFilters()">
+        <i class="fas fa-rotate-left"></i> Reset
+      </button>
+    </div>
   </div>
 </div>
 

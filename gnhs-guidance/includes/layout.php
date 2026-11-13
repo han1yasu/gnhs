@@ -197,9 +197,10 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title><?= htmlspecialchars($pageTitle) ?> — GNHS Guidance</title>
-  <link rel="icon" type="image/jpeg" href="/gnhs-guidance/gnhs.jpg"/>
-  <link rel="shortcut icon" type="image/jpeg" href="/gnhs-guidance/gnhs.jpg"/>
-  <link rel="apple-touch-icon" href="/gnhs-guidance/gnhs.jpg"/>
+  <link rel="icon" type="image/png" href="/gnhs-guidance/favicon.png?v=3"/>
+  <link rel="icon" type="image/x-icon" href="/gnhs-guidance/favicon.ico?v=3"/>
+  <link rel="shortcut icon" type="image/x-icon" href="/gnhs-guidance/favicon.ico?v=3"/>
+  <link rel="apple-touch-icon" href="/gnhs-guidance/gnhs.png?v=3"/>
   <link rel="stylesheet" href="/gnhs-guidance/style.css?v=<?= @filemtime(__DIR__ . '/../style.css') ?: '4.0' ?>"/>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
@@ -246,7 +247,7 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
 <!-- SIDEBAR -->
 <aside class="sidebar" id="sidebar">
   <a href="<?= $dashboardUrl ?>" class="sb-brand" title="Go to Dashboard">
-    <img src="/gnhs-guidance/gnhs.jpg" alt="GNHS Logo" class="sb-logo-img"/>
+    <img src="/gnhs-guidance/gnhs.png" alt="GNHS Logo" class="sb-logo-img"/>
     <div>
       <div class="sb-school">GNHS</div>
       <div class="sb-sub">Guidance System</div>
@@ -285,7 +286,7 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
         <i class="fas fa-bars"></i>
       </button>
       <a href="<?= $dashboardUrl ?>" class="topbar-brand" id="topbarBrand" title="Go to Dashboard">
-        <img src="/gnhs-guidance/gnhs.jpg" alt="GNHS Logo" class="topbar-logo-img"/>
+        <img src="/gnhs-guidance/gnhs.png" alt="GNHS Logo" class="topbar-logo-img"/>
         <div class="topbar-school-info">
           <span class="topbar-school-name">Guinayang National High School</span>
           <span class="topbar-page-title"><?= htmlspecialchars($pageTitle) ?></span>

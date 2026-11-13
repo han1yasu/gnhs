@@ -69,10 +69,8 @@ $cases = $db->query("SELECT c.*,
     s.grade_section
     FROM cases c LEFT JOIN users s ON c.student_id=s.id
     $where ORDER BY
-    (c.status = 'pending' AND c.follow_up_msg IS NOT NULL AND c.follow_up_msg != '' AND COALESCE(c.is_follow_up, 0) = 0) DESC,
-    c.updated_at DESC,
-    FIELD(c.priority,'high','medium','low'),
-    c.submitted_at DESC")->fetchAll();
+    CAST(SUBSTRING(c.case_number, 3) AS UNSIGNED) ASC,
+    c.id ASC")->fetchAll();
 
 if (!function_exists('badge')) {
     function badge(string $s): string {

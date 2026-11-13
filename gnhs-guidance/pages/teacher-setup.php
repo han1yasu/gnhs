@@ -18,6 +18,9 @@ $middleName = $dbUser['middle_name'] ?? '';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Teacher Profile Setup | GNHS Guidance</title>
+    <link rel="icon" type="image/jpeg" href="../gnhs.jpg">
+    <link rel="shortcut icon" type="image/jpeg" href="../gnhs.jpg">
+    <link rel="apple-touch-icon" href="../gnhs.jpg">
     <link rel="stylesheet" href="../style.css?v=2.3">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">

@@ -10,50 +10,105 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
     $avatarPhoto = $user['avatar_photo'] ?? null;
     $avatarOnError = "onerror=\"if(!this.dataset.t){this.dataset.t='1';this.src=this.src.includes('/gnhs-guidance/uploads/')?this.src.replace('/gnhs-guidance/uploads/','/uploads/'):this.src.replace('/uploads/','/gnhs-guidance/uploads/');}else{this.style.display='none';var fb=this.parentElement.querySelector('.avatar-fallback');if(fb)fb.style.display='flex';}\"";
 
-    // Sidebar links per role
+    // Sidebar links grouped by category per role
     $navLinks = [
         'student' => [
-            ['icon'=>'fa-home',         'label'=>'Dashboard',       'href'=>'student-dashboard.php', 'key'=>'dashboard'],
-            ['icon'=>'fa-file-medical', 'label'=>'Submit Concern',  'href'=>'student-submit.php',    'key'=>'submit'],
-            ['icon'=>'fa-folder-open',  'label'=>'My Cases',        'href'=>'student-cases.php',     'key'=>'cases'],
-            ['icon'=>'fa-comments',     'label'=>'Cases Chat',      'href'=>'student-chats.php',     'key'=>'chats'],
-            ['icon'=>'fa-archive',      'label'=>'Case Archive',    'href'=>'student-archive.php',   'key'=>'archive'],
-            ['icon'=>'fa-history',      'label'=>'Chat Archive',    'href'=>'student-chat-archive.php','key'=>'chat_archive'],
-            ['icon'=>'fa-calendar-alt',   'label'=>'My Sessions',       'href'=>'student-sessions.php',         'key'=>'sessions'],
-            ['icon'=>'fa-calendar-check', 'label'=>'Sessions Archive',   'href'=>'student-sessions-archive.php', 'key'=>'sessions_archive'],
-        ],
-        'teacher' => [
-            ['icon'=>'fa-home',         'label'=>'Dashboard',       'href'=>'teacher-dashboard.php', 'key'=>'dashboard'],
-            ['icon'=>'fa-users',        'label'=>'Advisory Class',  'href'=>'teacher-advisory.php',  'key'=>'advisory'],
-            ['icon'=>'fa-user-plus',    'label'=>'Add Student',     'href'=>'teacher-add-student.php', 'key'=>'add_student'],
-            ['icon'=>'fa-paper-plane',  'label'=>'Submit Referral', 'href'=>'teacher-referral.php',  'key'=>'referral'],
-            ['icon'=>'fa-list-alt',     'label'=>'My Referrals',    'href'=>'teacher-referrals.php', 'key'=>'referrals'],
-            ['icon'=>'fa-comments',     'label'=>'Referrals Chat',  'href'=>'teacher-referrals-chat.php', 'key'=>'referrals_chat'],
-            ['icon'=>'fa-archive',      'label'=>'Referrals Archive','href'=>'teacher-referrals-archive.php','key'=>'referrals_archive'],
-        ],
-        'admin' => [
-            ['icon'=>'fa-home',         'label'=>'Dashboard',       'href'=>'admin-dashboard.php',   'key'=>'dashboard'],
-            ['icon'=>'fa-folder-open',  'label'=>'All Cases',       'href'=>'admin-cases.php',       'key'=>'cases'],
-            ['icon'=>'fa-comments',     'label'=>'Cases Chat',      'href'=>'admin-chats.php',       'key'=>'chats'],
-            ['icon'=>'fa-reply-all',    'label'=>'Follow Ups',      'href'=>'admin-followups.php',   'key'=>'followups'],
-            ['icon'=>'fa-exchange-alt', 'label'=>'Referrals',       'href'=>'admin-referrals.php',   'key'=>'referrals'],
-            ['icon'=>'fa-comments',     'label'=>'Referrals Chat',  'href'=>'admin-referrals-chat.php', 'key'=>'referrals_chat'],
             [
-                'icon'=>'fa-archive',
-                'label'=>'Archive',
-                'key'=>'archive_group',
-                'children'=>[
-                    ['icon'=>'fa-folder',         'label'=>'Cases Archive',     'href'=>'admin-archive.php',          'key'=>'archive'],
-                    ['icon'=>'fa-history',        'label'=>'Chat Archive',      'href'=>'admin-chat-archive.php',     'key'=>'chat_archive'],
-                    ['icon'=>'fa-exchange-alt',   'label'=>'Referrals Archive', 'href'=>'admin-referrals-archive.php','key'=>'referrals_archive'],
-                    ['icon'=>'fa-calendar-check', 'label'=>'Sessions Archive',  'href'=>'admin-sessions-archive.php', 'key'=>'sessions_archive'],
+                'section' => null,
+                'items' => [
+                    ['icon'=>'fa-home',         'label'=>'Dashboard',       'href'=>'student-dashboard.php', 'key'=>'dashboard'],
                 ]
             ],
-            ['icon'=>'fa-calendar-alt', 'label'=>'Sessions',        'href'=>'admin-sessions.php',    'key'=>'sessions'],
-            ['icon'=>'fa-chart-bar',    'label'=>'Analytics',       'href'=>'admin-analytics.php',   'key'=>'analytics'],
-            ['icon'=>'fa-users-cog',    'label'=>'User Accounts',   'href'=>'admin-users.php',          'key'=>'users'],
-            ['icon'=>'fa-user-plus',    'label'=>'Add Student',     'href'=>'admin-add-student.php', 'key'=>'add_student'],
-            ['icon'=>'fa-shield-alt',   'label'=>'2FA Requests',    'href'=>'admin-2fa-requests.php',   'key'=>'2fa_requests'],
+            [
+                'section' => 'Counseling & Concerns',
+                'items' => [
+                    ['icon'=>'fa-file-medical', 'label'=>'Submit Concern',  'href'=>'student-submit.php',    'key'=>'submit'],
+                    ['icon'=>'fa-folder-open',  'label'=>'My Cases',        'href'=>'student-cases.php',     'key'=>'cases'],
+                    ['icon'=>'fa-comments',     'label'=>'Cases Chat',      'href'=>'student-chats.php',     'key'=>'chats'],
+                    ['icon'=>'fa-calendar-alt', 'label'=>'My Sessions',     'href'=>'student-sessions.php',  'key'=>'sessions'],
+                ]
+            ],
+            [
+                'section' => 'History & Archives',
+                'items' => [
+                    ['icon'=>'fa-archive',      'label'=>'Case Archive',     'href'=>'student-archive.php',          'key'=>'archive'],
+                    ['icon'=>'fa-history',      'label'=>'Chat Archive',     'href'=>'student-chat-archive.php',     'key'=>'chat_archive'],
+                    ['icon'=>'fa-calendar-check','label'=>'Sessions Archive', 'href'=>'student-sessions-archive.php', 'key'=>'sessions_archive'],
+                ]
+            ],
+        ],
+        'teacher' => [
+            [
+                'section' => null,
+                'items' => [
+                    ['icon'=>'fa-home',         'label'=>'Dashboard',       'href'=>'teacher-dashboard.php', 'key'=>'dashboard'],
+                ]
+            ],
+            [
+                'section' => 'Students',
+                'items' => [
+                    ['icon'=>'fa-users',        'label'=>'Advisory Class',  'href'=>'teacher-advisory.php',    'key'=>'advisory'],
+                    ['icon'=>'fa-user-plus',    'label'=>'Add Student',     'href'=>'teacher-add-student.php', 'key'=>'add_student'],
+                ]
+            ],
+            [
+                'section' => 'Referrals',
+                'items' => [
+                    ['icon'=>'fa-paper-plane',  'label'=>'Submit Referral', 'href'=>'teacher-referral.php',          'key'=>'referral'],
+                    ['icon'=>'fa-list-alt',     'label'=>'My Referrals',    'href'=>'teacher-referrals.php',         'key'=>'referrals'],
+                    ['icon'=>'fa-comments',     'label'=>'Referrals Chat',  'href'=>'teacher-referrals-chat.php',    'key'=>'referrals_chat'],
+                    ['icon'=>'fa-archive',      'label'=>'Referrals Archive','href'=>'teacher-referrals-archive.php','key'=>'referrals_archive'],
+                ]
+            ],
+        ],
+        'admin' => [
+            [
+                'section' => null,
+                'items' => [
+                    ['icon'=>'fa-home',         'label'=>'Dashboard',       'href'=>'admin-dashboard.php',   'key'=>'dashboard'],
+                ]
+            ],
+            [
+                'section' => 'Case Management',
+                'items' => [
+                    ['icon'=>'fa-folder-open',  'label'=>'All Cases',       'href'=>'admin-cases.php',       'key'=>'cases'],
+                    ['icon'=>'fa-comments',     'label'=>'Cases Chat',      'href'=>'admin-chats.php',       'key'=>'chats'],
+                    ['icon'=>'fa-reply-all',    'label'=>'Follow Ups',      'href'=>'admin-followups.php',   'key'=>'followups'],
+                    ['icon'=>'fa-calendar-alt', 'label'=>'Sessions',        'href'=>'admin-sessions.php',    'key'=>'sessions'],
+                ]
+            ],
+            [
+                'section' => 'Referrals',
+                'items' => [
+                    ['icon'=>'fa-exchange-alt', 'label'=>'Referrals',       'href'=>'admin-referrals.php',      'key'=>'referrals'],
+                    ['icon'=>'fa-comments',     'label'=>'Referrals Chat',  'href'=>'admin-referrals-chat.php', 'key'=>'referrals_chat'],
+                ]
+            ],
+            [
+                'section' => 'Archives',
+                'items' => [
+                    [
+                        'icon'=>'fa-archive',
+                        'label'=>'Archive',
+                        'key'=>'archive_group',
+                        'children'=>[
+                            ['icon'=>'fa-folder',         'label'=>'Cases Archive',     'href'=>'admin-archive.php',          'key'=>'archive'],
+                            ['icon'=>'fa-history',        'label'=>'Chat Archive',      'href'=>'admin-chat-archive.php',     'key'=>'chat_archive'],
+                            ['icon'=>'fa-exchange-alt',   'label'=>'Referrals Archive', 'href'=>'admin-referrals-archive.php','key'=>'referrals_archive'],
+                            ['icon'=>'fa-calendar-check', 'label'=>'Sessions Archive',  'href'=>'admin-sessions-archive.php', 'key'=>'sessions_archive'],
+                        ]
+                    ],
+                ]
+            ],
+            [
+                'section' => 'Administration',
+                'items' => [
+                    ['icon'=>'fa-chart-bar',    'label'=>'Analytics',       'href'=>'admin-analytics.php',       'key'=>'analytics'],
+                    ['icon'=>'fa-users-cog',    'label'=>'User Accounts',   'href'=>'admin-users.php',           'key'=>'users'],
+                    ['icon'=>'fa-user-plus',    'label'=>'Add Student',     'href'=>'admin-add-student.php',     'key'=>'add_student'],
+                    ['icon'=>'fa-shield-alt',   'label'=>'2FA Requests',    'href'=>'admin-2fa-requests.php',    'key'=>'2fa_requests'],
+                ]
+            ],
         ],
     ];
 
@@ -65,42 +120,48 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
         } catch(Exception $e){}
     }
 
-    $links = $navLinks[$role] ?? [];
+    $sections = $navLinks[$role] ?? [];
     $sidebarLinks = '';
-    foreach ($links as $l) {
-        if (!empty($l['children'])) {
-            $childKeys = array_column($l['children'], 'key');
-            $isGroupActive = in_array($activeNav, $childKeys);
-            $openClass = $isGroupActive ? 'open' : '';
-            $showClass = $isGroupActive ? 'show' : '';
-            $activeClass = $isGroupActive ? 'active active-parent' : '';
-            $ariaExpanded = $isGroupActive ? 'true' : 'false';
-            $groupId = 'sb-group-' . preg_replace('/[^a-zA-Z0-9_-]/', '', $l['key']);
+    foreach ($sections as $sec) {
+        if (!empty($sec['section'])) {
+            $secTitle = htmlspecialchars($sec['section']);
+            $sidebarLinks .= "<div class='nav-section-title'>{$secTitle}</div>";
+        }
+        foreach ($sec['items'] as $l) {
+            if (!empty($l['children'])) {
+                $childKeys = array_column($l['children'], 'key');
+                $isGroupActive = in_array($activeNav, $childKeys);
+                $openClass = $isGroupActive ? 'open' : '';
+                $showClass = $isGroupActive ? 'show' : '';
+                $activeClass = $isGroupActive ? 'active active-parent' : '';
+                $ariaExpanded = $isGroupActive ? 'true' : 'false';
+                $groupId = 'sb-group-' . preg_replace('/[^a-zA-Z0-9_-]/', '', $l['key']);
 
-            $sublinksHtml = '';
-            foreach ($l['children'] as $child) {
-                $cActive = ($child['key'] === $activeNav) ? 'active' : '';
-                $sublinksHtml .= "<a href='{$child['href']}' class='sb-sublink $cActive' id='sb-link-{$child['key']}' data-nav-key='{$child['key']}'><i class='fas {$child['icon']}'></i><span>{$child['label']}</span></a>";
-            }
+                $sublinksHtml = '';
+                foreach ($l['children'] as $child) {
+                    $cActive = ($child['key'] === $activeNav) ? 'active' : '';
+                    $sublinksHtml .= "<a href='{$child['href']}' class='sb-sublink $cActive' id='sb-link-{$child['key']}' data-nav-key='{$child['key']}'><i class='fas {$child['icon']}'></i><span>{$child['label']}</span></a>";
+                }
 
-            $sidebarLinks .= "
-            <div class='sb-dropdown-group $openClass' id='{$groupId}-wrap' data-nav-key='{$l['key']}'>
-              <button type='button' class='sb-link sb-dropdown-btn $activeClass $openClass' onclick='toggleSbDropdown(\"{$groupId}\")' aria-expanded='$ariaExpanded' id='{$groupId}-btn'>
-                <i class='fas {$l['icon']}'></i>
-                <span>{$l['label']}</span>
-                <i class='fas fa-chevron-down sb-chevron'></i>
-              </button>
-              <div class='sb-submenu $showClass' id='{$groupId}-menu'>
-                $sublinksHtml
-              </div>
-            </div>";
-        } else {
-            $active = $l['key']===$activeNav ? 'active' : '';
-            $badge = '';
-            if ($l['key'] === '2fa_requests' && $pending2faCount > 0) {
-                $badge = "<span class='badge-notif' style='margin-left:auto;background:var(--danger);color:#fff;font-size:10px;font-weight:800;padding:2px 7px;border-radius:50px;min-width:20px;text-align:center'>$pending2faCount</span>";
+                $sidebarLinks .= "
+                <div class='sb-dropdown-group $openClass' id='{$groupId}-wrap' data-nav-key='{$l['key']}'>
+                  <button type='button' class='sb-link sb-dropdown-btn $activeClass $openClass' onclick='toggleSbDropdown(\"{$groupId}\")' aria-expanded='$ariaExpanded' id='{$groupId}-btn'>
+                    <i class='fas {$l['icon']}'></i>
+                    <span>{$l['label']}</span>
+                    <i class='fas fa-chevron-down sb-chevron'></i>
+                  </button>
+                  <div class='sb-submenu $showClass' id='{$groupId}-menu'>
+                    $sublinksHtml
+                  </div>
+                </div>";
+            } else {
+                $active = $l['key']===$activeNav ? 'active' : '';
+                $badge = '';
+                if ($l['key'] === '2fa_requests' && $pending2faCount > 0) {
+                    $badge = "<span class='badge-notif' style='margin-left:auto;background:var(--danger);color:#fff;font-size:10px;font-weight:800;padding:2px 7px;border-radius:50px;min-width:20px;text-align:center'>$pending2faCount</span>";
+                }
+                $sidebarLinks .= "<a href='{$l['href']}' class='sb-link $active' id='sb-link-{$l['key']}' data-nav-key='{$l['key']}'><i class='fas {$l['icon']}'></i><span>{$l['label']}</span>$badge</a>";
             }
-            $sidebarLinks .= "<a href='{$l['href']}' class='sb-link $active' id='sb-link-{$l['key']}' data-nav-key='{$l['key']}'><i class='fas {$l['icon']}'></i><span>{$l['label']}</span>$badge</a>";
         }
     }
 
@@ -136,6 +197,9 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title><?= htmlspecialchars($pageTitle) ?> — GNHS Guidance</title>
+  <link rel="icon" type="image/jpeg" href="/gnhs-guidance/gnhs.jpg"/>
+  <link rel="shortcut icon" type="image/jpeg" href="/gnhs-guidance/gnhs.jpg"/>
+  <link rel="apple-touch-icon" href="/gnhs-guidance/gnhs.jpg"/>
   <link rel="stylesheet" href="/gnhs-guidance/style.css?v=<?= @filemtime(__DIR__ . '/../style.css') ?: '4.0' ?>"/>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>

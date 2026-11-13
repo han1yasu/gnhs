@@ -228,53 +228,103 @@ $totalActive = count($cases);
 
 $content = <<<HTML
 $reopenedBannerHtml
-<div class="content-card">
-  <div class="card-header">
-    <h3><i class="fas fa-folder-open"></i> Active Cases <span id="activeCasesCount" style="font-size:13px;font-weight:600;color:var(--text-3);margin-left:6px">($totalActive)</span></h3>
-    <a href="admin-archive.php" class="btn-sm-outline"><i class="fas fa-archive"></i> View Archive</a>
+
+<!-- Page Header Card (matching modern reference UI) -->
+<div class="cases-page-header">
+  <div class="cph-info-row">
+    <div class="cph-icon-box">
+      <i class="fas fa-folder-open"></i>
+    </div>
+    <div class="cph-text-col">
+      <h2 class="cph-title">All Active Cases</h2>
+      <p class="cph-desc">Review, manage, and filter guidance cases <span class="cph-count-pill" id="activeCasesCount">($totalActive Active)</span></p>
+    </div>
   </div>
-  <!-- Search & Filters Toolbar -->
-  <div class="filter-toolbar">
-    <div class="filter-search-box">
-      <i class="fas fa-search"></i>
-      <input type="text" class="filter-search-input" id="searchQ" value="$sqVal" placeholder="Search by name, case #, type, grade, status…"
+  <a href="admin-archive.php" class="cph-action-btn">
+    <i class="fas fa-archive"></i> View Cases Archive
+  </a>
+</div>
+
+<!-- Notched Outline Filter Card (matching reference image) -->
+<div class="cases-filter-card">
+  <!-- Search Field -->
+  <div class="filter-notched-box">
+    <label class="filter-notched-label"><i class="fas fa-search"></i> Search Cases</label>
+    <div class="filter-input-content">
+      <i class="fas fa-search filter-search-ico"></i>
+      <input type="text" class="filter-text-input" id="searchQ" value="$sqVal" placeholder="Search by student name, case #, type, grade, status…"
         autocomplete="off"
         onkeydown="if(event.key==='Enter'){event.preventDefault();doSearch();}"/>
     </div>
-    <button type="button" class="filter-btn-search" onclick="doSearch()"><i class="fas fa-search"></i> Search</button>
-    <select class="filter-select" onchange="applyFilter('status',this.value)">
-      <option value="">All Status</option>
-      <option value="pending"      $ss1>Pending</option>
-      <option value="under_review" $ss2>Under Review</option>
-      <option value="ongoing"      $ss3>Ongoing</option>
-    </select>
-    <select class="filter-select" onchange="applyFilter('priority',this.value)">
-      <option value="">All Priority</option>
-      <option value="high"   $sp1>High</option>
-      <option value="medium" $sp2>Medium</option>
-      <option value="low"    $sp3>Low</option>
-    </select>
-    <select class="filter-select" onchange="applyFilter('type',this.value)">
-      <option value="">All Types</option>
-      <option value="bullying"        $st1>Bullying</option>
-      <option value="academic_stress" $st2>Academic Stress</option>
-      <option value="emotional"       $st3>Emotional</option>
-      <option value="family"          $st4>Family</option>
-      <option value="peer_conflict"   $st5>Peer Conflict</option>
-      <option value="behavioral"      $st6>Behavioral</option>
-      <option value="other"           $st7>Other</option>
-    </select>
-    <select class="filter-select" id="gradeFilterSel" onchange="gradeFilterChange()">
-      <option value="">All Grades</option>
-      <option value="7"  $sg7>Grade 7</option>
-      <option value="8"  $sg8>Grade 8</option>
-      <option value="9"  $sg9>Grade 9</option>
-      <option value="10" $sg10>Grade 10</option>
-    </select>
-    <select class="filter-select" id="sectionFilterSel" onchange="applyFilter('section',this.value)">
-      <option value="">All Sections</option>
-    </select>
-    <button type="button" class="filter-btn-clear" onclick="clearFilters()"><i class="fas fa-rotate-left"></i> Reset</button>
+  </div>
+
+  <!-- Filter Dropdowns Grid -->
+  <div class="filter-dropdowns-grid">
+    <div class="filter-notched-box">
+      <label class="filter-notched-label">Status</label>
+      <select class="filter-select-input" onchange="applyFilter('status',this.value)">
+        <option value="">All Status</option>
+        <option value="pending"      $ss1>Pending</option>
+        <option value="under_review" $ss2>Under Review</option>
+        <option value="ongoing"      $ss3>Ongoing</option>
+      </select>
+    </div>
+
+    <div class="filter-notched-box">
+      <label class="filter-notched-label">Priority</label>
+      <select class="filter-select-input" onchange="applyFilter('priority',this.value)">
+        <option value="">All Priority</option>
+        <option value="high"   $sp1>High</option>
+        <option value="medium" $sp2>Medium</option>
+        <option value="low"    $sp3>Low</option>
+      </select>
+    </div>
+
+    <div class="filter-notched-box">
+      <label class="filter-notched-label">Concern Type</label>
+      <select class="filter-select-input" onchange="applyFilter('type',this.value)">
+        <option value="">All Types</option>
+        <option value="bullying"        $st1>Bullying</option>
+        <option value="academic_stress" $st2>Academic Stress</option>
+        <option value="emotional"       $st3>Emotional</option>
+        <option value="family"          $st4>Family</option>
+        <option value="peer_conflict"   $st5>Peer Conflict</option>
+        <option value="behavioral"      $st6>Behavioral</option>
+        <option value="other"           $st7>Other</option>
+      </select>
+    </div>
+
+    <div class="filter-notched-box">
+      <label class="filter-notched-label">Grade Level</label>
+      <select class="filter-select-input" id="gradeFilterSel" onchange="gradeFilterChange()">
+        <option value="">All Grades</option>
+        <option value="7"  $sg7>Grade 7</option>
+        <option value="8"  $sg8>Grade 8</option>
+        <option value="9"  $sg9>Grade 9</option>
+        <option value="10" $sg10>Grade 10</option>
+      </select>
+    </div>
+
+    <div class="filter-notched-box">
+      <label class="filter-notched-label">Section</label>
+      <select class="filter-select-input" id="sectionFilterSel" onchange="applyFilter('section',this.value)">
+        <option value="">All Sections</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Actions Bar -->
+  <div class="filter-actions-bar">
+    <button type="button" class="btn-filter-submit" onclick="doSearch()"><i class="fas fa-search"></i> Search Cases</button>
+    <button type="button" class="btn-filter-reset" onclick="clearFilters()"><i class="fas fa-rotate-left"></i> Reset</button>
+  </div>
+</div>
+
+<!-- Case Records Table Card -->
+<div class="cases-table-card">
+  <div class="cases-table-card-header">
+    <div class="ctc-title"><i class="fas fa-table-list" style="color:var(--maroon)"></i> Case Records</div>
+    <div class="ctc-hint"><i class="fas fa-arrows-left-right"></i> Swipe table horizontally to see all columns</div>
   </div>
   <div class="table-wrap">
     <table class="data-table">

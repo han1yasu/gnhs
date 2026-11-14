@@ -234,9 +234,9 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
   <script>
     (function(){
       var t = localStorage.getItem('theme') || 'light';
-      var c = localStorage.getItem('colorTheme') || 'maroon';
       document.documentElement.setAttribute('data-theme', t);
-      document.documentElement.setAttribute('data-color', c);
+      document.documentElement.setAttribute('data-color', 'maroon');
+      localStorage.setItem('colorTheme', 'maroon');
       window.currentUserRole = <?= json_encode($role) ?>;
       window.currentUserName = <?= json_encode($fullName) ?>;
     })();
@@ -298,21 +298,9 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
         <i class="fas fa-compass"></i>
         <span class="tour-btn-text">Guide Me</span>
       </button>
-      <div class="theme-container" id="themeContainerBtn" style="position:relative; display:inline-flex; align-items:center; margin-right:8px;">
-        <button class="nav-link" id="themeToggleBtn" style="background:none;border:none;cursor:pointer;font-size:16px;color:var(--text-2);padding:8px;border-radius:50%;" onclick="toggleThemeMenu()" title="Theme & Color Switcher"><i class="fas fa-palette"></i></button>
-        <div class="theme-panel" id="themePanel">
-          <button class="tp-mode-toggle" id="tpModeToggle" onclick="setTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark')">
-            <i class="fas fa-moon"></i> Dark Mode
-          </button>
-          <div style="font-size:12px;font-weight:800;color:var(--text-3);text-align:center;margin-top:4px">COLOR THEME</div>
-          <div class="tp-row">
-            <div class="tp-color active" style="background:#550000" data-color="maroon" onclick="setColorMode('maroon')"></div>
-            <div class="tp-color" style="background:#2563eb" data-color="blue" onclick="setColorMode('blue')"></div>
-            <div class="tp-color" style="background:#059669" data-color="emerald" onclick="setColorMode('emerald')"></div>
-            <div class="tp-color" style="background:#7c3aed" data-color="violet" onclick="setColorMode('violet')"></div>
-          </div>
-        </div>
-      </div>
+      <button type="button" class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()" title="Toggle Dark / Light Mode" aria-label="Toggle Theme">
+        <i class="fas fa-moon" id="themeToggleIcon"></i>
+      </button>
       <button class="notif-btn" id="topbarNotifBtn" onclick="toggleNotifs()" title="Notifications">
         <i class="fas fa-bell"></i>
         <span class="notif-dot hidden" id="notifDot"></span>
@@ -360,7 +348,7 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
 
   <!-- Notification Overview Modal -->
   <div class="modal-overlay hidden" id="notifOverviewModal" onclick="closeNotifOverviewOnBackdrop(event)" style="z-index: 2500;">
-    <div class="modal-box" style="max-width: 580px; width: 95%; border-radius: 16px; padding: 0; overflow: hidden; box-shadow: var(--shadow-lg);">
+    <div class="modal-box" style="max-width: 580px; width: 95%; border-radius: 20px; padding: 0; overflow: hidden; box-shadow: var(--shadow-lg);">
       <div style="background: var(--bg2); padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;">
         <div style="display: flex; gap: 14px; align-items: center;">
           <div id="notifModalIconBox" style="width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; background: var(--maroon-tint); color: var(--maroon);">

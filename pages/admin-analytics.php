@@ -619,6 +619,7 @@ canvas {
   background: var(--white) !important;
   color: var(--text) !important;
   border: 1px solid var(--border) !important;
+  border-radius: 20px !important;
 }
 
 [data-theme="dark"] #casesDrilldownModal .modal-box,

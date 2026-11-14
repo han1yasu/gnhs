@@ -1443,7 +1443,7 @@ function ensureCaseResolutionModal() {
   };
 
   modal.innerHTML = `
-    <div class="modal-box" style="max-width:720px;width:95%;padding:26px;max-height:92vh;overflow-y:auto;border-radius:14px">
+    <div class="modal-box" style="max-width:720px;width:95%;padding:26px;max-height:92vh;overflow-y:auto;border-radius:20px">
       <button type="button" class="modal-close" onclick="closeCaseResolutionModal()"><i class="fas fa-times"></i></button>
 
       <div style="margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid var(--border)">

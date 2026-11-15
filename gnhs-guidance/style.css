@@ -380,7 +380,8 @@ img {
 }
 
 .btn-message-student,
-.btn-message-counselor {
+.btn-message-counselor,
+.btn-message-teacher {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -388,15 +389,19 @@ img {
   width: 100%;
   padding: 13px 20px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
   color: #ffffff !important;
   font-size: 15px;
   font-weight: 700;
   border: none;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(37, 99, 235, .35);
   transition: all .25s cubic-bezier(.4, 0, .2, 1);
-  text-decoration: none
+  text-decoration: none;
+}
+
+.btn-message-student,
+.btn-message-counselor {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, .35);
 }
 
 .btn-message-student:hover,
@@ -404,13 +409,26 @@ img {
   background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%) !important;
   color: #ffffff !important;
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(37, 99, 235, .45)
+  box-shadow: 0 8px 24px rgba(37, 99, 235, .45);
+}
+
+.btn-message-teacher {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+  box-shadow: 0 4px 14px rgba(5, 150, 105, .35);
+}
+
+.btn-message-teacher:hover {
+  background: linear-gradient(135deg, #047857 0%, #065f46 100%) !important;
+  color: #ffffff !important;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(5, 150, 105, .45);
 }
 
 .btn-message-student i,
-.btn-message-counselor i {
+.btn-message-counselor i,
+.btn-message-teacher i {
   font-size: 16px;
-  color: #ffffff !important
+  color: #ffffff !important;
 }
 
 .hero-stats {
@@ -5238,9 +5256,37 @@ html.theme-transitioning *::after {
 }
 
 .navbar .theme-toggle-btn {
-  width: 38px;
-  height: 38px;
-  margin-right: 6px;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  margin: 0 6px;
+  background: var(--bg2, #f4f4f5);
+  border: 1px solid var(--border, #e4e4e7);
+  color: var(--text-2, #52525b);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  padding: 0;
+}
+
+.navbar .theme-toggle-btn:hover {
+  background: var(--maroon-pale, #fff5f5);
+  color: var(--maroon, #550000);
+  border-color: var(--maroon-tint, #fce8e8);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(85, 0, 0, 0.12);
+}
+
+[data-theme="dark"] .navbar .theme-toggle-btn {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #fbbf24 !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3) !important;
+}
+
+[data-theme="dark"] .navbar .theme-toggle-btn:hover {
+  background: rgba(251, 191, 36, 0.18) !important;
+  color: #f59e0b !important;
+  border-color: rgba(251, 191, 36, 0.4) !important;
+  box-shadow: 0 2px 12px rgba(251, 191, 36, 0.25) !important;
 }
 
 /* ── MARQUEE ── */

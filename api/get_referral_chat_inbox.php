@@ -8,9 +8,50 @@ $isCounselor = ($user['role'] === 'admin');
 $isTeacher = ($user['role'] === 'teacher');
 $archiveId = (int)($_GET['archive_id'] ?? 0);
 $refId = (int)($_GET['ref_id'] ?? 0);
+$caseId = (int)($_GET['case_id'] ?? 0);
 
 if (!$isCounselor && !$isTeacher) {
     jsonOut(['success' => false, 'message' => 'Unauthorized'], 403);
+}
+
+// If opened from a case, find or initialize referral coordination thread with the teacher
+if ($caseId > 0 && !$refId) {
+    $cStmt = $db->prepare("SELECT c.*, CONCAT(s.first_name, ' ', s.last_name) AS full_student_name, s.grade_section AS student_grade_sec FROM cases c JOIN users s ON c.student_id = s.id WHERE c.id = ?");
+    $cStmt->execute([$caseId]);
+    $caseData = $cStmt->fetch(PDO::FETCH_ASSOC);
+    if ($caseData) {
+        $stName = trim($caseData['full_student_name']);
+        $sec = trim($caseData['student_grade_sec'] ?: ($caseData['grade_section'] ?? ''));
+
+        // Check if referral already exists for this student
+        $rCheck = $db->prepare("SELECT id FROM referrals WHERE student_name = ? ORDER BY id DESC LIMIT 1");
+        $rCheck->execute([$stName]);
+        $existingRef = $rCheck->fetch(PDO::FETCH_ASSOC);
+        if ($existingRef) {
+            $refId = (int)$existingRef['id'];
+        } else {
+            // Find advisory teacher or any teacher
+            $teacher = null;
+            if ($sec) {
+                $tStmt = $db->prepare("SELECT id FROM users WHERE role = 'teacher' AND advisory_class = ? LIMIT 1");
+                $tStmt->execute([$sec]);
+                $teacher = $tStmt->fetch(PDO::FETCH_ASSOC);
+            }
+            if (!$teacher) {
+                $tStmt2 = $db->query("SELECT id FROM users WHERE role = 'teacher' ORDER BY id ASC LIMIT 1");
+                $teacher = $tStmt2->fetch(PDO::FETCH_ASSOC);
+            }
+            if ($teacher) {
+                $countRow = (int)$db->query("SELECT COUNT(*) FROM referrals")->fetchColumn();
+                $nextNum = 'R-' . str_pad((string)($countRow + 1), 4, '0', STR_PAD_LEFT);
+                $ins = $db->prepare("INSERT INTO referrals (ref_number, teacher_id, student_name, grade_section, concern_type, urgency, observations, status, submitted_at, ai_summary) VALUES (?, ?, ?, ?, ?, 'moderate', ?, 'ongoing', NOW(), ?)");
+                $obs = "Guidance Counselor case coordination thread regarding Case #" . ($caseData['case_number'] ?? $caseId) . " for student " . $stName . ".";
+                $aiSum = "Case coordination between Guidance Counselor and Advisory Teacher for student " . $stName . " (" . $sec . ").";
+                $ins->execute([$nextNum, (int)$teacher['id'], $stName, $sec, $caseData['concern_type'] ?? 'other', $obs, $aiSum]);
+                $refId = (int)$db->lastInsertId();
+            }
+        }
+    }
 }
 
 // Query active referrals for this user

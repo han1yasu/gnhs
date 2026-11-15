@@ -216,7 +216,7 @@ function openRefModal(btn) {
         <div class="form-group" style="margin-top:20px;border-top:1px solid var(--border);padding-top:20px">
           <label>Referred By</label>
           <div style="font-weight:600;margin-bottom:15px;">${ref.teacher_name}</div>
-          <button class="btn-primary" style="width:100%;background:var(--blue);display:flex;align-items:center;justify-content:center;gap:8px" onclick="window.location.href=\'admin-referrals-chat.php?ref_id=${ref.id}\'">
+          <button class="btn-primary" style="width:100%;background:var(--blue);display:flex;align-items:center;justify-content:center;gap:8px" onclick="goToReferralChat(${ref.id})">
             <i class="fas fa-comment-dots"></i> Message Teacher
           </button>
         </div>

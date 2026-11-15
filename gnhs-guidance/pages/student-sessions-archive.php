@@ -290,7 +290,7 @@ function openSessionRowOverview(rowEl) {
     <!-- Bottom Action Buttons -->
     <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;padding-top:14px;border-top:1px solid var(--border)">
       <button type="button" class="btn-sm-outline" onclick="closeStudentSessionModal()">Close</button>
-      <button type="button" class="btn-sm-primary" style="background:var(--blue)" onclick="window.location.href='student-chats.php?case_id=' + \${d.case_id}">
+      <button type="button" class="btn-sm-primary" style="background:var(--blue)" onclick="goToCaseChat(\${d.case_id})">
         <i class="fas fa-comment-dots"></i> Message Counselor
       </button>
       <button type="button" class="btn-sm-primary" onclick="window.location.href='student-archive.php?open_case=' + \${d.case_id}">

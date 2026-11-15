@@ -770,7 +770,8 @@ async function pageLoadInbox() {
     const params = new URLSearchParams(window.location.search);
     const archiveId = params.get('archive_id') || '';
     const refId = params.get('ref_id') || '';
-    const query = refId ? '?ref_id=' + refId : (archiveId ? '?archive_id=' + archiveId : '');
+    const caseId = params.get('case_id') || '';
+    const query = refId ? '?ref_id=' + encodeURIComponent(refId) : (caseId ? '?case_id=' + encodeURIComponent(caseId) : (archiveId ? '?archive_id=' + encodeURIComponent(archiveId) : ''));
 
     const data = await apiFetch('get_referral_chat_inbox.php' + query);
     const list = document.getElementById('msgInboxList');
@@ -792,6 +793,8 @@ async function pageLoadInbox() {
     if (refId && !pageCurrentRefId) {
       const target = allInboxData.find(c => c.id == refId);
       if (target) openConversation(target.id);
+    } else if (caseId && !pageCurrentRefId) {
+      if (allInboxData.length > 0) openConversation(allInboxData[0].id);
     } else if (archiveId && !pageCurrentRefId) {
       const target = allInboxData.find(c => c.id == archiveId);
       if (target) openConversation(target.id);

@@ -9,12 +9,62 @@
   <link rel="icon" type="image/x-icon" href="favicon.ico?v=3" />
   <link rel="shortcut icon" type="image/x-icon" href="favicon.ico?v=3" />
   <link rel="apple-touch-icon" href="gnhs.png?v=3" />
-  <link rel="stylesheet" href="style.css?v=20261111_07" />
+  <link rel="stylesheet" href="style.css?v=20261115_02" />
   <link
     href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,600;1,400&display=swap"
     rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    /* Direct resilient styling for navbar theme toggle button */
+    .navbar .theme-toggle-btn {
+      width: 40px !important;
+      height: 40px !important;
+      min-width: 40px !important;
+      min-height: 40px !important;
+      border-radius: 10px !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      background: var(--bg2, #f4f4f5) !important;
+      color: var(--text-2, #52525b) !important;
+      font-size: 16px !important;
+      border: 1px solid var(--border, #e4e4e7) !important;
+      cursor: pointer !important;
+      transition: all 0.2s ease !important;
+      flex-shrink: 0 !important;
+      margin: 0 6px !important;
+      padding: 0 !important;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06) !important;
+    }
+    .navbar .theme-toggle-btn:hover {
+      background: var(--maroon-pale, #fff5f5) !important;
+      color: var(--maroon, #550000) !important;
+      border-color: var(--maroon-tint, #fce8e8) !important;
+      transform: translateY(-1px) !important;
+      box-shadow: 0 3px 10px rgba(85,0,0,0.12) !important;
+    }
+    [data-theme="dark"] .navbar .theme-toggle-btn {
+      background: rgba(255, 255, 255, 0.1) !important;
+      color: #fbbf24 !important;
+      border-color: rgba(255, 255, 255, 0.18) !important;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3) !important;
+    }
+    [data-theme="dark"] .navbar .theme-toggle-btn:hover {
+      background: rgba(251, 191, 36, 0.18) !important;
+      color: #f59e0b !important;
+      border-color: rgba(251, 191, 36, 0.4) !important;
+      box-shadow: 0 2px 12px rgba(251, 191, 36, 0.25) !important;
+    }
+    @media (max-width: 768px) {
+      .navbar .theme-toggle-btn {
+        width: 38px !important;
+        height: 38px !important;
+        font-size: 14px !important;
+        margin: 6px auto !important;
+      }
+    }
+  </style>
   <script>
     (function () {
       var t = localStorage.getItem('theme') || 'light';
@@ -689,8 +739,8 @@
 
   </div>
 
-  <script src="theme.js?v=1.1"></script>
-  <script src="app.js?v=20261111_04"></script>
+  <script src="theme.js?v=20261115_02"></script>
+  <script src="app.js?v=20261115_02"></script>
   <script>
     const GNHS_GRADE_SECTIONS = {
       '7':  ['Bonifacio', 'Burgos', 'Del Pilar', 'Diego Silang', 'Luna', 'Mabini', 'Malvar', 'Rizal'],

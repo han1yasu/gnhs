@@ -778,9 +778,12 @@ function openCaseSummaryModal(caseId) {
     : "<div style=\"width:48px;height:48px;border-radius:12px;background:var(--maroon-pale);color:var(--maroon);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px\">" + (c.avatar_initials || "?") + "</div>";
 
   const referralBtn = c.is_anonymous ? "" : ""
-    + "<div style=\"margin-top:12px;display:flex;justify-content:flex-end\">"
-    + "  <a href=\"teacher-referral.php?student_name=" + encodeURIComponent(c.student_name) + "&concern_type=" + encodeURIComponent(c.concern_type) + "\" class=\"btn-sm-primary\" style=\"text-decoration:none\">"
+    + "<div style=\"margin-top:12px;display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap\">"
+    + "  <a href=\"teacher-referral.php?student_name=" + encodeURIComponent(c.student_name) + "&concern_type=" + encodeURIComponent(c.concern_type) + "\" class=\"btn-sm-outline\" style=\"text-decoration:none\">"
     + "    <i class=\"fas fa-clipboard-check\"></i> Submit Teacher Observation Referral"
+    + "  </a>"
+    + "  <a href=\"teacher-referrals-chat.php\" class=\"btn-sm-primary\" style=\"text-decoration:none;display:inline-flex;align-items:center;gap:6px;background:var(--blue)\">"
+    + "    <i class=\"fas fa-comment-dots\"></i> Message Counselor"
     + "  </a>"
     + "</div>";
 

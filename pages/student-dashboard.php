@@ -160,27 +160,20 @@ $content = <<<HTML
 $refAlertBanner
 
 <div class="summary-cards">
-  <div class="sum-card">
+  <div class="sum-card clickable" onclick="window.location.href='student-cases.php'" title="View active cases">
     <div class="sum-icon" style="background:#fff0f0;color:var(--maroon)"><i class="fas fa-folder-open"></i></div>
     <div><div class="sum-num">$totalCases</div><div class="sum-label">My Cases</div></div>
   </div>
-  <div class="sum-card">
+  <div class="sum-card clickable" onclick="window.location.href='student-cases.php?tab=referrals'" title="View teacher referrals">
     <div class="sum-icon" style="background:#eff6ff;color:#2563eb"><i class="fas fa-hand-holding-heart"></i></div>
     <div><div class="sum-num">$activeRefsCount</div><div class="sum-label">Teacher Referrals</div></div>
   </div>
-  <div class="sum-card">
+  <div class="sum-card clickable" onclick="window.location.href='student-archive.php'" title="View resolved cases">
     <div class="sum-icon" style="background:#f0fdf4;color:#16a34a"><i class="fas fa-check-circle"></i></div>
     <div><div class="sum-num">$resolved</div><div class="sum-label">Resolved Cases</div></div>
   </div>
-  <div class="sum-card">
+  <div class="sum-card clickable" onclick="document.querySelector('.nav-btn-icon .fa-bell')?.parentElement?.click()" title="View notifications">
     <div class="sum-icon" style="background:#fffbeb;color:#d97706"><i class="fas fa-bell"></i></div>
-    <div><div class="sum-num">$unread</div><div class="sum-label">Unread Notifs</div></div>
-  </div>
-</div>
-    <div><div class="sum-num">$resolved</div><div class="sum-label">Resolved</div></div>
-  </div>
-  <div class="sum-card">
-    <div class="sum-icon" style="background:#eff6ff;color:#2563eb"><i class="fas fa-bell"></i></div>
     <div><div class="sum-num">$unread</div><div class="sum-label">Unread Notifs</div></div>
   </div>
 </div>

@@ -99,6 +99,22 @@ try {
                ->execute([$session['referral_id']]);
             $db->prepare("UPDATE referrals SET status = 'resolved' WHERE id = ?")
                ->execute([$session['referral_id']]);
+
+            // Notify referring teacher of resolution
+            try {
+                $rStmt = $db->prepare("SELECT * FROM referrals WHERE id = ?");
+                $rStmt->execute([$session['referral_id']]);
+                $refData = $rStmt->fetch();
+                if ($refData && !empty($refData['teacher_id'])) {
+                    $tTitle = "Referral #{$refData['ref_number']} Concluded & Resolved";
+                    $tMsg   = "Counselor {$counselorName} has completed the counseling session for your referred student {$refData['student_name']} regarding \"{$refData['concern_type']}\". The referral is now officially marked as RESOLVED.\n\n• Case Resolution Summary:\n{$resolution}";
+                    if (!empty($guidanceRec)) {
+                        $tMsg .= "\n\n• Guidance Recommendations:\n{$guidanceRec}";
+                    }
+                    $db->prepare("INSERT INTO notifications (user_id, title, message, type, is_read, created_at) VALUES (?, ?, ?, 'referral', 0, NOW())")
+                       ->execute([$refData['teacher_id'], $tTitle, $tMsg]);
+                }
+            } catch (Exception $nte) {}
         }
 
         // Save final session notes into case_notes if provided (internal, not visible to student)
@@ -232,6 +248,30 @@ try {
 
             $db->prepare("INSERT INTO notifications (user_id, title, message, type, is_read, created_at) VALUES (?, ?, ?, 'session', 0, NOW())")
                ->execute([$studentId, $notifTitle, $notifMsg]);
+        }
+
+        // Send notification to referring teacher if linked to a referral
+        if (!empty($session['referral_id'])) {
+            try {
+                $rStmt = $db->prepare("SELECT * FROM referrals WHERE id = ?");
+                $rStmt->execute([$session['referral_id']]);
+                $refData = $rStmt->fetch();
+                if ($refData && !empty($refData['teacher_id'])) {
+                    $tTitle = "Referral #{$refData['ref_number']} Update: Follow-Up Scheduled";
+                    $tMsg   = "Counselor {$counselorName} conducted a counseling session with your referred student {$refData['student_name']}.\n\nA follow-up session has been scheduled:\n\n• Next Session: {$formattedDate}\n• Session Mode: {$formattedMode}\n";
+                    if (($nextType === 'online' || $nextType === 'virtual') && !empty($nextMeetingLink)) {
+                        $tMsg .= "• Virtual Meeting Link: {$nextMeetingLink}\n";
+                    } else {
+                        $tMsg .= "• Location: {$nextLocation}\n";
+                    }
+                    if ($nextRemarks) {
+                        $tMsg .= "• Counselor Remarks: {$nextRemarks}\n";
+                    }
+                    $tMsg .= "\nThe referral status remains Ongoing.";
+                    $db->prepare("INSERT INTO notifications (user_id, title, message, type, is_read, created_at) VALUES (?, ?, ?, 'referral', 0, NOW())")
+                       ->execute([$refData['teacher_id'], $tTitle, $tMsg]);
+                }
+            } catch (Exception $nte) {}
         }
 
         jsonOut([

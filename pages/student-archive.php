@@ -4,10 +4,33 @@ require_once __DIR__ . '/../includes/layout.php';
 $user = requireLogin('student');
 
 $db = getDB();
+
+$studentFullName = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''));
+$revStudentName  = trim(($user['last_name'] ?? '') . ' ' . ($user['first_name'] ?? ''));
+
 // Fetch resolved or closed cases for this student
 $stmt = $db->prepare("SELECT * FROM cases WHERE student_id=? AND status IN ('resolved','closed') ORDER BY updated_at DESC, submitted_at DESC");
 $stmt->execute([$user['id']]);
 $cases = $stmt->fetchAll();
+
+// Fetch archived teacher referrals for this student
+$refStmt = $db->prepare("SELECT r.*, CONCAT(t.first_name, ' ', t.last_name) AS teacher_name,
+    cs.session_date, cs.recommendations AS session_recommendations, cs.notes AS session_notes,
+    u.first_name AS counselor_first, u.last_name AS counselor_last
+    FROM referrals r
+    JOIN users t ON r.teacher_id = t.id
+    LEFT JOIN counseling_sessions cs ON cs.id = (
+        SELECT id FROM counseling_sessions WHERE referral_id = r.id ORDER BY session_date DESC LIMIT 1
+    )
+    LEFT JOIN users u ON cs.counselor_id = u.id
+    WHERE (
+        r.student_id = :uid 
+        OR LOWER(TRIM(r.student_name)) = LOWER(:fullName) 
+        OR LOWER(TRIM(r.student_name)) = LOWER(:revFullName)
+    ) AND r.status IN ('resolved', 'closed')
+    ORDER BY r.updated_at DESC, r.submitted_at DESC");
+$refStmt->execute([':uid' => $user['id'], ':fullName' => $studentFullName, ':revFullName' => $revStudentName]);
+$archivedRefs = $refStmt->fetchAll();
 
 function badge(string $s): string {
     $map=['pending'=>'status-pending','under_review'=>'status-under_review','ongoing'=>'status-ongoing','resolved'=>'status-resolved','closed'=>'status-resolved'];
@@ -36,10 +59,19 @@ ob_start();
 </div>
 
 <div class="content-card" style="margin-top:18px">
-  <div class="card-header">
-    <h3><i class="fas fa-box-archive"></i> Resolved & Completed Cases (<?= count($cases) ?>)</h3>
+  <div class="card-header" style="flex-wrap:wrap;gap:12px">
+    <div style="display:flex;gap:10px;align-items:center">
+      <button type="button" class="btn-sm-outline" id="tabCasesArchiveBtn" onclick="switchArchiveTab('cases')" style="padding:8px 14px;font-weight:700;display:inline-flex;align-items:center;gap:6px;cursor:pointer;background:var(--maroon);color:#fff;border-color:var(--maroon)">
+        <i class="fas fa-folder-open"></i> Resolved Cases (<?= count($cases) ?>)
+      </button>
+      <button type="button" class="btn-sm-outline" id="tabRefsArchiveBtn" onclick="switchArchiveTab('referrals')" style="padding:8px 14px;font-weight:700;display:inline-flex;align-items:center;gap:6px;cursor:pointer">
+        <i class="fas fa-hand-holding-heart"></i> Teacher Referrals (<?= count($archivedRefs) ?>)
+      </button>
+    </div>
     <a href="student-submit.php" class="btn-sm-primary"><i class="fas fa-plus"></i> New Concern</a>
   </div>
+
+  <div id="archiveCasesPane">
 
   <?php if (empty($cases)): ?>
     <div style="text-align:center;padding:60px 20px;color:var(--text-3)">
@@ -126,6 +158,77 @@ ob_start();
       </table>
     </div>
   <?php endif; ?>
+  </div>
+
+  <!-- Pane 2: Archived Referrals -->
+  <div id="archiveRefsPane" style="display:none">
+  <?php if (empty($archivedRefs)): ?>
+    <div style="text-align:center;padding:60px 20px;color:var(--text-3)">
+      <div style="width:72px;height:72px;border-radius:50%;background:rgba(37,99,235,0.06);color:#2563eb;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:28px">
+        <i class="fas fa-hand-holding-heart"></i>
+      </div>
+      <h3 style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:6px">No Archived Teacher Referrals</h3>
+      <p style="font-size:13.5px;max-width:440px;margin:0 auto;line-height:1.5">When teacher referrals on your behalf are completed and concluded, they will appear here in your permanent archive.</p>
+    </div>
+  <?php else: ?>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Ref #</th>
+            <th>Referred By</th>
+            <th>Concern</th>
+            <th>Urgency</th>
+            <th>Status</th>
+            <th>Resolved Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php foreach ($archivedRefs as $ar): 
+             $type = ucfirst(str_replace('_',' ',$ar['concern_type']));
+             $arDate = $ar['updated_at'] ? date('M d, Y h:i A', strtotime($ar['updated_at'])) : date('M d, Y', strtotime($ar['submitted_at']));
+             $arJson = htmlspecialchars(json_encode([
+                 'ref_number'     => $ar['ref_number'],
+                 'teacher_name'   => $ar['teacher_name'],
+                 'concern_type'   => $ar['concern_type'],
+                 'urgency'        => $ar['urgency'],
+                 'status'         => $ar['status'],
+                 'observations'   => $ar['observations'],
+                 'ai_summary'     => $ar['ai_summary'] ?? '',
+                 'submitted_at'   => date('M d, Y g:i A', strtotime($ar['submitted_at'])),
+                 'resolved_at'    => $arDate,
+                 'counselor_name' => trim(($ar['counselor_first'] ?? '') . ' ' . ($ar['counselor_last'] ?? '')) ?: 'Guidance Staff',
+                 'session_recommendations' => $ar['session_recommendations'] ?? ''
+             ]), ENT_QUOTES, 'UTF-8');
+          ?>
+            <tr>
+              <td class="cell-case-num"><span class="case-num-text" style="color:var(--maroon);font-weight:800"><?= htmlspecialchars($ar['ref_number']) ?></span></td>
+              <td style="font-weight:600"><i class="fas fa-chalkboard-teacher" style="color:var(--maroon);margin-right:4px"></i><?= htmlspecialchars($ar['teacher_name']) ?></td>
+              <td><span class="case-type-label"><?= $type ?></span></td>
+              <td><?= prioBadge($ar['urgency']) ?></td>
+              <td><span class="status-badge status-resolved">Resolved</span></td>
+              <td class="cell-date"><?= $arDate ?></td>
+              <td class="cell-actions">
+                <button type="button" class="btn-row-action" onclick="openArchivedRefModal(this)" data-ref='<?= $arJson ?>'>
+                  <i class="fas fa-eye"></i> View Outcome
+                </button>
+              </td>
+            </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
+  <?php endif; ?>
+  </div>
+</div>
+
+<!-- Archived Referral Detail Modal -->
+<div class="modal-overlay hidden" id="archivedRefModal" onclick="if(event.target.id==='archivedRefModal')this.classList.add('hidden')">
+  <div class="modal-box" style="max-width:650px;width:95%">
+    <button class="modal-close" onclick="document.getElementById('archivedRefModal').classList.add('hidden')"><i class="fas fa-times"></i></button>
+    <div id="archivedRefModalBody"></div>
+  </div>
 </div>
 
 <!-- Case Detail Modal -->
@@ -261,6 +364,84 @@ async function submitAppeal() {
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Appeal';
     }
+}
+
+function switchArchiveTab(tab) {
+  const btnCases = document.getElementById('tabCasesArchiveBtn');
+  const btnRefs  = document.getElementById('tabRefsArchiveBtn');
+  const paneCases = document.getElementById('archiveCasesPane');
+  const paneRefs  = document.getElementById('archiveRefsPane');
+
+  if (tab === 'referrals') {
+    btnCases.style.background = '';
+    btnCases.style.color = '';
+    btnCases.style.borderColor = '';
+    btnRefs.style.background = 'var(--maroon)';
+    btnRefs.style.color = '#fff';
+    btnRefs.style.borderColor = 'var(--maroon)';
+    paneCases.style.display = 'none';
+    paneRefs.style.display  = 'block';
+  } else {
+    btnRefs.style.background = '';
+    btnRefs.style.color = '';
+    btnRefs.style.borderColor = '';
+    btnCases.style.background = 'var(--maroon)';
+    btnCases.style.color = '#fff';
+    btnCases.style.borderColor = 'var(--maroon)';
+    paneRefs.style.display  = 'none';
+    paneCases.style.display = 'block';
+  }
+}
+
+function openArchivedRefModal(btn) {
+  const ref = JSON.parse(btn.getAttribute('data-ref'));
+  if (!ref) return;
+
+  const typeLabel = (ref.concern_type || '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+  document.getElementById('archivedRefModalBody').innerHTML = `
+    <div style="border-bottom:1px solid var(--border);padding-bottom:14px;margin-bottom:18px;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <span style="background:var(--maroon-pale);color:var(--maroon);font-weight:900;font-size:14px;padding:3px 10px;border-radius:6px;border:1px solid var(--maroon-tint)">#\${ref.ref_number}</span>
+          <span class="status-badge status-resolved">Resolved</span>
+        </div>
+        <h2 style="font-size:18px;font-weight:800;color:var(--text);margin:0">Archived Referral from Teacher \${ref.teacher_name}</h2>
+      </div>
+      <div style="font-size:12.5px;color:var(--text-3);text-align:right">
+        Resolved on<br><strong>\${ref.resolved_at}</strong>
+      </div>
+    </div>
+
+    <div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:16px;margin-bottom:18px">
+      <div style="font-size:12px;font-weight:800;color:#166534;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">
+        <i class="fas fa-check-circle"></i> Official Guidance Resolution Outcome
+      </div>
+      <div style="font-size:13.5px;color:#14532d;line-height:1.6">
+        This teacher referral regarding <strong>\${typeLabel}</strong> was addressed and concluded by Counselor <strong>\${ref.counselor_name}</strong>.
+      </div>
+      \${ref.session_recommendations ? `
+        <div style="margin-top:10px;padding-top:10px;border-top:1px dashed #86efac;font-size:13px;color:#14532d">
+          <strong>Guidance Recommendations:</strong><br>\${ref.session_recommendations}
+        </div>` : ''}
+    </div>
+
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:18px">
+      <div style="font-size:12px;font-weight:800;color:var(--maroon);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px">
+        <i class="fas fa-quote-left" style="color:var(--maroon)"></i> Teacher's Original Observations
+      </div>
+      <div style="font-size:13.5px;line-height:1.6;color:var(--text);white-space:pre-wrap;background:var(--bg);padding:12px;border-radius:8px">\${ref.observations}</div>
+    </div>
+
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;padding-top:14px;border-top:1px solid var(--border)">
+      <button type="button" class="btn-secondary" onclick="document.getElementById('archivedRefModal').classList.add('hidden')">Close</button>
+      <a href="student-sessions-archive.php" class="btn-primary" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px">
+        <i class="fas fa-box-archive"></i> Go to Sessions Archive
+      </a>
+    </div>
+  `;
+
+  document.getElementById('archivedRefModal').classList.remove('hidden');
 }
 
 document.addEventListener('DOMContentLoaded', function() {

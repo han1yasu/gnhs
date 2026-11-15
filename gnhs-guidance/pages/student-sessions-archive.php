@@ -31,8 +31,11 @@ function getStudentGuidanceRecommendations(array $s, PDO $db): string {
     return $defaultRecs[$type] ?? "1. Continue following your guidance action plan and keep open communication with your counselor.\n2. Utilize school guidance resources whenever you encounter difficulties or need support.\n3. Focus on personal well-being, healthy habits, and positive growth in your school journey.";
 }
 
-// Completed counseling sessions
-$sessions = $db->query("SELECT cs.*,
+$studentFullName = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''));
+$revStudentName  = trim(($user['last_name'] ?? '') . ' ' . ($user['first_name'] ?? ''));
+
+// Completed counseling sessions (both student cases and teacher referrals)
+$sessStmt = $db->prepare("SELECT cs.*,
     u.first_name AS counselor_first, u.last_name AS counselor_last,
     c.id AS case_id, 
     COALESCE(c.case_number, r.ref_number, CONCAT('CS-', cs.id)) AS case_number, 
@@ -43,13 +46,29 @@ $sessions = $db->query("SELECT cs.*,
     COALESCE(c.status, r.status) AS case_status,
     c.is_peer_report, c.reported_student_name, c.reported_student_grade,
     c.resolution, c.sanctions, c.guidance_recommendations,
-    cs.recommendations AS session_recommendations
+    cs.recommendations AS session_recommendations,
+    r.id AS referral_id,
+    CONCAT(t.first_name, ' ', t.last_name) AS teacher_name
     FROM counseling_sessions cs 
-    JOIN users u ON cs.counselor_id=u.id 
+    LEFT JOIN users u ON cs.counselor_id=u.id 
     LEFT JOIN cases c ON cs.case_id=c.id
     LEFT JOIN referrals r ON cs.referral_id=r.id
-    WHERE cs.student_id=$uid AND cs.status = 'completed'
-    ORDER BY cs.session_date DESC")->fetchAll();
+    LEFT JOIN users t ON r.teacher_id=t.id
+    WHERE (
+        cs.student_id = :uid 
+        OR cs.referral_id IN (
+            SELECT id FROM referrals WHERE student_id = :uid 
+            OR LOWER(TRIM(student_name)) = LOWER(:fullName)
+            OR LOWER(TRIM(student_name)) = LOWER(:revFullName)
+        )
+    ) AND cs.status = 'completed'
+    ORDER BY cs.session_date DESC");
+$sessStmt->execute([
+    ':uid'         => $uid,
+    ':fullName'    => $studentFullName,
+    ':revFullName' => $revStudentName,
+]);
+$sessions = $sessStmt->fetchAll();
 
 $rows = '';
 foreach ($sessions as $s) {
@@ -61,6 +80,8 @@ foreach ($sessions as $s) {
     $sessionData = [
         'id'                     => (int)$s['id'],
         'case_id'                => (int)($s['case_id'] ?? 0),
+        'referral_id'            => (int)($s['referral_id'] ?? 0),
+        'teacher_name'           => $s['teacher_name'] ?? '',
         'case_number'            => $s['case_number'],
         'case_subject'           => $s['case_subject'],
         'case_description'       => $s['case_description'],
@@ -87,10 +108,15 @@ foreach ($sessions as $s) {
         ? "<div style='font-size:11px;color:#be185d;margin-top:2px'><i class='fas fa-hand-holding-heart'></i> For: ".htmlspecialchars($s['reported_student_name']?:'Peer')."</div>" 
         : "";
 
+    $refIndicator = !empty($s['referral_id']) 
+        ? "<div style='font-size:11px;color:#2563eb;margin-top:2px;font-weight:600'><i class='fas fa-hand-holding-heart'></i> Teacher Referral</div>" 
+        : "";
+
     $rows .= "<tr class='session-overview-row' onclick='openSessionRowOverview(this)' data-session='{$jsonAttr}' title='Click to view session summary and guidance recommendations'>
         <td>
           <strong style='color:var(--maroon);font-size:14px'>{$s['case_number']}</strong>
           $peerIndicator
+          $refIndicator
         </td>
         <td>".$dt->format('M d, Y')."</td>
         <td style='font-weight:600'>".$dt->format('h:i A')."</td>
@@ -258,18 +284,24 @@ function openSessionRowOverview(rowEl) {
       </div>
     </div>
 
-    <!-- Case Context Section -->
+    <!-- Case / Referral Context Section -->
     <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
         <div style="font-size:12px;font-weight:800;color:var(--maroon);text-transform:uppercase;letter-spacing:1px">
-          <i class="fas fa-clipboard-list"></i> Linked Case Information
+          \${d.referral_id > 0 ? '<i class="fas fa-hand-holding-heart"></i> Linked Teacher Referral Information' : '<i class="fas fa-clipboard-list"></i> Linked Case Information'}
         </div>
         <div style="display:flex;gap:8px">
           <span class="status-badge status-ongoing" style="font-size:11px">\${typeClean}</span>
           <span class="priority-badge \${prioClass}" style="font-size:11px"><i class="fas fa-circle"></i> \${(d.case_priority||'medium').toUpperCase()}</span>
         </div>
       </div>
-      <div style="font-size:12px;color:var(--text-3);margin-bottom:4px;font-weight:700;text-transform:uppercase">Your Submitted Concern:</div>
+      \${d.referral_id > 0 && d.teacher_name ? `
+        <div style="font-size:12px;color:var(--text-2);margin-bottom:8px">
+          <i class="fas fa-chalkboard-teacher" style="color:var(--maroon);margin-right:4px"></i> Referred by: <strong>Teacher \${escapeHtml(d.teacher_name)}</strong>
+        </div>` : ''}
+      <div style="font-size:12px;color:var(--text-3);margin-bottom:4px;font-weight:700;text-transform:uppercase">
+        \${d.referral_id > 0 ? "Teacher's Observations / Reason for Referral:" : "Your Submitted Concern:"}
+      </div>
       <div class="concern-text" style="font-size:13.5px;max-height:160px;overflow-y:auto;background:var(--bg);border-radius:8px;padding:10px;line-height:1.6">
         \${escapeHtml(d.case_description || 'No description provided.')}
       </div>
@@ -295,14 +327,21 @@ function openSessionRowOverview(rowEl) {
       </div>` : ''}
 
     <!-- Bottom Action Buttons -->
-    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;padding-top:14px;border-top:1px solid var(--border)">
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;padding-top:14px;border-top:1px solid var(--border);flex-wrap:wrap">
       <button type="button" class="btn-sm-outline" onclick="closeStudentSessionModal()">Close</button>
-      <button type="button" class="btn-sm-primary" style="background:var(--blue)" onclick="goToCaseChat(\${d.case_id})">
-        <i class="fas fa-comment-dots"></i> Message Counselor
-      </button>
-      <button type="button" class="btn-sm-primary" onclick="window.location.href='student-archive.php?open_case=' + \${d.case_id}">
-        <i class="fas fa-folder-open"></i> View Case in Archive
-      </button>
+      \${d.case_id > 0 ? `
+        <button type="button" class="btn-sm-primary" style="background:var(--blue)" onclick="goToCaseChat(\${d.case_id})">
+          <i class="fas fa-comment-dots"></i> Message Counselor
+        </button>
+        <button type="button" class="btn-sm-primary" onclick="window.location.href='student-archive.php?open_case=' + \${d.case_id}">
+          <i class="fas fa-folder-open"></i> View Case in Archive
+        </button>
+      ` : ''}
+      \${d.referral_id > 0 ? `
+        <button type="button" class="btn-sm-primary" onclick="window.location.href='student-cases.php?tab=referrals&open_ref=' + \${d.referral_id}">
+          <i class="fas fa-eye"></i> View Referral
+        </button>
+      ` : ''}
     </div>
   `;
 }

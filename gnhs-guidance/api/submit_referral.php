@@ -39,20 +39,22 @@ try {
     $aiSummary = generateReferralSummary($concernType, $studentName, $observations, $urgency);
 
     // Attempt to match student in users table
-    $studentId = null;
-    $sStmt = $db->prepare("SELECT id FROM users 
-        WHERE role='student' 
-          AND (
-            LOWER(TRIM(CONCAT(first_name, ' ', last_name))) = LOWER(?)
-            OR LOWER(TRIM(CONCAT(last_name, ' ', first_name))) = LOWER(?)
-            OR LOWER(TRIM(last_name)) = LOWER(?)
-            OR LOWER(?) LIKE CONCAT('%', LOWER(TRIM(last_name)), '%')
-          )
-        ORDER BY (CASE WHEN grade_section = ? THEN 1 ELSE 2 END), id ASC LIMIT 1");
-    $sStmt->execute([$studentName, $studentName, $studentName, $studentName, $gradeSection]);
-    $studentMatch = $sStmt->fetch();
-    if ($studentMatch) {
-        $studentId = (int)$studentMatch['id'];
+    $studentId = !empty($raw['student_id']) ? (int)$raw['student_id'] : null;
+    if (!$studentId) {
+        $sStmt = $db->prepare("SELECT id FROM users 
+            WHERE role='student' 
+              AND (
+                LOWER(TRIM(CONCAT(first_name, ' ', last_name))) = LOWER(?)
+                OR LOWER(TRIM(CONCAT(last_name, ' ', first_name))) = LOWER(?)
+                OR LOWER(TRIM(last_name)) = LOWER(?)
+                OR LOWER(?) LIKE CONCAT('%', LOWER(TRIM(last_name)), '%')
+              )
+            ORDER BY (CASE WHEN grade_section = ? THEN 1 ELSE 2 END), id ASC LIMIT 1");
+        $sStmt->execute([$studentName, $studentName, $studentName, $studentName, $gradeSection]);
+        $studentMatch = $sStmt->fetch();
+        if ($studentMatch) {
+            $studentId = (int)$studentMatch['id'];
+        }
     }
 
     // Check if referrals table has student_id column

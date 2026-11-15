@@ -22,7 +22,17 @@ if ($search) {
     )";
 }
 
-$refs = $db->query("SELECT r.* FROM referrals r $where ORDER BY r.submitted_at DESC")->fetchAll();
+$refs = $db->query("SELECT r.*,
+    cs.id AS session_id, cs.session_date, cs.session_type, cs.location, cs.meeting_link, cs.status AS session_status, cs.notes AS session_notes, cs.recommendations AS session_recommendations,
+    u.first_name AS counselor_first, u.last_name AS counselor_last
+    FROM referrals r 
+    LEFT JOIN counseling_sessions cs ON cs.id = (
+        SELECT id FROM counseling_sessions 
+        WHERE referral_id = r.id 
+        ORDER BY session_date DESC LIMIT 1
+    )
+    LEFT JOIN users u ON cs.counselor_id = u.id
+    $where ORDER BY r.submitted_at DESC")->fetchAll();
 
 function urgencyBadge(string $u): string {
     $map = ['urgent'=>'priority-high','moderate'=>'priority-medium','low'=>'priority-low'];
@@ -37,7 +47,24 @@ $rows = '';
 foreach ($refs as $r) {
     $type = ucfirst(str_replace('_',' ',$r['concern_type']));
     $date = date('M d, Y', strtotime($r['submitted_at']));
-    $refData = htmlspecialchars(json_encode($r), ENT_QUOTES, 'UTF-8');
+    $refData = htmlspecialchars(json_encode([
+        'id'             => (int)$r['id'],
+        'ref_number'     => $r['ref_number'],
+        'student_name'   => $r['student_name'],
+        'grade_section'  => $r['grade_section'],
+        'concern_type'   => $r['concern_type'],
+        'urgency'        => $r['urgency'],
+        'status'         => $r['status'],
+        'observations'   => $r['observations'],
+        'ai_summary'     => $r['ai_summary'] ?? null,
+        'submitted_at'   => date('M d, Y g:i A', strtotime($r['submitted_at'])),
+        'session_id'     => !empty($r['session_id']) ? (int)$r['session_id'] : null,
+        'session_date'   => !empty($r['session_date']) ? date('M d, Y \a\t h:i A', strtotime($r['session_date'])) : null,
+        'session_type'   => ucfirst($r['session_type'] ?? 'In-person'),
+        'location'       => $r['location'] ?? 'Guidance Office',
+        'counselor_name' => trim(($r['counselor_first'] ?? '') . ' ' . ($r['counselor_last'] ?? '')) ?: 'Guidance Staff',
+        'session_recommendations' => $r['session_recommendations'] ?? ''
+    ]), ENT_QUOTES, 'UTF-8');
     $rows .= "<tr>
         <td><strong style='color:var(--maroon)'>{$r['ref_number']}</strong></td>
         <td>".htmlspecialchars($r['student_name'])."</td>
@@ -203,6 +230,14 @@ function openRefModal(btn) {
           <label style="font-size:12px;color:var(--text-3);display:block;margin-bottom:4px">Submitted On</label>
           <span style="font-size:13px;color:var(--text)">${ref.submitted_at}</span>
         </div>
+        ${ref.session_id ? `
+          <div class="form-group" style="margin-bottom:20px;background:#f0fdf4;border:1px solid #bbf7d0;padding:12px;border-radius:8px">
+            <label style="font-size:11px;font-weight:700;color:#166534;text-transform:uppercase;display:block;margin-bottom:3px"><i class="fas fa-check-circle"></i> Counseling Session Conducted</label>
+            <div style="font-size:13px;font-weight:700;color:var(--text)">${ref.session_date}</div>
+            <div style="font-size:12px;color:var(--text-2);margin-top:2px">Counselor: <strong>${ref.counselor_name}</strong></div>
+            ${ref.session_recommendations ? `<div style="font-size:12px;color:#14532d;margin-top:6px;background:rgba(255,255,255,0.7);padding:6px 8px;border-radius:4px"><strong>Guidance Recommendations:</strong><br>${ref.session_recommendations}</div>` : \'\'}
+          </div>
+        ` : \'\'}
         <div style="display:flex;flex-direction:column;gap:10px">
           <button class="btn-primary" style="width:100%;background:var(--blue);display:flex;align-items:center;justify-content:center;gap:8px;" onclick="window.location.href=\'teacher-referrals-chat.php?ref_id=${ref.id}\'">
             <i class="fas fa-comments"></i> Open Referrals Chat

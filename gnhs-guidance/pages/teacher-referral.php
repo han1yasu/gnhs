@@ -9,7 +9,7 @@ $studentOpts = '';
 foreach ($students as $s) {
     $fullName = htmlspecialchars(trim($s['first_name'] . ' ' . $s['last_name']));
     $gs = htmlspecialchars($s['grade_section'] ?? '');
-    $studentOpts .= "<option value=\"{$fullName}\" data-grade-section=\"{$gs}\">{$fullName}" . ($gs ? " ({$gs})" : "") . "</option>";
+    $studentOpts .= "<option value=\"{$fullName}\" data-id=\"{$s['id']}\" data-grade-section=\"{$gs}\">{$fullName}" . ($gs ? " ({$gs})" : "") . "</option>";
 }
 
 $content = <<<HTML
@@ -22,6 +22,7 @@ $content = <<<HTML
       <div class="form-group">
         <label>Student Full Name <span class="req">*</span></label>
         <div class="input-wrap"><i class="fas fa-user-graduate"></i>
+          <input type="hidden" id="studentId" value=""/>
           <input type="text" id="studentName" list="studentDataList" placeholder="e.g. Juan Dela Cruz" oninput="onStudentInput(this.value)" autocomplete="off"/>
           <datalist id="studentDataList">
             $studentOpts
@@ -250,10 +251,13 @@ function validateReferralSpam(text) {
 }
 
 function onStudentInput(val) {
+  const hiddenIdEl = document.getElementById('studentId');
+  if (hiddenIdEl) hiddenIdEl.value = '';
   if (!val || val.length < 2) return;
   const opts = document.querySelectorAll('#studentDataList option');
   for (const opt of opts) {
     if (opt.value.toLowerCase() === val.trim().toLowerCase()) {
+      if (hiddenIdEl) hiddenIdEl.value = opt.getAttribute('data-id') || '';
       const gs = opt.getAttribute('data-grade-section') || '';
       const match = gs.match(/Grade\s*(\d+)\s*[-–]\s*(.+)/i);
       if (match) {
@@ -274,6 +278,7 @@ function onStudentInput(val) {
 
 async function submitReferral() {
   const studentName  = document.getElementById('studentName').value.trim();
+  const studentId    = document.getElementById('studentId')?.value || null;
   const grade        = document.getElementById('gradeLevel').value;
   const section      = document.getElementById('sectionName').value;
   let concernType  = document.getElementById('concernType').value;
@@ -307,6 +312,7 @@ async function submitReferral() {
 
   try {
     const res = await apiPost('/gnhs-guidance/api/submit_referral.php', {
+      student_id: studentId,
       student_name: studentName, grade_section: gradeSection,
       concern_type: concernType, urgency, observations
     });
@@ -325,6 +331,7 @@ async function submitReferral() {
 
 function resetForm() {
   document.getElementById('successModal').classList.add('hidden');
+  document.getElementById('studentId').value = '';
   document.getElementById('studentName').value = '';
   document.getElementById('gradeLevel').value  = '';
   document.getElementById('sectionName').innerHTML = '<option value="">Select Grade First</option>';

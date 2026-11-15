@@ -23,7 +23,7 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
                 'section' => 'Counseling & Concerns',
                 'items' => [
                     ['icon'=>'fa-file-medical', 'label'=>'Submit Concern',  'href'=>'student-submit.php',    'key'=>'submit'],
-                    ['icon'=>'fa-folder-open',  'label'=>'My Cases',        'href'=>'student-cases.php',     'key'=>'cases'],
+                    ['icon'=>'fa-folder-open',  'label'=>'My Cases & Referrals', 'href'=>'student-cases.php', 'key'=>'cases'],
                     ['icon'=>'fa-comments',     'label'=>'Cases Chat',      'href'=>'student-chats.php',     'key'=>'chats'],
                     ['icon'=>'fa-calendar-alt', 'label'=>'My Sessions',     'href'=>'student-sessions.php',  'key'=>'sessions'],
                 ]

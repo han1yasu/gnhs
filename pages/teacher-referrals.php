@@ -27,7 +27,17 @@ if ($search) {
     )";
 }
 
-$refs = $db->query("SELECT r.* FROM referrals r $where ORDER BY r.submitted_at DESC")->fetchAll();
+$refs = $db->query("SELECT r.*,
+    cs.id AS session_id, cs.session_date, cs.session_type, cs.location, cs.meeting_link, cs.status AS session_status, cs.notes AS session_notes,
+    u.first_name AS counselor_first, u.last_name AS counselor_last
+    FROM referrals r 
+    LEFT JOIN counseling_sessions cs ON cs.id = (
+        SELECT id FROM counseling_sessions 
+        WHERE referral_id = r.id AND status NOT IN ('cancelled')
+        ORDER BY session_date DESC LIMIT 1
+    )
+    LEFT JOIN users u ON cs.counselor_id = u.id
+    $where ORDER BY r.submitted_at DESC")->fetchAll();
 
 $archivedCount = (int)$db->query("SELECT COUNT(*) FROM referrals WHERE teacher_id=$uid AND status IN ('resolved','closed')")->fetchColumn();
 $activeCount   = (int)$db->query("SELECT COUNT(*) FROM referrals WHERE teacher_id=$uid AND status NOT IN ('resolved','closed')")->fetchColumn();
@@ -45,7 +55,36 @@ $rows = '';
 foreach ($refs as $r) {
     $type = ucfirst(str_replace('_',' ',$r['concern_type']));
     $date = date('M d, Y', strtotime($r['submitted_at']));
-    $refData = htmlspecialchars(json_encode($r), ENT_QUOTES, 'UTF-8');
+
+    $sessionBadge = "<span style='color:var(--text-3);font-size:12px'><i class='fas fa-hourglass-half'></i> Pending Schedule</span>";
+    if (!empty($r['session_id'])) {
+        $sDt = date('M d, Y h:i A', strtotime($r['session_date']));
+        $isVirtual = ($r['session_type'] === 'virtual' || $r['session_type'] === 'online');
+        $modeIcon = $isVirtual ? "<i class='fas fa-video' style='color:#2563eb'></i>" : "<i class='fas fa-building' style='color:var(--maroon)'></i>";
+        $sessionBadge = "<div style='font-size:12px;font-weight:600;color:var(--text)'>$modeIcon $sDt</div>";
+    }
+
+    $refData = htmlspecialchars(json_encode([
+        'id'             => (int)$r['id'],
+        'ref_number'     => $r['ref_number'],
+        'student_name'   => $r['student_name'],
+        'grade_section'  => $r['grade_section'],
+        'concern_type'   => $r['concern_type'],
+        'urgency'        => $r['urgency'],
+        'status'         => $r['status'],
+        'observations'   => $r['observations'],
+        'ai_summary'     => $r['ai_summary'] ?? null,
+        'submitted_at'   => date('M d, Y g:i A', strtotime($r['submitted_at'])),
+        'session_id'     => !empty($r['session_id']) ? (int)$r['session_id'] : null,
+        'session_date'   => !empty($r['session_date']) ? date('M d, Y \a\t h:i A', strtotime($r['session_date'])) : null,
+        'session_type'   => ucfirst($r['session_type'] ?? 'In-person'),
+        'location'       => $r['location'] ?? 'Guidance Office',
+        'meeting_link'   => $r['meeting_link'] ?? '',
+        'session_status' => ucfirst($r['session_status'] ?? ''),
+        'session_notes'  => $r['session_notes'] ?? '',
+        'counselor_name' => trim(($r['counselor_first'] ?? '') . ' ' . ($r['counselor_last'] ?? '')) ?: 'Guidance Staff'
+    ]), ENT_QUOTES, 'UTF-8');
+
     $rows .= "<tr>
         <td><strong style='color:var(--maroon)'>{$r['ref_number']}</strong></td>
         <td>".htmlspecialchars($r['student_name'])."</td>
@@ -53,11 +92,12 @@ foreach ($refs as $r) {
         <td>$type</td>
         <td>".urgencyBadge($r['urgency'])."</td>
         <td>".statusBadge($r['status'])."</td>
+        <td>$sessionBadge</td>
         <td style='color:var(--text-3);font-size:13px'>$date</td>
         <td><button class='btn-sm-outline' onclick='openRefModal(this)' data-ref='$refData'><i class='fas fa-eye'></i> View</button></td>
     </tr>";
 }
-if (!$rows) $rows = "<tr><td colspan='8' style='text-align:center;color:var(--text-3);padding:40px'>".($search ? "No referrals matching \"".htmlspecialchars($search)."\"." : "No active referrals found. <a href='teacher-referral.php' style='color:var(--maroon);font-weight:700'>Submit one →</a>")."</td></tr>";
+if (!$rows) $rows = "<tr><td colspan='9' style='text-align:center;color:var(--text-3);padding:40px'>".($search ? "No referrals matching \"".htmlspecialchars($search)."\"." : "No active referrals found. <a href='teacher-referral.php' style='color:var(--maroon);font-weight:700'>Submit one →</a>")."</td></tr>";
 
 $sqVal = htmlspecialchars($search);
 $sSel1 = $filterStatus==='pending'      ? 'selected' : '';
@@ -119,7 +159,7 @@ $content = <<<HTML
 
   <div class="table-wrap">
     <table class="data-table">
-      <thead><tr><th>Ref #</th><th>Student Name</th><th>Grade/Section</th><th>Concern</th><th>Urgency</th><th>Status</th><th>Date</th><th>Action</th></tr></thead>
+      <thead><tr><th>Ref #</th><th>Student Name</th><th>Grade/Section</th><th>Concern</th><th>Urgency</th><th>Status</th><th>Counseling Session</th><th>Date</th><th>Action</th></tr></thead>
       <tbody>$rows</tbody>
     </table>
   </div>
@@ -181,6 +221,24 @@ function openRefModal(btn) {
         <div class="form-group" style="margin-bottom:20px">
           <label style="display:block;margin-bottom:8px">Current Status</label>
           <span class="status-badge ${statMap[ref.status]||\'status-pending\'}">${statLabel[ref.status]}</span>
+        </div>
+
+        <!-- Counseling Session Information -->
+        <div class="form-group" style="margin-top:16px;border-top:1px solid var(--border);padding-top:16px">
+          <label style="display:block;margin-bottom:8px;font-weight:700"><i class="fas fa-calendar-alt" style="color:var(--maroon)"></i> Counseling Session Status</label>
+          ${ref.session_id ? `
+            <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px;font-size:13px">
+              <div style="font-weight:700;color:#1e40af;margin-bottom:4px"><i class="fas fa-calendar-check"></i> Session Appointed (${ref.session_status || "Scheduled"})</div>
+              <div style="color:var(--text);font-weight:600">${ref.session_date}</div>
+              <div style="color:var(--text-2);font-size:12px;margin-top:3px">Counselor: <strong>${ref.counselor_name}</strong> &bull; Mode: <strong>${ref.session_type}</strong></div>
+              <div style="color:var(--text-2);font-size:12px;margin-top:2px">Location: ${ref.location}</div>
+              ${ref.meeting_link ? `<div style="margin-top:6px"><a href="${ref.meeting_link}" target="_blank" style="color:#2563eb;font-weight:700;font-size:12px"><i class="fas fa-video"></i> Join Virtual Meeting</a></div>` : ""}
+            </div>
+          ` : `
+            <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px;font-size:12.5px;color:#92400e">
+              <i class="fas fa-hourglass-half"></i> Pending schedule by guidance counselor.
+            </div>
+          `}
         </div>
         
         <div class="review-actions" style="margin-top:20px;border-top:1px solid var(--border);padding-top:20px;display:flex;gap:10px;">

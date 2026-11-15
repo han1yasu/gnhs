@@ -242,7 +242,7 @@ $content = <<<HTML
 <!-- COUNSELING SESSION CONSOLE MODAL -->
 <!-- ============================================================== -->
 <div class="modal-overlay hidden" id="sessionConsoleModal" onclick="closeSessionConsoleOverlay(event)">
-  <div class="modal-box" style="max-width:920px;width:95%;padding:26px;max-height:92vh;overflow-y:auto">
+  <div class="modal-box session-console-modal-box" style="max-width:920px;width:95%;max-height:92vh;overflow-y:auto">
     <button type="button" class="modal-close" onclick="closeSessionConsole()"><i class="fas fa-times"></i></button>
 
     <div id="sessionConsoleContent">
@@ -623,7 +623,7 @@ function renderSessionConsole(data) {
             <div style="font-size:12px;opacity:0.85">Started at \${s.started_at ? new Date(s.started_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Just now'} &bull; Location: \${escapeHtml(s.location || 'Guidance Office')}</div>
           </div>
         </div>
-        <div style="display:flex;align-items:center;gap:10px">
+        <div class="session-live-actions">
           <div class="session-timer-badge">
             <i class="fas fa-stopwatch" style="margin-right:6px"></i><span id="sessionTimerDisplay">00:00:00</span>
           </div>
@@ -637,7 +637,7 @@ function renderSessionConsole(data) {
       </div>`;
   } else if (isOngoing) {
     sessionControlBar = `
-      <div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:12px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div class="session-ongoing-bar">
         <div style="display:flex;align-items:center;gap:10px">
           <i class="fas fa-clock-rotate-left" style="color:#d97706;font-size:18px"></i>
           <div>
@@ -654,7 +654,7 @@ function renderSessionConsole(data) {
       </div>`;
   } else if (isCompleted) {
     sessionControlBar = `
-      <div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:12px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div class="session-completed-bar">
         <div style="display:flex;align-items:center;gap:10px">
           <i class="fas fa-check-circle" style="color:#15803d;font-size:18px"></i>
           <div>
@@ -762,11 +762,11 @@ function renderSessionConsole(data) {
     \${sessionControlBar}
 
     <!-- Two-Column Workspace -->
-    <div style="display:grid;grid-template-columns: 1.15fr 1fr; gap:20px; align-items:start">
+    <div class="session-workspace-grid">
       
       <!-- LEFT COLUMN: Live Case Notes Workspace -->
       <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
           <h3 style="font-size:15px;font-weight:800;color:var(--text);margin:0;display:flex;align-items:center;gap:8px">
             <i class="fas fa-pen-nib" style="color:var(--maroon)"></i> Counselor Case Notes (Official Records)
           </h3>
@@ -779,7 +779,7 @@ function renderSessionConsole(data) {
 
         <textarea id="liveSessionNotesInput" class="form-control" rows="8" style="width:100%;padding:14px;border-radius:10px;border:1.5px solid var(--border);font-size:14px;line-height:1.6;font-family:inherit;background:var(--bg)" placeholder="Type confidential session notes, behavioral observations, student commitments, and discussion points during this counseling meeting...">\${currentNotesVal}</textarea>
 
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px">
+        <div class="session-notes-actions">
           <label style="font-size:12px;color:var(--text-2);display:flex;align-items:center;gap:6px;cursor:pointer">
             <input type="checkbox" id="chkAppendTimeline" checked> Log as timestamped entry in case history
           </label>
@@ -822,7 +822,7 @@ function renderSessionConsole(data) {
         </div>
 
         <!-- Student Messaging & Communication Card -->
-        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
           <div style="display:flex;align-items:center;gap:10px">
             <div style="width:36px;height:36px;border-radius:8px;background:rgba(37,99,235,0.12);color:#2563eb;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">
               <i class="fas fa-comment-dots"></i>

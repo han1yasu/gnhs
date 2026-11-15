@@ -193,7 +193,7 @@ $content = <<<HTML
 <!-- SESSION OVERVIEW & RECOMMENDATIONS MODAL FOR STUDENT -->
 <!-- ============================================================== -->
 <div class="modal-overlay hidden" id="studentSessionModal" onclick="if(event.target===this) closeStudentSessionModal()">
-  <div class="modal-box" style="max-width:680px;width:95%;padding:26px;max-height:90vh;overflow-y:auto">
+  <div class="modal-box session-console-modal-box" style="max-width:680px;width:95%;max-height:90vh;overflow-y:auto">
     <button type="button" class="modal-close" onclick="closeStudentSessionModal()"><i class="fas fa-times"></i></button>
     <div id="studentSessionModalBody">
       <div style="text-align:center;padding:40px"><span class="spinner" style="border-color:rgba(85,0,0,.2);border-top-color:var(--maroon);display:inline-block"></span></div>

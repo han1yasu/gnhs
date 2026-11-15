@@ -262,7 +262,7 @@ $content = <<<HTML
 <!-- COUNSELING SESSION RECORD CONSOLE MODAL -->
 <!-- ============================================================== -->
 <div class="modal-overlay hidden" id="sessionConsoleModal" onclick="if(event.target===this) closeSessionConsole()">
-  <div class="modal-box" style="max-width:920px;width:95%;padding:26px;max-height:92vh;overflow-y:auto">
+  <div class="modal-box session-console-modal-box" style="max-width:920px;width:95%;max-height:92vh;overflow-y:auto">
     <button type="button" class="modal-close" onclick="closeSessionConsole()"><i class="fas fa-times"></i></button>
     <div id="sessionConsoleContent">
       <div style="text-align:center;padding:50px">
@@ -471,7 +471,7 @@ function renderArchiveConsole(data) {
     \${peerReportBanner}
 
     <!-- Completed Status Banner -->
-    <div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:12px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+    <div class="session-completed-bar">
       <div style="display:flex;align-items:center;gap:10px">
         <i class="fas fa-check-circle" style="color:#15803d;font-size:20px"></i>
         <div>
@@ -485,7 +485,7 @@ function renderArchiveConsole(data) {
     </div>
 
     <!-- Two-Column Workspace -->
-    <div style="display:grid;grid-template-columns: 1.15fr 1fr; gap:20px; align-items:start">
+    <div class="session-workspace-grid">
       
       <!-- LEFT COLUMN: Official Case Notes -->
       <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px">

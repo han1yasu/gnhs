@@ -140,25 +140,7 @@ if ($session) {
     $sessionHtml = "<div style='text-align:center;color:var(--text-3);padding:24px;font-size:14px'><i class='fas fa-calendar' style='font-size:28px;margin-bottom:8px;display:block'></i>No upcoming sessions</div>";
 }
 
-$refAlertBanner = '';
-if ($activeRefsCount > 0) {
-    $refAlertBanner = <<<BANNER
-<div style="background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:10px;padding:12px 18px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap">
-  <div style="display:flex;align-items:center;gap:12px">
-    <div style="width:34px;height:34px;border-radius:50%;background:#3b82f6;color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0"><i class="fas fa-hand-holding-heart"></i></div>
-    <div>
-      <strong style="color:#1e40af;font-size:13.5px">Active Teacher Referral on Record ($activeRefsCount)</strong>
-      <div style="color:#1d4ed8;font-size:12.5px">A teacher referral has been filed on your behalf. Guidance counselors are available to support and guide you.</div>
-    </div>
-  </div>
-  <a href="student-cases.php?tab=referrals" class="btn-sm-primary" style="background:#2563eb;text-decoration:none;font-size:12px;padding:6px 14px;display:inline-flex;align-items:center;gap:6px"><i class="fas fa-eye"></i> View Referral &rarr;</a>
-</div>
-BANNER;
-}
-
 $content = <<<HTML
-$refAlertBanner
-
 <div class="summary-cards">
   <div class="sum-card clickable" onclick="window.location.href='student-cases.php'" title="View active cases">
     <div class="sum-icon" style="background:#fff0f0;color:var(--maroon)"><i class="fas fa-folder-open"></i></div>

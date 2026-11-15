@@ -149,22 +149,9 @@ function startSession(): void {
 }
 
 function checkSessionTimeout(): void {
+    // Inactivity timeout disabled to prevent session drops during presentations and defense
     if (session_status() === PHP_SESSION_NONE) return;
     if (!empty($_SESSION['user'])) {
-        $timeout = 900; // 15 minutes = 900 seconds
-        if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > $timeout)) {
-            unset($_SESSION['user']);
-            session_unset();
-            session_destroy();
-            $isJson = (!empty($_SERVER['HTTP_ACCEPT']) && str_contains($_SERVER['HTTP_ACCEPT'], 'application/json'))
-                   || (!empty($_SERVER['PHP_SELF']) && str_contains($_SERVER['PHP_SELF'], '/api/'));
-            if ($isJson) {
-                jsonOut(['success' => false, 'message' => 'Your session has expired due to 15 minutes of inactivity. Please log in again.', 'session_expired' => true], 401);
-            } else {
-                header('Location: /gnhs-guidance/index.html?reason=timeout');
-                exit;
-            }
-        }
         $_SESSION['last_activity'] = time();
     }
 }

@@ -55,8 +55,28 @@ try {
         $studentId = (int)$studentMatch['id'];
     }
 
-    $stmt    = $db->prepare("INSERT INTO referrals (ref_number,teacher_id,student_id,student_name,grade_section,concern_type,urgency,observations,ai_summary) VALUES (?,?,?,?,?,?,?,?,?)");
-    $stmt->execute([$refNum,$user['id'],$studentId,$studentName,$gradeSection,$concernType,$urgency,$observations,$aiSummary ?: null]);
+    // Check if referrals table has student_id column
+    $hasStudentIdCol = false;
+    try {
+        $chk = $db->query("SHOW COLUMNS FROM referrals LIKE 'student_id'")->fetch();
+        if ($chk) {
+            $hasStudentIdCol = true;
+        } else {
+            // Attempt auto-migration
+            $db->exec("ALTER TABLE referrals ADD COLUMN student_id INT(11) NULL DEFAULT NULL AFTER teacher_id");
+            $hasStudentIdCol = true;
+        }
+    } catch (Exception $e) {
+        $hasStudentIdCol = false;
+    }
+
+    if ($hasStudentIdCol) {
+        $stmt = $db->prepare("INSERT INTO referrals (ref_number,teacher_id,student_id,student_name,grade_section,concern_type,urgency,observations,ai_summary) VALUES (?,?,?,?,?,?,?,?,?)");
+        $stmt->execute([$refNum,$user['id'],$studentId,$studentName,$gradeSection,$concernType,$urgency,$observations,$aiSummary ?: null]);
+    } else {
+        $stmt = $db->prepare("INSERT INTO referrals (ref_number,teacher_id,student_name,grade_section,concern_type,urgency,observations,ai_summary) VALUES (?,?,?,?,?,?,?,?)");
+        $stmt->execute([$refNum,$user['id'],$studentName,$gradeSection,$concernType,$urgency,$observations,$aiSummary ?: null]);
+    }
 
     // Notify admins
     $admins = $db->query("SELECT id FROM users WHERE role='admin'")->fetchAll();

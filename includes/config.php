@@ -85,6 +85,27 @@ function getDB(): PDO {
         try { $pdo->exec("ALTER TABLE case_messages ADD COLUMN IF NOT EXISTS read_at DATETIME DEFAULT NULL"); } catch(Exception $e){}
         try { $pdo->exec("ALTER TABLE referral_messages ADD COLUMN IF NOT EXISTS read_at DATETIME DEFAULT NULL"); } catch(Exception $e){}
         try {
+            $hasStudentId = $pdo->query("SHOW COLUMNS FROM referrals LIKE 'student_id'")->fetch();
+            if (!$hasStudentId) {
+                $pdo->exec("ALTER TABLE referrals ADD COLUMN student_id INT(11) NULL DEFAULT NULL AFTER teacher_id");
+            }
+        } catch(Exception $e){}
+        try {
+            $hasRefId = $pdo->query("SHOW COLUMNS FROM counseling_sessions LIKE 'referral_id'")->fetch();
+            if (!$hasRefId) {
+                $pdo->exec("ALTER TABLE counseling_sessions ADD COLUMN referral_id INT(11) NULL DEFAULT NULL AFTER case_id");
+            }
+        } catch(Exception $e){}
+        try {
+            $hasMeetingLink = $pdo->query("SHOW COLUMNS FROM counseling_sessions LIKE 'meeting_link'")->fetch();
+            if (!$hasMeetingLink) {
+                $pdo->exec("ALTER TABLE counseling_sessions ADD COLUMN meeting_link VARCHAR(255) NULL DEFAULT NULL AFTER location");
+            }
+        } catch(Exception $e){}
+        try {
+            $pdo->exec("ALTER TABLE counseling_sessions MODIFY COLUMN case_id INT(11) NULL DEFAULT NULL");
+        } catch(Exception $e){}
+        try {
             $hasIdx = $pdo->query("SHOW INDEX FROM users WHERE Key_name = 'uq_id_number'")->fetch();
             if (!$hasIdx) {
                 $pdo->exec("ALTER TABLE users ADD UNIQUE KEY uq_id_number (id_number)");

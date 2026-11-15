@@ -55,7 +55,9 @@ try {
         $match = $sStmt->fetch();
         if ($match) {
             $studentId = (int)$match['id'];
-            $db->prepare("UPDATE referrals SET student_id = ? WHERE id = ?")->execute([$studentId, $referral['id']]);
+            try {
+                $db->prepare("UPDATE referrals SET student_id = ? WHERE id = ?")->execute([$studentId, $referral['id']]);
+            } catch (Exception $e) {}
         }
     }
 
@@ -132,3 +134,4 @@ try {
 } catch (Exception $e) {
     jsonOut(['success' => false, 'message' => $e->getMessage()], 500);
 }
+

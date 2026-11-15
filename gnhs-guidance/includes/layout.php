@@ -239,6 +239,7 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
       localStorage.setItem('colorTheme', 'maroon');
       window.currentUserRole = <?= json_encode($role) ?>;
       window.currentUserName = <?= json_encode($fullName) ?>;
+      window.currentUserAdvisory = <?= json_encode($user['advisory_class'] ?? '') ?>;
     })();
   </script>
 </head>
@@ -580,8 +581,128 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
     </div>
   </div>
 
+  <!-- Bulk CSV & Excel Import Modal (Available for Counselors & Teachers) -->
+  <?php if ($role === 'admin' || $role === 'teacher'): ?>
+  <div class="modal-overlay hidden" id="csvImportModal" style="z-index: 2100;" onclick="if(event.target.id==='csvImportModal')closeCsvImportModal()">
+    <div class="modal-box" style="max-width:780px;width:95vw;max-height:90vh;display:flex;flex-direction:column;padding:24px 26px;text-align:left;overflow-y:auto">
+      
+      <!-- Modal Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:14px;margin-bottom:18px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:44px;height:44px;border-radius:12px;background:rgba(22,163,74,0.12);color:#16a34a;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">
+            <i class="fas fa-file-excel"></i>
+          </div>
+          <div>
+            <h2 class="modal-title" style="margin:0;font-size:18px;text-align:left;display:flex;align-items:center;gap:8px">
+              Import Students via CSV / Excel
+            </h2>
+            <div style="font-size:12px;color:var(--text-3);margin-top:2px">
+              Select an Excel (<code>.xlsx</code>/<code>.xls</code>) or <code>.csv</code> spreadsheet to enroll multiple student accounts
+            </div>
+          </div>
+        </div>
+        <button type="button" class="modal-close" onclick="closeCsvImportModal()" style="position:static"><i class="fas fa-times"></i></button>
+      </div>
+
+      <!-- Native OS File Manager Input (Filtered strictly to Excel & CSV) -->
+      <input type="file" id="globalCsvFileInput" accept=".csv, .xlsx, .xls, text/csv, application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;opacity:0" onchange="handleGlobalCsvSelect(this)" />
+
+      <!-- Step 1: Upload / Dropzone Screen -->
+      <div id="csvModalUploadStep">
+        <!-- Guidelines banner -->
+        <div style="background:var(--maroon-pale, #fff0f0);border:1px solid rgba(85,0,0,0.12);border-radius:12px;padding:14px 16px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+          <div style="font-size:12.5px;color:var(--text-2);line-height:1.5;max-width:520px">
+            <strong style="color:var(--maroon);display:block;margin-bottom:2px"><i class="fas fa-info-circle"></i> Spreadsheet Column Headers:</strong>
+            <code>first_name</code>, <code>last_name</code>, <code>lrn</code> (strictly 12 digits), <code>email</code>, <code>grade_level</code>, <code>section</code>
+            <?= ($role === 'teacher' && !empty($user['advisory_class'])) ? '<br><span style="font-size:11.5px;color:var(--text-3)">Blank grade/section entries default to your advisory class: <strong>' . htmlspecialchars($user['advisory_class']) . '</strong></span>' : '' ?>
+          </div>
+          <a href="<?= (strpos($_SERVER['REQUEST_URI'] ?? '', '/pages/') !== false ? '../api/download_student_template.php' : 'api/download_student_template.php') ?>" class="btn-sm-primary" style="background:#2563eb;text-decoration:none;display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:8px 14px;white-space:nowrap">
+            <i class="fas fa-file-download"></i> Download Template
+          </a>
+        </div>
+
+        <!-- File Manager Dropzone / Click Box -->
+        <label for="globalCsvFileInput" class="csv-dropzone" id="csvModalDropzone" ondragover="handleGlobalCsvDragOver(event)" ondragleave="handleGlobalCsvDragLeave(event)" ondrop="handleGlobalCsvDrop(event)" style="display:block;border:2px dashed #cbd5e1;border-radius:14px;padding:38px 20px;text-align:center;background:var(--bg2, #f8fafc);cursor:pointer;transition:all .2s">
+          <i class="fas fa-file-excel" style="font-size:46px;color:#16a34a;margin-bottom:12px;display:block"></i>
+          <div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:4px">Click to Open File Manager</div>
+          <div style="font-size:13px;color:var(--text-3);margin-bottom:16px">Filters exclusively for Excel (<code>.xlsx</code>, <code>.xls</code>) and <code>.csv</code> spreadsheet files</div>
+          <button type="button" class="btn-primary" onclick="event.preventDefault(); document.getElementById('globalCsvFileInput').click();" style="display:inline-flex;align-items:center;gap:8px;padding:10px 24px;font-size:14px;pointer-events:auto;background:var(--maroon);color:#fff;border-radius:8px">
+            <i class="fas fa-folder-open"></i> Browse Files in File Manager
+          </button>
+        </label>
+      </div>
+
+      <!-- Step 2: Live Preview & Validation Screen -->
+      <div id="csvModalPreviewStep" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:12px">
+          <div>
+            <h4 style="margin:0;font-size:14.5px;font-weight:800;color:var(--text);display:flex;align-items:center;gap:8px">
+              <i class="fas fa-table" style="color:var(--maroon)"></i>
+              <span>File: <span id="csvModalFileName" style="color:var(--maroon)"></span></span>
+            </h4>
+            <div style="font-size:12px;color:var(--text-3);margin-top:2px" id="csvModalMetaText"></div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <span class="badge-valid" id="csvModalValidBadge" style="background:#dcfce7;color:#166534;padding:4px 12px;border-radius:50px;font-size:12px;font-weight:700">
+              <i class="fas fa-check-circle"></i> 0 Ready
+            </span>
+            <span class="badge-invalid" id="csvModalErrorBadge" style="background:#fee2e2;color:#991b1b;padding:4px 12px;border-radius:50px;font-size:12px;font-weight:700">
+              <i class="fas fa-exclamation-circle"></i> 0 Errors
+            </span>
+          </div>
+        </div>
+
+        <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;max-height:300px;overflow-y:auto;overflow-x:auto;margin-bottom:16px">
+          <table style="width:100%;border-collapse:collapse;font-size:12px" id="csvModalPreviewTable">
+            <thead>
+              <tr style="background:var(--bg2, #f8fafc);border-bottom:1px solid var(--border);color:var(--text-2);text-align:left">
+                <th style="padding:10px 12px;width:35px;text-align:center">#</th>
+                <th style="padding:10px 12px">Student Name</th>
+                <th style="padding:10px 12px;width:120px">12-Digit LRN</th>
+                <th style="padding:10px 12px">Email Address</th>
+                <th style="padding:10px 12px;width:80px">Grade</th>
+                <th style="padding:10px 12px;width:100px">Section</th>
+                <th style="padding:10px 12px;width:105px">Status</th>
+              </tr>
+            </thead>
+            <tbody id="csvModalPreviewTbody"></tbody>
+          </table>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;border-top:1px solid var(--border);padding-top:14px">
+          <button type="button" class="btn-secondary" onclick="resetGlobalCsvModal()">
+            <i class="fas fa-redo"></i> Choose Different File
+          </button>
+          <button type="button" class="btn-primary" id="btnConfirmGlobalImport" onclick="executeGlobalCsvModalImport()" style="background:linear-gradient(135deg,var(--maroon) 0%,#7a0c0c 100%);display:inline-flex;align-items:center;gap:8px;padding:10px 22px;font-size:13.5px">
+            <i class="fas fa-user-check"></i> Import Valid Students (<span id="csvModalImportCountText">0</span>)
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 3: Success Screen -->
+      <div id="csvModalSuccessStep" style="display:none;text-align:center;padding:24px 12px">
+        <div style="width:60px;height:60px;border-radius:50%;background:#dcfce7;color:#16a34a;display:inline-flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:14px">
+          <i class="fas fa-check"></i>
+        </div>
+        <h3 style="font-size:20px;font-weight:900;color:var(--text);margin:0 0 6px" id="csvModalSuccessTitle">Import Completed!</h3>
+        <p style="font-size:13.5px;color:var(--text-2);margin:0 0 20px" id="csvModalSuccessDesc"></p>
+        <div style="display:flex;gap:12px;justify-content:center">
+          <button type="button" class="btn-secondary" onclick="resetGlobalCsvModal()">
+            <i class="fas fa-plus"></i> Import Another File
+          </button>
+          <button type="button" class="btn-primary" onclick="closeCsvImportModalAndReload()" style="background:#16a34a;display:inline-flex;align-items:center;gap:8px">
+            <i class="fas fa-sync-alt"></i> Done &amp; Refresh Roster
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+  <?php endif; ?>
+
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
 <script src="/gnhs-guidance/theme.js?v=<?= @filemtime(__DIR__ . '/../theme.js') ?: '1.2' ?>"></script>
 <script src="/gnhs-guidance/app.js?v=<?= @filemtime(__DIR__ . '/../app.js') ?: '3.1' ?>"></script>
@@ -1230,6 +1351,360 @@ async function removeAvatar() {
     showToast('Error. Please try again.', 'error');
   }
 }
+
+// ── Global CSV & Excel Import Modal Engine ─────────────────────────────
+let _globalCsvValidStudents = [];
+
+function openCsvImportModal() {
+  resetGlobalCsvModal();
+  document.getElementById('csvImportModal')?.classList.remove('hidden');
+}
+
+function closeCsvImportModal() {
+  document.getElementById('csvImportModal')?.classList.add('hidden');
+}
+
+function closeCsvImportModalAndReload() {
+  closeCsvImportModal();
+  window.location.reload();
+}
+
+function resetGlobalCsvModal() {
+  _globalCsvValidStudents = [];
+  const inp = document.getElementById('globalCsvFileInput');
+  if (inp) inp.value = '';
+  const upStep = document.getElementById('csvModalUploadStep');
+  const prevStep = document.getElementById('csvModalPreviewStep');
+  const succStep = document.getElementById('csvModalSuccessStep');
+  if (upStep) upStep.style.display = 'block';
+  if (prevStep) prevStep.style.display = 'none';
+  if (succStep) succStep.style.display = 'none';
+  const tbody = document.getElementById('csvModalPreviewTbody');
+  if (tbody) tbody.innerHTML = '';
+}
+
+function handleGlobalCsvDragOver(e) {
+  e.preventDefault();
+  document.getElementById('csvModalDropzone')?.classList.add('dragover');
+}
+
+function handleGlobalCsvDragLeave(e) {
+  document.getElementById('csvModalDropzone')?.classList.remove('dragover');
+}
+
+function handleGlobalCsvDrop(e) {
+  e.preventDefault();
+  document.getElementById('csvModalDropzone')?.classList.remove('dragover');
+  if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+    processGlobalSpreadsheetFile(e.dataTransfer.files[0]);
+  }
+}
+
+function handleGlobalCsvSelect(input) {
+  if (input && input.files && input.files.length > 0) {
+    processGlobalSpreadsheetFile(input.files[0]);
+  }
+}
+
+function processGlobalSpreadsheetFile(file) {
+  if (!file) return;
+  const fName = file.name || '';
+  const lower = fName.toLowerCase();
+  if (!lower.endsWith('.csv') && !lower.endsWith('.xlsx') && !lower.endsWith('.xls') && file.type !== 'text/csv') {
+    alert('Please select a valid Excel (.xlsx, .xls) or CSV spreadsheet file.');
+    return;
+  }
+
+  // Reveal modal immediately
+  document.getElementById('csvImportModal')?.classList.remove('hidden');
+
+  if (typeof XLSX !== 'undefined') {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheet = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheet];
+        const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+        parseAndPreviewGlobalRows(rows, fName, file.size);
+      } catch(err) {
+        parseGlobalCsvPlainText(file, fName);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  } else {
+    parseGlobalCsvPlainText(file, fName);
+  }
+}
+
+function parseGlobalCsvPlainText(file, fName) {
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const text = e.target.result || '';
+    const rows = parseGlobalCsvLines(text);
+    parseAndPreviewGlobalRows(rows, fName, file.size);
+  };
+  reader.readAsText(file);
+}
+
+function parseGlobalCsvLines(text) {
+  const lines = [];
+  let row = [];
+  let cur = '';
+  let inside = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    const n = text[i + 1];
+    if (c === '"') {
+      if (inside && n === '"') { cur += '"'; i++; } else { inside = !inside; }
+    } else if (c === ',' && !inside) {
+      row.push(cur.trim()); cur = '';
+    } else if ((c === '\r' || c === '\n') && !inside) {
+      if (c === '\r' && n === '\n') i++;
+      row.push(cur.trim());
+      if (row.length > 1 || (row.length === 1 && row[0] !== '')) lines.push(row);
+      row = []; cur = '';
+    } else {
+      cur += c;
+    }
+  }
+  if (cur.length > 0 || row.length > 0) {
+    row.push(cur.trim());
+    if (row.length > 1 || (row.length === 1 && row[0] !== '')) lines.push(row);
+  }
+  return lines;
+}
+
+function parseAndPreviewGlobalRows(rawRows, fileName, fileSize) {
+  if (!rawRows || rawRows.length < 2) {
+    alert('The selected spreadsheet is empty or has no data rows.');
+    return;
+  }
+
+  // Header mapping
+  const headers = rawRows[0].map(h => String(h).toLowerCase().replace(/[^a-z0-9_]/g, ''));
+  const findIdx = (names) => {
+    for (let n of names) {
+      const idx = headers.indexOf(n);
+      if (idx !== -1) return idx;
+    }
+    return -1;
+  };
+
+  const idxFirst   = findIdx(['firstname', 'first_name', 'first', 'givenname', 'pangalan']);
+  const idxLast    = findIdx(['lastname', 'last_name', 'last', 'surname', 'familyname', 'apelyido']);
+  const idxMiddle  = findIdx(['middlename', 'middle_name', 'middle', 'mid']);
+  const idxSuffix  = findIdx(['suffix', 'ext']);
+  const idxLrn     = findIdx(['lrn', 'idnumber', 'id_number', 'student_lrn', 'studentlrn', 'learnerreferencenumber']);
+  const idxEmail   = findIdx(['email', 'emailaddress', 'email_address', 'student_email', 'studentemail']);
+  const idxGrade   = findIdx(['gradelevel', 'grade_level', 'grade', 'level', 'baitang']);
+  const idxSection = findIdx(['section', 'pangkat', 'sec']);
+  const idxPass    = findIdx(['temporarypassword', 'temporary_password', 'password', 'pass']);
+  const idxFullName = findIdx(['name', 'fullname', 'studentname', 'student_name']);
+  const idxGradeSec = findIdx(['gradesection', 'grade_section', 'class', 'gradeandsection']);
+
+  if (idxFirst === -1 && idxFullName === -1) {
+    alert('Spreadsheet is missing student name! Make sure your file contains first_name, last_name, lrn, and email.');
+    return;
+  }
+  if (idxLrn === -1 || idxEmail === -1) {
+    alert('Spreadsheet is missing required column headers! Make sure your file contains lrn and email.');
+    return;
+  }
+
+  // Teacher advisory defaults if present
+  let defGrade = '';
+  let defSec = '';
+  if (window.currentUserAdvisory) {
+    const parts = window.currentUserAdvisory.split('-');
+    if (parts.length >= 2) {
+      defGrade = parts[0].replace(/[^0-9]/g, '').trim();
+      defSec = parts.slice(1).join('-').trim();
+    }
+  }
+
+  _globalCsvValidStudents = [];
+  const tbody = document.getElementById('csvModalPreviewTbody');
+  if (tbody) tbody.innerHTML = '';
+
+  let validCount = 0;
+  let errorCount = 0;
+  const seenLrns = new Set();
+  const seenEmails = new Set();
+
+  for (let i = 1; i < rawRows.length; i++) {
+    const r = rawRows[i];
+    if (!r || (r.length === 1 && !r[0])) continue;
+
+    let first  = idxFirst !== -1 ? String(r[idxFirst] || '').trim() : '';
+    let last   = idxLast !== -1 ? String(r[idxLast] || '').trim() : '';
+    let middle = idxMiddle !== -1 ? String(r[idxMiddle] || '').trim() : '';
+    let suffix = idxSuffix !== -1 ? String(r[idxSuffix] || '').trim() : '';
+    const lrn    = String(r[idxLrn] || '').trim().replace(/[^0-9]/g, '');
+    const email  = String(r[idxEmail] || '').trim();
+    let grade    = idxGrade !== -1 ? String(r[idxGrade] || '').trim() : '';
+    let section  = idxSection !== -1 ? String(r[idxSection] || '').trim() : '';
+    let pass     = idxPass !== -1 ? String(r[idxPass] || '').trim() : 'Student@2026';
+    if (!pass) pass = 'Student@2026';
+
+    // Full name fallback
+    if ((!first || !last) && idxFullName !== -1) {
+      const full = String(r[idxFullName] || '').trim();
+      if (full.includes(',')) {
+        const parts = full.split(',').map(p => p.trim());
+        last = parts[0] || last;
+        const firstParts = (parts[1] || '').split(' ').filter(Boolean);
+        first = firstParts[0] || first;
+        if (firstParts.length > 1) middle = firstParts.slice(1).join(' ');
+      } else {
+        const parts = full.split(' ').filter(Boolean);
+        first = parts[0] || '';
+        last = parts.length > 1 ? parts.slice(1).join(' ') : 'Student';
+      }
+    }
+
+    // Grade & Section fallback
+    if ((!grade || !section) && idxGradeSec !== -1) {
+      const gs = String(r[idxGradeSec] || '').trim();
+      const parts = gs.split('-');
+      if (parts.length >= 2) {
+        if (!grade) grade = parts[0].replace(/[^0-9]/g, '').trim();
+        if (!section) section = parts.slice(1).join('-').trim();
+      }
+    }
+
+    if (!grade && defGrade) grade = defGrade;
+    if (!section && defSec) section = defSec;
+    const gradeNum = grade.replace(/[^0-9]/g, '');
+
+    // Validation
+    const errors = [];
+    if (!first) errors.push('Missing First Name');
+    if (!last)  errors.push('Missing Last Name');
+    if (!lrn || lrn.length !== 12) errors.push('LRN must be strictly 12 digits');
+    else if (seenLrns.has(lrn)) errors.push('Duplicate LRN in file');
+
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push('Invalid Email');
+    else if (seenEmails.has(email.toLowerCase())) errors.push('Duplicate Email in file');
+
+    if (!gradeNum || !['7','8','9','10'].includes(gradeNum)) errors.push('Grade must be 7-10');
+    if (!section) errors.push('Missing Section');
+
+    const isValid = errors.length === 0;
+    if (isValid) {
+      validCount++;
+      seenLrns.add(lrn);
+      seenEmails.add(email.toLowerCase());
+      _globalCsvValidStudents.push({
+        first_name: first,
+        last_name: last,
+        middle_name: middle,
+        suffix: suffix,
+        lrn: lrn,
+        email: email,
+        grade_level: gradeNum,
+        section: section,
+        temporary_password: pass
+      });
+    } else {
+      errorCount++;
+    }
+
+    if (tbody) {
+      const tr = document.createElement('tr');
+      tr.style.borderBottom = '1px solid var(--border)';
+      if (!isValid) tr.style.background = '#fff5f5';
+
+      tr.innerHTML = '<td style="padding:8px 12px;text-align:center;font-weight:700;color:var(--text-3)">' + i + '</td>'
+        + '<td style="padding:8px 12px"><strong>' + escapeHtml(first) + ' ' + escapeHtml(last) + '</strong> ' + (suffix ? escapeHtml(suffix) : '') + '</td>'
+        + '<td style="padding:8px 12px"><code style="font-size:11.5px">' + escapeHtml(lrn || '—') + '</code></td>'
+        + '<td style="padding:8px 12px;font-size:11.5px">' + escapeHtml(email || '—') + '</td>'
+        + '<td style="padding:8px 12px">Grade ' + escapeHtml(gradeNum || '—') + '</td>'
+        + '<td style="padding:8px 12px">' + escapeHtml(section || '—') + '</td>'
+        + '<td style="padding:8px 12px">'
+        + (isValid 
+            ? '<span style="background:#dcfce7;color:#166534;padding:3px 8px;border-radius:50px;font-size:11px;font-weight:700"><i class="fas fa-check"></i> Ready</span>' 
+            : '<span style="background:#fee2e2;color:#991b1b;padding:3px 8px;border-radius:50px;font-size:11px;font-weight:700" title="' + escapeHtml(errors.join(', ')) + '"><i class="fas fa-times"></i> ' + escapeHtml(errors[0]) + '</span>')
+        + '</td>';
+      tbody.appendChild(tr);
+    }
+  }
+
+  // Update Preview UI
+  document.getElementById('csvModalFileName').textContent = fileName;
+  const kb = Math.round(fileSize / 1024) || 1;
+  document.getElementById('csvModalMetaText').textContent = (rawRows.length - 1) + ' student rows parsed • ' + kb + ' KB';
+  document.getElementById('csvModalValidBadge').innerHTML = '<i class="fas fa-check-circle"></i> ' + validCount + ' Ready';
+  document.getElementById('csvModalErrorBadge').innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + errorCount + ' Errors';
+  document.getElementById('csvModalImportCountText').textContent = validCount;
+
+  const btnConfirm = document.getElementById('btnConfirmGlobalImport');
+  if (btnConfirm) btnConfirm.disabled = (validCount === 0);
+
+  document.getElementById('csvModalUploadStep').style.display = 'none';
+  document.getElementById('csvModalPreviewStep').style.display = 'block';
+  document.getElementById('csvModalSuccessStep').style.display = 'none';
+}
+
+async function executeGlobalCsvModalImport() {
+  if (!_globalCsvValidStudents || _globalCsvValidStudents.length === 0) {
+    alert('There are no valid student records to import.');
+    return;
+  }
+
+  const btn = document.getElementById('btnConfirmGlobalImport');
+  if (!confirm('Are you sure you want to enroll and create accounts for ' + _globalCsvValidStudents.length + ' valid students?')) {
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enrolling Accounts...';
+
+  try {
+    const p = window.location.pathname;
+    const idx = p.lastIndexOf('/pages/');
+    const base = idx !== -1 ? p.substring(0, idx) : '';
+    const apiPath = base + '/api/import_students.php';
+
+    const resp = await fetch(apiPath, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ students: _globalCsvValidStudents })
+    });
+
+    const res = await resp.json();
+    if (res.success) {
+      document.getElementById('csvModalPreviewStep').style.display = 'none';
+      document.getElementById('csvModalSuccessStep').style.display = 'block';
+      document.getElementById('csvModalSuccessTitle').textContent = 'Success! ' + res.imported + ' Students Enrolled.';
+      let desc = 'Successfully created ' + res.imported + ' student portal accounts into the database.';
+      if (res.skipped > 0) {
+        desc += ' (' + res.skipped + ' records were skipped as duplicates).';
+      }
+      document.getElementById('csvModalSuccessDesc').textContent = desc;
+    } else {
+      alert('Import failed: ' + (res.message || 'Unknown server error.'));
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-user-check"></i> Import Valid Students (' + _globalCsvValidStudents.length + ')';
+    }
+  } catch(err) {
+    alert('Network error while executing import: ' + err.message);
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-user-check"></i> Import Valid Students (' + _globalCsvValidStudents.length + ')';
+  }
+}
+
+// Global exports
+window.openCsvImportModal = openCsvImportModal;
+window.closeCsvImportModal = closeCsvImportModal;
+window.closeCsvImportModalAndReload = closeCsvImportModalAndReload;
+window.resetGlobalCsvModal = resetGlobalCsvModal;
+window.handleGlobalCsvDragOver = handleGlobalCsvDragOver;
+window.handleGlobalCsvDragLeave = handleGlobalCsvDragLeave;
+window.handleGlobalCsvDrop = handleGlobalCsvDrop;
+window.handleGlobalCsvSelect = handleGlobalCsvSelect;
+window.executeGlobalCsvModalImport = executeGlobalCsvModalImport;
 </script>
 
 <!-- 15-Minute Inactivity Session Monitor -->

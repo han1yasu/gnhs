@@ -581,7 +581,7 @@ $content = <<<HTML
         <button type="button" class="as-mode-btn active" id="btnModeSingle" onclick="switchEnrollMode('single')">
           <i class="fas fa-user-plus"></i> Single Student Enrollment
         </button>
-        <button type="button" class="as-mode-btn" id="btnModeBulk" onclick="switchEnrollMode('bulk')">
+        <button type="button" class="as-mode-btn" id="btnModeBulk" onclick="openCsvImportModal()">
           <i class="fas fa-file-csv"></i> Bulk Import via CSV / Excel
         </button>
       </div>

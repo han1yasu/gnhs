@@ -330,9 +330,9 @@ HTML;
       <button type="button" class="btn-sm-primary" onclick="openTeacherAddStudentModal()" style="display:inline-flex;align-items:center;gap:6px">
         <i class="fas fa-user-plus"></i> Add Student Account
       </button>
-      <a href="teacher-add-student.php?tab=bulk" class="btn-sm-outline" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px">
+      <button type="button" class="btn-sm-outline" onclick="openCsvImportModal()" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">
         <i class="fas fa-file-csv"></i> Bulk CSV Import
-      </a>
+      </button>
       <a href="teacher-referral.php" class="btn-sm-outline" style="text-decoration:none">
         <i class="fas fa-clipboard-check"></i> New Referral
       </a>
@@ -598,9 +598,9 @@ $content .= <<<HTML
       <div style="font-size:12px;color:var(--text-2)">
         <i class="fas fa-file-csv" style="color:var(--maroon);margin-right:4px"></i> Need to enroll multiple students at once?
       </div>
-      <a href="teacher-add-student.php?tab=bulk" class="btn-sm-primary" style="font-size:11.5px;padding:5px 12px;text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;gap:6px">
+      <button type="button" class="btn-sm-primary" onclick="closeTeacherAddStudentModal(); openCsvImportModal();" style="font-size:11.5px;padding:5px 12px;border:none;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px">
         <i class="fas fa-upload"></i> Bulk CSV Import
-      </a>
+      </button>
     </div>
 
     <div id="tasMsg" style="display:none;margin-bottom:14px"></div>

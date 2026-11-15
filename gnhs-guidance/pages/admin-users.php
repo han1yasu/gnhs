@@ -287,7 +287,7 @@ $bannerHtml
         <option value="admin"   $rAdm>Counselors</option>
       </select>
       <button class="btn-sm-primary" style="background:linear-gradient(135deg, #1e40af, #2563eb);border-color:#1e40af;font-weight:700" onclick="openAddStudentModal()"><i class="fas fa-user-graduate"></i> Register Walk-in Student</button>
-      <a href="admin-add-student.php?tab=bulk" class="btn-sm-outline" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px"><i class="fas fa-file-csv"></i> Bulk CSV Import</a>
+      <button class="btn-sm-outline" onclick="openCsvImportModal()" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer"><i class="fas fa-file-csv"></i> Bulk CSV Import</button>
       <button class="btn-sm-outline" onclick="openAddUserModal()"><i class="fas fa-user-plus"></i> Add User</button>
     </div>
   </div>
@@ -304,9 +304,9 @@ $bannerHtml
       <div style="font-size:12px;color:var(--text-2)">
         <i class="fas fa-file-csv" style="color:var(--maroon);margin-right:4px"></i> Bulk enrollment via spreadsheet?
       </div>
-      <a href="admin-add-student.php?tab=bulk" class="btn-sm-primary" style="font-size:11.5px;padding:5px 12px;text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;gap:6px">
+      <button type="button" class="btn-sm-primary" onclick="closeAddUser(); openCsvImportModal();" style="font-size:11.5px;padding:5px 12px;border:none;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px">
         <i class="fas fa-upload"></i> Bulk CSV Import
-      </a>
+      </button>
     </div>
     <div id="nuMsg" style="display:none"></div>
     <div id="addUserForm">

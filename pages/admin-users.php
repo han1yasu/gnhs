@@ -300,6 +300,14 @@ $bannerHtml
     <button class="modal-close" onclick="closeAddUser(event)"><i class="fas fa-times"></i></button>
     <div class="modal-logo"><i class="fas fa-user-plus"></i></div>
     <h2 class="modal-title">Add New User</h2>
+    <div style="background:var(--maroon-pale, #fff0f0);border:1px solid rgba(85,0,0,0.12);border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px">
+      <div style="font-size:12px;color:var(--text-2)">
+        <i class="fas fa-file-csv" style="color:var(--maroon);margin-right:4px"></i> Bulk enrollment via spreadsheet?
+      </div>
+      <a href="admin-add-student.php?tab=bulk" class="btn-sm-primary" style="font-size:11.5px;padding:5px 12px;text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;gap:6px">
+        <i class="fas fa-upload"></i> Bulk CSV Import
+      </a>
+    </div>
     <div id="nuMsg" style="display:none"></div>
     <div id="addUserForm">
       <div class="form-row">

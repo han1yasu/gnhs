@@ -594,6 +594,15 @@ $content .= <<<HTML
       </div>
     </div>
 
+    <div style="background:var(--maroon-pale, #fff0f0);border:1px solid rgba(85,0,0,0.12);border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px">
+      <div style="font-size:12px;color:var(--text-2)">
+        <i class="fas fa-file-csv" style="color:var(--maroon);margin-right:4px"></i> Need to enroll multiple students at once?
+      </div>
+      <a href="teacher-add-student.php?tab=bulk" class="btn-sm-primary" style="font-size:11.5px;padding:5px 12px;text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;gap:6px">
+        <i class="fas fa-upload"></i> Bulk CSV Import
+      </a>
+    </div>
+
     <div id="tasMsg" style="display:none;margin-bottom:14px"></div>
 
     <form id="teacherAddStudentForm" onsubmit="saveTeacherNewStudent(event)">

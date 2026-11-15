@@ -747,18 +747,21 @@ $content = <<<HTML
               </div>
             </div>
           </div>
-          <a href="/gnhs-guidance/api/download_student_template.php" class="btn-primary" style="display:inline-flex;align-items:center;gap:8px;padding:9px 16px;font-size:13px;text-decoration:none;background:#2563eb;white-space:nowrap">
+          <a href="../api/download_student_template.php" class="btn-primary" style="display:inline-flex;align-items:center;gap:8px;padding:9px 16px;font-size:13px;text-decoration:none;background:#2563eb;white-space:nowrap">
             <i class="fas fa-file-download"></i> Download CSV Template
           </a>
         </div>
 
         <!-- File Upload Dropzone -->
-        <div id="csvDropzone" class="csv-dropzone" onclick="document.getElementById('csvFileInput').click()" ondragover="handleCsvDragOver(event)" ondragleave="handleCsvDragLeave(event)" ondrop="handleCsvDrop(event)">
-          <i class="fas fa-cloud-upload-alt" style="font-size:42px;color:var(--maroon);margin-bottom:12px;display:block"></i>
+        <label for="csvFileInput" id="csvDropzone" class="csv-dropzone" ondragover="handleCsvDragOver(event)" ondragleave="handleCsvDragLeave(event)" ondrop="handleCsvDrop(event)" style="display:block;cursor:pointer">
+          <i class="fas fa-cloud-upload-alt" style="font-size:44px;color:var(--maroon);margin-bottom:12px;display:block"></i>
           <div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:4px">Click to Select CSV File or Drag &amp; Drop Here</div>
-          <div style="font-size:13px;color:var(--text-3)">Accepts comma-separated <code>.csv</code> spreadsheet files</div>
-          <input type="file" id="csvFileInput" accept=".csv,text/csv" style="display:none" onchange="handleCsvFileSelected(event)">
-        </div>
+          <div style="font-size:13px;color:var(--text-3);margin-bottom:14px">Accepts comma-separated <code>.csv</code> spreadsheet files</div>
+          <button type="button" class="btn-primary" onclick="event.preventDefault(); document.getElementById('csvFileInput').click();" style="display:inline-flex;align-items:center;gap:8px;padding:9px 20px;font-size:13.5px;pointer-events:auto;background:var(--maroon);color:#fff">
+            <i class="fas fa-folder-open"></i> Browse CSV File
+          </button>
+        </label>
+        <input type="file" id="csvFileInput" accept=".csv,text/csv" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;opacity:0" onchange="handleCsvFileSelected(event)" />
 
         <!-- Live Preview & Validation Table Container -->
         <div id="csvPreviewContainer" style="display:none;margin-top:22px">
@@ -972,8 +975,7 @@ async function handleStudentEnroll(e) {
   btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enrolling Student...';
 
   try {
-    const isNested = window.location.pathname.startsWith('/gnhs-guidance');
-    const apiPath = isNested ? '/gnhs-guidance/api/register.php' : '/api/register.php';
+    const apiPath = getApiPath('register.php');
 
     const resp = await fetch(apiPath, {
       method: 'POST',
@@ -1086,14 +1088,12 @@ function resetFormForNewStudent() {
   document.getElementById('stuFirst').focus();
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-  initGradeAndSections();
-  validatePasswordStandards();
-
-  if (new URLSearchParams(window.location.search).get('tab') === 'bulk') {
-    switchEnrollMode('bulk');
-  }
-});
+function getApiPath(endpoint) {
+  const p = window.location.pathname;
+  const idx = p.lastIndexOf('/pages/');
+  const base = idx !== -1 ? p.substring(0, idx) : '';
+  return base + '/api/' + endpoint;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // BULK STUDENT CSV IMPORT ENGINE (TEACHER ADVISORY)
@@ -1218,18 +1218,24 @@ function parseAndPreviewCsv(csvText, fileName, fileSize) {
     return -1;
   };
 
-  const idxFirst   = findIdx(['firstname', 'first_name', 'first', 'pangalan']);
-  const idxLast    = findIdx(['lastname', 'last_name', 'last', 'apelyido']);
-  const idxMiddle  = findIdx(['middlename', 'middle_name', 'middle']);
-  const idxSuffix  = findIdx(['suffix', 'ext']);
-  const idxLrn     = findIdx(['lrn', 'idnumber', 'id_number', 'student_lrn']);
-  const idxEmail   = findIdx(['email', 'emailaddress', 'email_address', 'student_email']);
-  const idxGrade   = findIdx(['gradelevel', 'grade_level', 'grade', 'level']);
-  const idxSection = findIdx(['section', 'pangkat']);
-  const idxPass    = findIdx(['temporarypassword', 'temporary_password', 'password', 'pass']);
+  let idxFirst   = findIdx(['firstname', 'first_name', 'first', 'givenname', 'pangalan']);
+  let idxLast    = findIdx(['lastname', 'last_name', 'last', 'surname', 'familyname', 'apelyido']);
+  let idxMiddle  = findIdx(['middlename', 'middle_name', 'middle', 'mid']);
+  let idxSuffix  = findIdx(['suffix', 'ext']);
+  let idxLrn     = findIdx(['lrn', 'idnumber', 'id_number', 'student_lrn', 'studentlrn', 'learnerreferencenumber']);
+  let idxEmail   = findIdx(['email', 'emailaddress', 'email_address', 'student_email', 'studentemail']);
+  let idxGrade   = findIdx(['gradelevel', 'grade_level', 'grade', 'level', 'baitang']);
+  let idxSection = findIdx(['section', 'pangkat', 'sec']);
+  let idxPass    = findIdx(['temporarypassword', 'temporary_password', 'password', 'pass']);
+  let idxFullName = findIdx(['name', 'fullname', 'studentname', 'student_name']);
+  let idxGradeSec = findIdx(['gradesection', 'grade_section', 'class', 'gradeandsection']);
 
-  if (idxFirst === -1 || idxLast === -1 || idxLrn === -1 || idxEmail === -1) {
-    alert('CSV is missing required column headers! Make sure your file contains first_name, last_name, lrn, email, grade_level, and section. You can download the sample template.');
+  if (idxFirst === -1 && idxFullName === -1) {
+    alert('CSV is missing student name column! Make sure your file contains first_name, last_name, lrn, and email. You can download the sample template.');
+    return;
+  }
+  if (idxLrn === -1 || idxEmail === -1) {
+    alert('CSV is missing required column headers! Make sure your file contains lrn and email. You can download the sample template.');
     return;
   }
 
@@ -1248,16 +1254,42 @@ function parseAndPreviewCsv(csvText, fileName, fileSize) {
     const r = rawRows[i];
     if (r.length === 1 && !r[0]) continue; // skip blank row
 
-    const first  = (r[idxFirst] || '').trim();
-    const last   = (r[idxLast] || '').trim();
-    const middle = idxMiddle !== -1 ? (r[idxMiddle] || '').trim() : '';
-    const suffix = idxSuffix !== -1 ? (r[idxSuffix] || '').trim() : '';
+    let first  = idxFirst !== -1 ? (r[idxFirst] || '').trim() : '';
+    let last   = idxLast !== -1 ? (r[idxLast] || '').trim() : '';
+    let middle = idxMiddle !== -1 ? (r[idxMiddle] || '').trim() : '';
+    let suffix = idxSuffix !== -1 ? (r[idxSuffix] || '').trim() : '';
     const lrn    = (r[idxLrn] || '').trim();
     const email  = (r[idxEmail] || '').trim();
     let grade    = idxGrade !== -1 ? (r[idxGrade] || '').trim() : '';
     let section  = idxSection !== -1 ? (r[idxSection] || '').trim() : '';
     let pass     = idxPass !== -1 ? (r[idxPass] || '').trim() : 'Student@2026';
     if (!pass) pass = 'Student@2026';
+
+    // Fallback: parse Full Name if separate first/last missing
+    if ((!first || !last) && idxFullName !== -1) {
+      const full = (r[idxFullName] || '').trim();
+      if (full.includes(',')) {
+        const parts = full.split(',').map(p => p.trim());
+        last = parts[0] || last;
+        const firstParts = (parts[1] || '').split(' ').filter(Boolean);
+        first = firstParts[0] || first;
+        if (firstParts.length > 1) middle = firstParts.slice(1).join(' ');
+      } else {
+        const parts = full.split(' ').filter(Boolean);
+        first = parts[0] || '';
+        last = parts.length > 1 ? parts.slice(1).join(' ') : 'Student';
+      }
+    }
+
+    // Fallback: parse combined Grade & Section if separate columns missing
+    if ((!grade || !section) && idxGradeSec !== -1) {
+      const gs = (r[idxGradeSec] || '').trim();
+      const parts = gs.split('-');
+      if (parts.length >= 2) {
+        if (!grade) grade = parts[0].replace(/[^0-9]/g, '');
+        if (!section) section = parts.slice(1).join('-').trim();
+      }
+    }
 
     // Auto default to teacher's advisory section if empty
     if (!grade && DEFAULT_GRADE) grade = DEFAULT_GRADE;
@@ -1377,8 +1409,7 @@ async function executeBatchImport() {
   btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enrolling Accounts...';
 
   try {
-    const isNested = window.location.pathname.startsWith('/gnhs-guidance');
-    const apiPath = isNested ? '/gnhs-guidance/api/import_students.php' : '/api/import_students.php';
+    const apiPath = getApiPath('import_students.php');
 
     const resp = await fetch(apiPath, {
       method: 'POST',
@@ -1418,6 +1449,29 @@ function resetCsvUpload() {
   _validCsvStudents = [];
   document.getElementById('csvPreviewContainer').style.display = 'none';
   document.getElementById('csvResultCard').style.display = 'none';
+}
+
+// Global Exports
+window.switchEnrollMode = switchEnrollMode;
+window.handleCsvFileSelected = handleCsvFileSelected;
+window.handleCsvFile = function(f) { if (f) processCsvFile(f); };
+window.executeBatchImport = executeBatchImport;
+window.resetCsvUpload = resetCsvUpload;
+
+// Initialize on page readiness
+function initTeacherAddStudentPage() {
+  initGradeAndSections();
+  validatePasswordStandards();
+  const tab = new URLSearchParams(window.location.search).get('tab');
+  if (tab === 'bulk') {
+    switchEnrollMode('bulk');
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initTeacherAddStudentPage);
+} else {
+  initTeacherAddStudentPage();
 }
 </script>
 HTML;

@@ -315,7 +315,7 @@ $refBanner
 <!-- Modal 1: Case Detail Modal -->
 <div class="modal-overlay hidden" id="caseModal" onclick="if(event.target.id==='caseModal')this.classList.add('hidden')">
   <div class="modal-box" style="max-width:600px">
-    <button class="modal-close" onclick="document.getElementById('caseModal').classList.add('hidden')"><i class="fas fa-times"></i></button>
+    <button type="button" class="modal-close" onclick="document.getElementById('caseModal').classList.add('hidden')" aria-label="Close" title="Close"><i class="fas fa-times"></i></button>
     <h2 class="modal-title">Case Detail</h2>
     <div id="caseModalBody"></div>
   </div>
@@ -324,7 +324,7 @@ $refBanner
 <!-- Modal 2: Teacher Referral Detail Modal -->
 <div class="modal-overlay hidden" id="studentRefModal" onclick="if(event.target.id==='studentRefModal')this.classList.add('hidden')">
   <div class="modal-box" style="max-width:700px;width:95%">
-    <button class="modal-close" onclick="document.getElementById('studentRefModal').classList.add('hidden')"><i class="fas fa-times"></i></button>
+    <button type="button" class="modal-close" onclick="document.getElementById('studentRefModal').classList.add('hidden')" aria-label="Close" title="Close"><i class="fas fa-times"></i></button>
     <div id="studentRefModalBody"></div>
   </div>
 </div>
@@ -414,17 +414,18 @@ function openStudentRefModal(btnOrData) {
   }
 
   document.getElementById('studentRefModalBody').innerHTML = `
-    <div style="border-bottom:1px solid var(--border);padding-bottom:14px;margin-bottom:18px;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">
-      <div>
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-          <span style="background:var(--maroon-pale);color:var(--maroon);font-weight:900;font-size:14px;padding:3px 10px;border-radius:6px;border:1px solid var(--maroon-tint)">#\${ref.ref_number}</span>
-          <span class="status-badge \${statMap[ref.status] || 'status-pending'}">\${statLabel[ref.status] || ref.status}</span>
-          <span class="priority-badge \${urgMap[ref.urgency] || 'priority-low'}"><i class="fas fa-circle"></i> \${ref.urgency.toUpperCase()}</span>
-        </div>
-        <h2 style="font-size:18px;font-weight:800;color:var(--text);margin:0">Teacher Referral from \${ref.teacher_name}</h2>
+    <div style="border-bottom:1px solid var(--border);padding-bottom:14px;margin-bottom:18px;padding-right:48px;position:relative">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+        <span style="background:var(--maroon-pale);color:var(--maroon);font-weight:900;font-size:14px;padding:3px 10px;border-radius:6px;border:1px solid var(--maroon-tint)">#\${ref.ref_number}</span>
+        <span class="status-badge \${statMap[ref.status] || 'status-pending'}">\${statLabel[ref.status] || ref.status}</span>
+        <span class="priority-badge \${urgMap[ref.urgency] || 'priority-low'}"><i class="fas fa-circle"></i> \${ref.urgency.toUpperCase()}</span>
       </div>
-      <div style="font-size:12.5px;color:var(--text-3);text-align:right">
-        Submitted on<br><strong>\${ref.submitted_at}</strong>
+      <h2 style="font-size:18px;font-weight:800;color:var(--text);margin:0 0 8px 0;display:flex;align-items:center;gap:8px">
+        <i class="fas fa-chalkboard-teacher" style="color:var(--maroon)"></i> Teacher Referral from \${ref.teacher_name}
+      </h2>
+      <div style="font-size:12.5px;color:var(--text-3);display:flex;align-items:center;gap:18px;flex-wrap:wrap">
+        <span><i class="fas fa-tag" style="color:var(--maroon);margin-right:4px"></i> Concern: <strong style="color:var(--text)">\${typeLabel}</strong></span>
+        <span><i class="fas fa-calendar-alt" style="color:var(--maroon);margin-right:4px"></i> Submitted on: <strong style="color:var(--text)">\${ref.submitted_at}</strong></span>
       </div>
     </div>
 

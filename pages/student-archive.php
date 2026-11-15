@@ -226,7 +226,7 @@ ob_start();
 <!-- Archived Referral Detail Modal -->
 <div class="modal-overlay hidden" id="archivedRefModal" onclick="if(event.target.id==='archivedRefModal')this.classList.add('hidden')">
   <div class="modal-box" style="max-width:650px;width:95%">
-    <button class="modal-close" onclick="document.getElementById('archivedRefModal').classList.add('hidden')"><i class="fas fa-times"></i></button>
+    <button type="button" class="modal-close" onclick="document.getElementById('archivedRefModal').classList.add('hidden')" aria-label="Close" title="Close"><i class="fas fa-times"></i></button>
     <div id="archivedRefModalBody"></div>
   </div>
 </div>
@@ -234,7 +234,7 @@ ob_start();
 <!-- Case Detail Modal -->
 <div class="modal-overlay hidden" id="caseModal" onclick="if(event.target.id==='caseModal')this.classList.add('hidden')">
   <div class="modal-box" style="max-width:600px">
-    <button class="modal-close" onclick="document.getElementById('caseModal').classList.add('hidden')"><i class="fas fa-times"></i></button>
+    <button type="button" class="modal-close" onclick="document.getElementById('caseModal').classList.add('hidden')" aria-label="Close" title="Close"><i class="fas fa-times"></i></button>
     <h2 class="modal-title">Case Detail</h2>
     <div id="caseModalBody"></div>
   </div>
@@ -243,7 +243,7 @@ ob_start();
 <!-- Appeal Modal -->
 <div class="modal-overlay hidden" id="appealModal" onclick="if(event.target.id==='appealModal')this.classList.add('hidden')">
   <div class="modal-box" style="max-width:540px">
-    <button class="modal-close" onclick="closeAppealModal()"><i class="fas fa-times"></i></button>
+    <button type="button" class="modal-close" onclick="closeAppealModal()" aria-label="Close" title="Close"><i class="fas fa-times"></i></button>
     <div style="width:48px;height:48px;border-radius:12px;background:rgba(85,0,0,0.08);color:var(--maroon);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:20px">
       <i class="fas fa-reply-all"></i>
     </div>
@@ -400,16 +400,17 @@ function openArchivedRefModal(btn) {
   const typeLabel = (ref.concern_type || '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 
   document.getElementById('archivedRefModalBody').innerHTML = `
-    <div style="border-bottom:1px solid var(--border);padding-bottom:14px;margin-bottom:18px;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">
-      <div>
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-          <span style="background:var(--maroon-pale);color:var(--maroon);font-weight:900;font-size:14px;padding:3px 10px;border-radius:6px;border:1px solid var(--maroon-tint)">#\${ref.ref_number}</span>
-          <span class="status-badge status-resolved">Resolved</span>
-        </div>
-        <h2 style="font-size:18px;font-weight:800;color:var(--text);margin:0">Archived Referral from Teacher \${ref.teacher_name}</h2>
+    <div style="border-bottom:1px solid var(--border);padding-bottom:14px;margin-bottom:18px;padding-right:48px;position:relative">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+        <span style="background:var(--maroon-pale);color:var(--maroon);font-weight:900;font-size:14px;padding:3px 10px;border-radius:6px;border:1px solid var(--maroon-tint)">#\${ref.ref_number}</span>
+        <span class="status-badge status-resolved">Resolved</span>
       </div>
-      <div style="font-size:12.5px;color:var(--text-3);text-align:right">
-        Resolved on<br><strong>\${ref.resolved_at}</strong>
+      <h2 style="font-size:18px;font-weight:800;color:var(--text);margin:0 0 8px 0;display:flex;align-items:center;gap:8px">
+        <i class="fas fa-archive" style="color:var(--maroon)"></i> Archived Referral from Teacher \${ref.teacher_name}
+      </h2>
+      <div style="font-size:12.5px;color:var(--text-3);display:flex;align-items:center;gap:18px;flex-wrap:wrap">
+        <span><i class="fas fa-tag" style="color:var(--maroon);margin-right:4px"></i> Concern: <strong style="color:var(--text)">\${typeLabel}</strong></span>
+        <span><i class="fas fa-calendar-check" style="color:var(--maroon);margin-right:4px"></i> Resolved on: <strong style="color:var(--text)">\${ref.resolved_at}</strong></span>
       </div>
     </div>
 

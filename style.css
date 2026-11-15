@@ -942,23 +942,35 @@ img {
   position: absolute;
   top: 18px;
   right: 18px;
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.04);
-  font-size: 14px;
+  background: rgba(0, 0, 0, 0.05);
+  font-size: 15px;
   color: var(--text-2);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: .3s;
-  border: none
+  transition: all .25s ease;
+  border: none;
+  cursor: pointer;
+  z-index: 20;
 }
 
 .modal-close:hover {
   background: var(--maroon-pale);
   color: var(--maroon);
-  transform: rotate(90deg)
+  transform: rotate(90deg);
+}
+
+[data-theme="dark"] .modal-close {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-2);
+}
+
+[data-theme="dark"] .modal-close:hover {
+  background: var(--maroon-pale);
+  color: var(--maroon);
 }
 
 .modal-back {

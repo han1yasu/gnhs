@@ -194,7 +194,7 @@ $content = <<<HTML
 <!-- Case Detail Modal -->
 <div class="modal-overlay hidden" id="caseModal" onclick="if(event.target.id==='caseModal')this.classList.add('hidden')">
   <div class="modal-box" style="max-width:600px">
-    <button class="modal-close" onclick="document.getElementById('caseModal').classList.add('hidden')"><i class="fas fa-times"></i></button>
+    <button type="button" class="modal-close" onclick="document.getElementById('caseModal').classList.add('hidden')" aria-label="Close" title="Close"><i class="fas fa-times"></i></button>
     <h2 class="modal-title">Case Detail</h2>
     <div id="caseModalBody"><div style="text-align:center;padding:40px"><span class="spinner" style="border-color:rgba(85,0,0,.2);border-top-color:var(--maroon);display:inline-block"></span></div></div>
   </div>

@@ -238,7 +238,26 @@ foreach (['Grade 7','Grade 8','Grade 9','Grade 10'] as $g) {
 }
 if (!$gradeTypeRows) $gradeTypeRows = "<tr><td colspan='3' style='text-align:center;color:var(--text-3);padding:20px'>Not enough data yet.</td></tr>";
 
+$todayYmd = date('Y-m-d');
+$firstOfMonthYmd = date('Y-m-01');
+
 $content = <<<HTML
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:18px;background:var(--bg2);padding:14px 20px;border-radius:12px;border:1px solid var(--border)">
+  <div>
+    <h2 style="font-size:18px;font-weight:800;margin:0;color:var(--text);display:flex;align-items:center;gap:8px">
+      <i class="fas fa-chart-pie" style="color:var(--maroon)"></i> Guidance Analytics &amp; Reports Console
+    </h2>
+    <div style="font-size:12.5px;color:var(--text-3);margin-top:3px">
+      Monitor real-time counseling indicators, student concern categories, and export customized administrative reports.
+    </div>
+  </div>
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+    <button type="button" class="btn-primary" onclick="openExportAnalyticsModal()" style="display:inline-flex;align-items:center;gap:8px;padding:9px 18px;font-size:13.5px;font-weight:700;background:linear-gradient(135deg,var(--maroon) 0%,#7a0c0c 100%);box-shadow:0 3px 10px rgba(85,0,0,0.2)">
+      <i class="fas fa-file-export"></i> Export Report &amp; Data
+    </button>
+  </div>
+</div>
+
 <div class="analytics-cards-4">
   <div class="sum-card">
     <div class="sum-icon" style="background:#fff0f0;color:var(--maroon)"><i class="fas fa-folder-open"></i></div>
@@ -664,6 +683,90 @@ canvas {
     <button type="button" class="modal-close" onclick="document.getElementById('caseReviewModal').classList.add('hidden')" style="cursor:pointer;position:absolute;top:18px;right:18px;width:34px;height:34px;background:var(--bg);border-radius:50%;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--text-2);transition:all .15s"><i class="fas fa-times"></i></button>
     <h2 class="modal-title" style="text-align:left;font-size:20px;margin-bottom:16px;color:var(--text)"><i class="fas fa-clipboard-check" style="color:var(--maroon)"></i> Review Case</h2>
     <div id="caseReviewBody"></div>
+  </div>
+</div>
+
+<!-- Analytics Export Modal -->
+<div class="modal-overlay hidden" id="exportAnalyticsModal" onclick="if(event.target===this)closeExportAnalyticsModal()" style="z-index:10010">
+  <div class="modal-box" style="max-width:540px;width:95%;padding:26px 28px;position:relative;border-radius:18px;box-shadow:0 25px 60px rgba(0,0,0,0.35)">
+    <button type="button" class="modal-close" onclick="closeExportAnalyticsModal()" style="cursor:pointer;position:absolute;top:18px;right:18px;width:32px;height:32px;background:var(--bg);border-radius:50%;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--text-2);transition:all .15s"><i class="fas fa-times"></i></button>
+
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
+      <div style="width:44px;height:44px;border-radius:12px;background:var(--maroon-pale);color:var(--maroon);display:flex;align-items:center;justify-content:center;font-size:20px">
+        <i class="fas fa-file-export"></i>
+      </div>
+      <div>
+        <h2 style="font-size:18px;font-weight:800;margin:0;color:var(--text)">Export Analytics &amp; Reports</h2>
+        <div style="font-size:12.5px;color:var(--text-3)">Generate printable DepEd guidance summaries or raw CSV spreadsheet records.</div>
+      </div>
+    </div>
+
+    <form id="exportAnalyticsForm" onsubmit="event.preventDefault()">
+      <!-- Step 1: Coverage Period -->
+      <div class="form-group" style="margin-bottom:16px">
+        <label style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-2);display:block;margin-bottom:8px">
+          <i class="fas fa-calendar-alt" style="color:var(--maroon);margin-right:4px"></i> Select Coverage Period
+        </label>
+        <div class="select-wrap">
+          <i class="fas fa-clock"></i>
+          <select id="expRangeSelect" onchange="onExportRangeChange()" style="width:100%;padding:10px 14px 10px 38px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13.5px;font-weight:600">
+            <option value="timeline" selected>Sync with Current View (On Screen)</option>
+            <option value="this_month">This Month</option>
+            <option value="last_30_days">Last 30 Days</option>
+            <option value="last_6_months">Last 6 Months</option>
+            <option value="all_time">All Time</option>
+            <option value="custom">Custom Date Range (Specify Dates)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Custom Date Row (Hidden by default, shown when custom selected) -->
+      <div id="expCustomDateRow" style="display:none;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;background:var(--bg2);padding:12px;border-radius:10px;border:1px solid var(--border)">
+        <div>
+          <label style="font-size:11px;font-weight:700;color:var(--text-3);display:block;margin-bottom:4px">Date From</label>
+          <input type="date" id="expDateFrom" value="{$firstOfMonthYmd}" style="width:100%;padding:8px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:12.5px">
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:700;color:var(--text-3);display:block;margin-bottom:4px">Date To</label>
+          <input type="date" id="expDateTo" value="{$todayYmd}" style="width:100%;padding:8px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:12.5px">
+        </div>
+      </div>
+
+      <!-- Step 2: Content Checkboxes -->
+      <div class="form-group" style="margin-bottom:22px;background:var(--bg2);padding:14px;border-radius:10px;border:1px solid var(--border)">
+        <label style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-2);display:block;margin-bottom:10px">
+          <i class="fas fa-list-check" style="color:var(--maroon);margin-right:4px"></i> Content Sections
+        </label>
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;color:var(--text)">
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+            <input type="checkbox" id="expIncKpis" checked disabled style="accent-color:var(--maroon)">
+            <span><strong>Executive Summary &amp; KPI Metrics</strong> (Counts, Resolution Rate, Avg Days)</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+            <input type="checkbox" id="expIncDist" checked disabled style="accent-color:var(--maroon)">
+            <span><strong>Concern Types &amp; Grade Level Breakdowns</strong></span>
+          </label>
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+            <input type="checkbox" id="expIncCases" checked style="accent-color:var(--maroon)">
+            <span><strong>Detailed Incident Cases Log</strong> (Case numbers, dates, statuses)</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+            <input type="checkbox" id="expIncRefs" checked style="accent-color:var(--maroon)">
+            <span><strong>Teacher Classroom Referrals Summary</strong></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Step 3: Export Actions -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <button type="button" class="btn-primary" onclick="triggerAnalyticsExport('report')" style="padding:12px 14px;justify-content:center;display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--maroon) 0%,#7a0c0c 100%)">
+          <i class="fas fa-print"></i> Printable Report (PDF)
+        </button>
+        <button type="button" class="btn-primary" onclick="triggerAnalyticsExport('csv')" style="padding:12px 14px;justify-content:center;display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,#059669 0%,#047857 100%)">
+          <i class="fas fa-file-csv"></i> Download CSV / Excel
+        </button>
+      </div>
+    </form>
   </div>
 </div>
 
@@ -1358,6 +1461,83 @@ new Chart(document.getElementById('refTypeChart'), {
     }
   }
 });
+
+// --- Analytics Export Functions ---
+function openExportAnalyticsModal() {
+  var m = document.getElementById('exportAnalyticsModal');
+  if (m) m.classList.remove('hidden');
+}
+
+function closeExportAnalyticsModal() {
+  var m = document.getElementById('exportAnalyticsModal');
+  if (m) m.classList.add('hidden');
+}
+
+function onExportRangeChange() {
+  var sel = document.getElementById('expRangeSelect');
+  var row = document.getElementById('expCustomDateRow');
+  if (sel && row) {
+    row.style.display = (sel.value === 'custom') ? 'grid' : 'none';
+  }
+}
+
+function triggerAnalyticsExport(format) {
+  var rangeVal = document.getElementById('expRangeSelect').value;
+  var dateFrom = '';
+  var dateTo = '';
+
+  if (rangeVal === 'timeline') {
+    var tlRangeEl = document.getElementById('timelineRangeSelect');
+    var tlRange = tlRangeEl ? tlRangeEl.value : 'last_6_months';
+    if (tlRange === 'specific_month') {
+      var ymEl = document.getElementById('timelineMonthSelect');
+      var ym = ymEl ? ymEl.value : '';
+      if (ym) {
+        rangeVal = 'custom';
+        dateFrom = ym + '-01';
+        var parts = ym.split('-');
+        var lastDay = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10), 0).getDate();
+        dateTo = ym + '-' + (lastDay < 10 ? '0' : '') + lastDay;
+      } else {
+        rangeVal = 'this_month';
+      }
+    } else {
+      rangeVal = tlRange;
+    }
+  } else if (rangeVal === 'custom') {
+    var fromEl = document.getElementById('expDateFrom');
+    var toEl = document.getElementById('expDateTo');
+    dateFrom = fromEl ? fromEl.value : '';
+    dateTo = toEl ? toEl.value : '';
+  }
+
+  var casesEl = document.getElementById('expIncCases');
+  var refsEl = document.getElementById('expIncRefs');
+  var incCases = (casesEl && casesEl.checked) ? 1 : 0;
+  var incRefs = (refsEl && refsEl.checked) ? 1 : 0;
+
+  var isNested = window.location.pathname.startsWith('/gnhs-guidance');
+  var baseApi = isNested ? '/gnhs-guidance/api/export_analytics.php' : '/api/export_analytics.php';
+
+  var params = new URLSearchParams({
+    format: format,
+    range: rangeVal,
+    date_from: dateFrom,
+    date_to: dateTo,
+    include_cases: incCases,
+    include_referrals: incRefs
+  });
+
+  var exportUrl = baseApi + '?' + params.toString();
+
+  if (format === 'report') {
+    window.open(exportUrl, '_blank');
+  } else {
+    window.location.href = exportUrl;
+  }
+
+  closeExportAnalyticsModal();
+}
 </script>
 HTML;
 

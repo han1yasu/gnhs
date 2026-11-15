@@ -287,6 +287,7 @@ $bannerHtml
         <option value="admin"   $rAdm>Counselors</option>
       </select>
       <button class="btn-sm-primary" style="background:linear-gradient(135deg, #1e40af, #2563eb);border-color:#1e40af;font-weight:700" onclick="openAddStudentModal()"><i class="fas fa-user-graduate"></i> Register Walk-in Student</button>
+      <a href="admin-add-student.php?tab=bulk" class="btn-sm-outline" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px"><i class="fas fa-file-csv"></i> Bulk CSV Import</a>
       <button class="btn-sm-outline" onclick="openAddUserModal()"><i class="fas fa-user-plus"></i> Add User</button>
     </div>
   </div>

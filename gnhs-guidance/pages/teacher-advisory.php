@@ -330,6 +330,9 @@ HTML;
       <button type="button" class="btn-sm-primary" onclick="openTeacherAddStudentModal()" style="display:inline-flex;align-items:center;gap:6px">
         <i class="fas fa-user-plus"></i> Add Student Account
       </button>
+      <a href="teacher-add-student.php?tab=bulk" class="btn-sm-outline" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px">
+        <i class="fas fa-file-csv"></i> Bulk CSV Import
+      </a>
       <a href="teacher-referral.php" class="btn-sm-outline" style="text-decoration:none">
         <i class="fas fa-clipboard-check"></i> New Referral
       </a>

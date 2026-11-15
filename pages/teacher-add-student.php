@@ -406,6 +406,104 @@ $content = <<<HTML
       min-height: 46px;
     }
   }
+
+  /* Bulk CSV Import Styles */
+  .as-mode-nav {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 22px;
+    border-bottom: 1.5px solid var(--border, #e2e8f0);
+    padding-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .as-mode-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    font-weight: 700;
+    border: 1px solid var(--border, #e2e8f0);
+    background: var(--bg2, #f8fafc);
+    color: var(--text-2, #475569);
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .as-mode-btn:hover {
+    background: #f1f5f9;
+    color: var(--maroon, #550000);
+  }
+  .as-mode-btn.active {
+    background: var(--maroon, #550000);
+    color: #ffffff;
+    border-color: var(--maroon, #550000);
+    box-shadow: 0 3px 10px rgba(85,0,0,0.18);
+  }
+  .csv-dropzone {
+    border: 2px dashed #cbd5e1;
+    border-radius: 14px;
+    padding: 40px 24px;
+    text-align: center;
+    background: var(--bg2, #f8fafc);
+    cursor: pointer;
+    transition: all .2s;
+    user-select: none;
+  }
+  .csv-dropzone:hover, .csv-dropzone.dragover {
+    border-color: var(--maroon, #550000);
+    background: #fff5f5;
+  }
+  .csv-table-wrap {
+    max-height: 420px;
+    overflow-y: auto;
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: 10px;
+    margin-top: 14px;
+  }
+  .csv-preview-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  .csv-preview-table th, .csv-preview-table td {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--border, #e2e8f0);
+    text-align: left;
+  }
+  .csv-preview-table th {
+    position: sticky;
+    top: 0;
+    background: #f8fafc;
+    font-weight: 800;
+    color: var(--text-2, #475569);
+    z-index: 2;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 11px;
+  }
+  .badge-valid {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    background: #dcfce7;
+    color: #15803d;
+  }
+  .badge-invalid {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    background: #fee2e2;
+    color: #b91c1c;
+  }
 </style>
 
 <div class="as-wrapper">
@@ -478,6 +576,18 @@ $content = <<<HTML
       <!-- Live Error / Notice Alert -->
       <div id="pageAlert" style="display:none;margin-bottom:18px"></div>
 
+      <!-- Enrollment Mode Tabs -->
+      <div class="as-mode-nav">
+        <button type="button" class="as-mode-btn active" id="btnModeSingle" onclick="switchEnrollMode('single')">
+          <i class="fas fa-user-plus"></i> Single Student Enrollment
+        </button>
+        <button type="button" class="as-mode-btn" id="btnModeBulk" onclick="switchEnrollMode('bulk')">
+          <i class="fas fa-file-csv"></i> Bulk Import via CSV / Excel
+        </button>
+      </div>
+
+      <!-- Single Student Enrollment Section -->
+      <div id="singleEnrollSection">
       <form id="studentEnrollForm" onsubmit="handleStudentEnroll(event)">
         <!-- 1. Personal Information -->
         <div class="as-section-tag">
@@ -621,6 +731,101 @@ $content = <<<HTML
           </button>
         </div>
       </form>
+      </div> <!-- /#singleEnrollSection -->
+
+      <!-- Bulk CSV Enrollment Section -->
+      <div id="bulkEnrollSection" style="display:none">
+        <div style="background:var(--maroon-pale, #fff0f0);border:1px solid rgba(85,0,0,0.12);border-radius:12px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:14px">
+          <div style="display:flex;gap:12px;align-items:flex-start;max-width:650px">
+            <i class="fas fa-info-circle" style="color:var(--maroon);font-size:20px;margin-top:2px"></i>
+            <div>
+              <strong style="color:var(--maroon);font-size:14px;display:block;margin-bottom:4px">Bulk Advisory Class CSV Enrollment</strong>
+              <div style="font-size:12.5px;color:var(--text-2);line-height:1.5">
+                Upload a <code>.csv</code> spreadsheet to quickly create student accounts for your advisory section: <strong>{$escapedAdvisory}</strong>.
+                <strong>Grade Level</strong> (e.g. <code>{$escapedGradeNum}</code>) and <strong>Section</strong> (e.g. <code>{$escapedSection}</code>) are placed in <strong>separate columns</strong>.
+                If left blank in the file, they will automatically default to your advisory section.
+              </div>
+            </div>
+          </div>
+          <a href="/gnhs-guidance/api/download_student_template.php" class="btn-primary" style="display:inline-flex;align-items:center;gap:8px;padding:9px 16px;font-size:13px;text-decoration:none;background:#2563eb;white-space:nowrap">
+            <i class="fas fa-file-download"></i> Download CSV Template
+          </a>
+        </div>
+
+        <!-- File Upload Dropzone -->
+        <div id="csvDropzone" class="csv-dropzone" onclick="document.getElementById('csvFileInput').click()" ondragover="handleCsvDragOver(event)" ondragleave="handleCsvDragLeave(event)" ondrop="handleCsvDrop(event)">
+          <i class="fas fa-cloud-upload-alt" style="font-size:42px;color:var(--maroon);margin-bottom:12px;display:block"></i>
+          <div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:4px">Click to Select CSV File or Drag &amp; Drop Here</div>
+          <div style="font-size:13px;color:var(--text-3)">Accepts comma-separated <code>.csv</code> spreadsheet files</div>
+          <input type="file" id="csvFileInput" accept=".csv,text/csv" style="display:none" onchange="handleCsvFileSelected(event)">
+        </div>
+
+        <!-- Live Preview & Validation Table Container -->
+        <div id="csvPreviewContainer" style="display:none;margin-top:22px">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:12px">
+            <div>
+              <h3 style="font-size:15px;font-weight:800;margin:0;color:var(--text);display:flex;align-items:center;gap:8px">
+                <i class="fas fa-table" style="color:var(--maroon)"></i>
+                <span>File Preview: <span id="csvFileNameText" style="color:var(--maroon)"></span></span>
+              </h3>
+              <div style="font-size:12px;color:var(--text-3);margin-top:2px" id="csvFileMetaText"></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:12px">
+              <span class="badge-valid" id="csvValidCountBadge"><i class="fas fa-check-circle"></i> 0 Valid</span>
+              <span class="badge-invalid" id="csvErrorCountBadge"><i class="fas fa-exclamation-circle"></i> 0 Errors</span>
+            </div>
+          </div>
+
+          <div class="csv-table-wrap">
+            <table class="csv-preview-table" id="csvPreviewTable">
+              <thead>
+                <tr>
+                  <th style="width:40px;text-align:center">#</th>
+                  <th>Student Name</th>
+                  <th style="width:115px">12-Digit LRN</th>
+                  <th>Email Address</th>
+                  <th style="width:75px">Grade</th>
+                  <th style="width:100px">Section</th>
+                  <th style="width:110px">Initial Pass</th>
+                  <th style="width:140px">Validation Status</th>
+                </tr>
+              </thead>
+              <tbody id="csvPreviewTbody"></tbody>
+            </table>
+          </div>
+
+          <!-- Bottom Action Buttons -->
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:18px;padding-top:16px;border-top:1px solid var(--border)">
+            <button type="button" class="btn-secondary" onclick="resetCsvUpload()">
+              <i class="fas fa-redo"></i> Choose Different File
+            </button>
+            <button type="button" class="btn-primary" id="btnConfirmBatchImport" onclick="executeBatchImport()" style="display:inline-flex;align-items:center;gap:8px;padding:11px 22px;font-size:14px;background:linear-gradient(135deg,var(--maroon) 0%,#7a0c0c 100%)">
+              <i class="fas fa-user-check"></i> Import Valid Students (<span id="btnImportCountText">0</span>)
+            </button>
+          </div>
+        </div>
+
+        <!-- Batch Result Success Card -->
+        <div id="csvResultCard" style="display:none;margin-top:20px;padding:22px;border-radius:12px;border:1px solid #bbf7d0;background:#f0fdf4">
+          <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px">
+            <div style="width:42px;height:42px;border-radius:50%;background:#dcfce7;color:#16a34a;display:flex;align-items:center;justify-content:center;font-size:20px">
+              <i class="fas fa-check-double"></i>
+            </div>
+            <div>
+              <h4 style="margin:0;font-size:16px;font-weight:800;color:#166534" id="csvResultTitle">Bulk Import Complete!</h4>
+              <p style="margin:2px 0 0;font-size:13px;color:#15803d" id="csvResultSubtitle"></p>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:14px">
+            <a href="teacher-advisory.php" class="btn-primary" style="text-decoration:none;background:#16a34a;padding:8px 16px;font-size:13px;display:inline-flex;align-items:center;gap:6px">
+              <i class="fas fa-users"></i> View Advisory Class Roster
+            </a>
+            <button type="button" class="btn-secondary" onclick="resetCsvUpload()" style="padding:8px 16px;font-size:13px">
+              <i class="fas fa-plus"></i> Import Another File
+            </button>
+          </div>
+        </div>
+      </div> <!-- /#bulkEnrollSection -->
     </div>
 
     <!-- Sidebar Tips & Guidelines -->
@@ -884,7 +1089,338 @@ function resetFormForNewStudent() {
 document.addEventListener('DOMContentLoaded', function() {
   initGradeAndSections();
   validatePasswordStandards();
+
+  if (new URLSearchParams(window.location.search).get('tab') === 'bulk') {
+    switchEnrollMode('bulk');
+  }
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BULK STUDENT CSV IMPORT ENGINE (TEACHER ADVISORY)
+// ─────────────────────────────────────────────────────────────────────────────
+let _parsedCsvStudents = [];
+let _validCsvStudents = [];
+
+function switchEnrollMode(mode) {
+  const btnSingle = document.getElementById('btnModeSingle');
+  const btnBulk = document.getElementById('btnModeBulk');
+  const secSingle = document.getElementById('singleEnrollSection');
+  const secBulk = document.getElementById('bulkEnrollSection');
+
+  if (mode === 'bulk') {
+    btnSingle?.classList.remove('active');
+    btnBulk?.classList.add('active');
+    if (secSingle) secSingle.style.display = 'none';
+    if (secBulk) secBulk.style.display = 'block';
+  } else {
+    btnBulk?.classList.remove('active');
+    btnSingle?.classList.add('active');
+    if (secBulk) secBulk.style.display = 'none';
+    if (secSingle) secSingle.style.display = 'block';
+  }
+}
+
+function handleCsvDragOver(e) {
+  e.preventDefault();
+  document.getElementById('csvDropzone')?.classList.add('dragover');
+}
+
+function handleCsvDragLeave(e) {
+  document.getElementById('csvDropzone')?.classList.remove('dragover');
+}
+
+function handleCsvDrop(e) {
+  e.preventDefault();
+  document.getElementById('csvDropzone')?.classList.remove('dragover');
+  if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+    processCsvFile(e.dataTransfer.files[0]);
+  }
+}
+
+function handleCsvFileSelected(e) {
+  if (e.target && e.target.files && e.target.files.length > 0) {
+    processCsvFile(e.target.files[0]);
+  }
+}
+
+function processCsvFile(file) {
+  if (!file) return;
+  if (!file.name.toLowerCase().endsWith('.csv') && file.type !== 'text/csv') {
+    alert('Please select a valid .csv spreadsheet file.');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const text = e.target.result;
+    parseAndPreviewCsv(text, file.name, file.size);
+  };
+  reader.readAsText(file);
+}
+
+function parseCsvText(text) {
+  const lines = [];
+  let row = [];
+  let current = '';
+  let insideQuote = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    const nextChar = text[i + 1];
+
+    if (char === '"') {
+      if (insideQuote && nextChar === '"') {
+        current += '"';
+        i++;
+      } else {
+        insideQuote = !insideQuote;
+      }
+    } else if (char === ',' && !insideQuote) {
+      row.push(current.trim());
+      current = '';
+    } else if ((char === '\r' || char === '\n') && !insideQuote) {
+      if (char === '\r' && nextChar === '\n') {
+        i++;
+      }
+      row.push(current.trim());
+      if (row.length > 1 || (row.length === 1 && row[0] !== '')) {
+        lines.push(row);
+      }
+      row = [];
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  if (current.length > 0 || row.length > 0) {
+    row.push(current.trim());
+    if (row.length > 1 || (row.length === 1 && row[0] !== '')) {
+      lines.push(row);
+    }
+  }
+  return lines;
+}
+
+function parseAndPreviewCsv(csvText, fileName, fileSize) {
+  const rawRows = parseCsvText(csvText);
+  if (!rawRows || rawRows.length < 2) {
+    alert('The uploaded CSV file is empty or missing data rows.');
+    return;
+  }
+
+  // Header mapping
+  const headers = rawRows[0].map(h => h.toLowerCase().replace(/[^a-z0-9_]/g, ''));
+  const findIdx = (names) => {
+    for (let n of names) {
+      const idx = headers.indexOf(n);
+      if (idx !== -1) return idx;
+    }
+    return -1;
+  };
+
+  const idxFirst   = findIdx(['firstname', 'first_name', 'first', 'pangalan']);
+  const idxLast    = findIdx(['lastname', 'last_name', 'last', 'apelyido']);
+  const idxMiddle  = findIdx(['middlename', 'middle_name', 'middle']);
+  const idxSuffix  = findIdx(['suffix', 'ext']);
+  const idxLrn     = findIdx(['lrn', 'idnumber', 'id_number', 'student_lrn']);
+  const idxEmail   = findIdx(['email', 'emailaddress', 'email_address', 'student_email']);
+  const idxGrade   = findIdx(['gradelevel', 'grade_level', 'grade', 'level']);
+  const idxSection = findIdx(['section', 'pangkat']);
+  const idxPass    = findIdx(['temporarypassword', 'temporary_password', 'password', 'pass']);
+
+  if (idxFirst === -1 || idxLast === -1 || idxLrn === -1 || idxEmail === -1) {
+    alert('CSV is missing required column headers! Make sure your file contains first_name, last_name, lrn, email, grade_level, and section. You can download the sample template.');
+    return;
+  }
+
+  _parsedCsvStudents = [];
+  _validCsvStudents = [];
+
+  const tbody = document.getElementById('csvPreviewTbody');
+  if (tbody) tbody.innerHTML = '';
+
+  let validCount = 0;
+  let errorCount = 0;
+  const seenBatchLrns = new Set();
+  const seenBatchEmails = new Set();
+
+  for (let i = 1; i < rawRows.length; i++) {
+    const r = rawRows[i];
+    if (r.length === 1 && !r[0]) continue; // skip blank row
+
+    const first  = (r[idxFirst] || '').trim();
+    const last   = (r[idxLast] || '').trim();
+    const middle = idxMiddle !== -1 ? (r[idxMiddle] || '').trim() : '';
+    const suffix = idxSuffix !== -1 ? (r[idxSuffix] || '').trim() : '';
+    const lrn    = (r[idxLrn] || '').trim();
+    const email  = (r[idxEmail] || '').trim();
+    let grade    = idxGrade !== -1 ? (r[idxGrade] || '').trim() : '';
+    let section  = idxSection !== -1 ? (r[idxSection] || '').trim() : '';
+    let pass     = idxPass !== -1 ? (r[idxPass] || '').trim() : 'Student@2026';
+    if (!pass) pass = 'Student@2026';
+
+    // Auto default to teacher's advisory section if empty
+    if (!grade && DEFAULT_GRADE) grade = DEFAULT_GRADE;
+    if (!section && DEFAULT_SECTION) section = DEFAULT_SECTION;
+
+    // Normalize grade
+    let gradeNum = grade.replace(/[^0-9]/g, '');
+
+    // Validation checks
+    const errors = [];
+    if (!first) errors.push('Missing First Name');
+    if (!last)  errors.push('Missing Last Name');
+    
+    if (!lrn) {
+      errors.push('Missing LRN');
+    } else if (!/^\d{12}$/.test(lrn)) {
+      errors.push('LRN must be strictly 12 digits');
+    } else if (seenBatchLrns.has(lrn)) {
+      errors.push('Duplicate LRN in file');
+    }
+
+    if (!email) {
+      errors.push('Missing Email');
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      errors.push('Invalid email format');
+    } else if (seenBatchEmails.has(email.toLowerCase())) {
+      errors.push('Duplicate email in file');
+    }
+
+    if (!gradeNum || !['7', '8', '9', '10'].includes(gradeNum)) {
+      errors.push('Grade must be 7, 8, 9, or 10');
+    }
+
+    if (!section) {
+      errors.push('Missing Section');
+    }
+
+    // Verify section matches advisory class if applicable
+    if (DEFAULT_GRADE && DEFAULT_SECTION) {
+      if (gradeNum !== DEFAULT_GRADE || section.toLowerCase() !== DEFAULT_SECTION.toLowerCase()) {
+        errors.push(`Must match your advisory section (Grade ${DEFAULT_GRADE} - ${DEFAULT_SECTION})`);
+      }
+    }
+
+    const isValid = errors.length === 0;
+    if (isValid) {
+      validCount++;
+      seenBatchLrns.add(lrn);
+      seenBatchEmails.add(email.toLowerCase());
+      _validCsvStudents.push({
+        first_name: first,
+        last_name: last,
+        middle_name: middle,
+        suffix: suffix,
+        lrn: lrn,
+        email: email,
+        grade_level: gradeNum,
+        section: section,
+        temporary_password: pass
+      });
+    } else {
+      errorCount++;
+    }
+
+    const studentObj = { first, last, middle, suffix, lrn, email, gradeNum, section, pass, isValid, errors };
+    _parsedCsvStudents.push(studentObj);
+
+    // Build row
+    if (tbody) {
+      const tr = document.createElement('tr');
+      tr.className = isValid ? 'csv-row-valid' : 'csv-row-invalid';
+      
+      tr.innerHTML = `
+        <td style="text-align:center;font-weight:700;color:var(--text-3)">${i}</td>
+        <td><strong>${escapeHtml(first)} ${escapeHtml(last)}</strong> ${suffix ? escapeHtml(suffix) : ''}</td>
+        <td><code style="font-size:11.5px">${escapeHtml(lrn || '—')}</code></td>
+        <td style="font-size:11.5px">${escapeHtml(email || '—')}</td>
+        <td>Grade ${escapeHtml(gradeNum || '—')}</td>
+        <td>${escapeHtml(section || '—')}</td>
+        <td><code style="font-size:11px">${escapeHtml(pass)}</code></td>
+        <td>
+          ${isValid 
+            ? '<span class="badge-valid"><i class="fas fa-check-circle"></i> Ready</span>' 
+            : '<span class="badge-invalid" title="' + escapeHtml(errors.join(', ')) + '"><i class="fas fa-times-circle"></i> ' + escapeHtml(errors[0]) + '</span>'}
+        </td>
+      `;
+      tbody.appendChild(tr);
+    }
+  }
+
+  // Update header and badges
+  document.getElementById('csvFileNameText').textContent = fileName;
+  const kbSize = Math.round(fileSize / 1024);
+  document.getElementById('csvFileMetaText').textContent = `${rawRows.length - 1} rows parsed • ${kbSize} KB`;
+  document.getElementById('csvValidCountBadge').innerHTML = `<i class="fas fa-check-circle"></i> ${validCount} Valid`;
+  document.getElementById('csvErrorCountBadge').innerHTML = `<i class="fas fa-exclamation-circle"></i> ${errorCount} Errors`;
+  document.getElementById('btnImportCountText').textContent = validCount;
+
+  const btnImport = document.getElementById('btnConfirmBatchImport');
+  if (btnImport) btnImport.disabled = (validCount === 0);
+
+  document.getElementById('csvPreviewContainer').style.display = 'block';
+  document.getElementById('csvResultCard').style.display = 'none';
+  document.getElementById('csvPreviewContainer').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+async function executeBatchImport() {
+  if (!_validCsvStudents || _validCsvStudents.length === 0) {
+    alert('There are no valid student records to import.');
+    return;
+  }
+
+  const btn = document.getElementById('btnConfirmBatchImport');
+  if (!confirm(`Are you sure you want to enroll and create accounts for ${_validCsvStudents.length} valid students?`)) {
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enrolling Accounts...';
+
+  try {
+    const isNested = window.location.pathname.startsWith('/gnhs-guidance');
+    const apiPath = isNested ? '/gnhs-guidance/api/import_students.php' : '/api/import_students.php';
+
+    const resp = await fetch(apiPath, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ students: _validCsvStudents })
+    });
+
+    const res = await resp.json();
+    if (res.success) {
+      document.getElementById('csvPreviewContainer').style.display = 'none';
+      const resultCard = document.getElementById('csvResultCard');
+      resultCard.style.display = 'block';
+      document.getElementById('csvResultTitle').textContent = `Success! ${res.imported} Student Accounts Created.`;
+      
+      let subMsg = `Successfully enrolled ${res.imported} out of ${res.total} students into your Advisory Class records.`;
+      if (res.skipped > 0) {
+        subMsg += ` Note: ${res.skipped} students were skipped (already registered LRN or email).`;
+      }
+      document.getElementById('csvResultSubtitle').textContent = subMsg;
+      resultCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } else {
+      alert('Import failed: ' + (res.message || 'Unknown server error.'));
+      btn.disabled = false;
+      btn.innerHTML = `<i class="fas fa-user-check"></i> Import Valid Students (${_validCsvStudents.length})`;
+    }
+  } catch(err) {
+    alert('Network or server error while executing import: ' + err.message);
+    btn.disabled = false;
+    btn.innerHTML = `<i class="fas fa-user-check"></i> Import Valid Students (${_validCsvStudents.length})`;
+  }
+}
+
+function resetCsvUpload() {
+  const fileInp = document.getElementById('csvFileInput');
+  if (fileInp) fileInp.value = '';
+  _parsedCsvStudents = [];
+  _validCsvStudents = [];
+  document.getElementById('csvPreviewContainer').style.display = 'none';
+  document.getElementById('csvResultCard').style.display = 'none';
+}
 </script>
 HTML;
 

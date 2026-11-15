@@ -19,9 +19,13 @@ try {
     // Fetch session and case data
     $session = null;
     if ($sessionId > 0) {
-        $stmt = $db->prepare("SELECT cs.*, c.case_number, c.subject AS case_subject, c.student_id AS case_student_id
+        $stmt = $db->prepare("SELECT cs.*, 
+            COALESCE(c.case_number, r.ref_number) AS case_number, 
+            COALESCE(c.subject, CONCAT('Teacher Referral: ', REPLACE(r.concern_type, '_', ' '))) AS case_subject, 
+            COALESCE(c.student_id, r.student_id, cs.student_id) AS case_student_id
             FROM counseling_sessions cs
-            JOIN cases c ON cs.case_id = c.id
+            LEFT JOIN cases c ON cs.case_id = c.id
+            LEFT JOIN referrals r ON cs.referral_id = r.id
             WHERE cs.id = ?");
         $stmt->execute([$sessionId]);
         $session = $stmt->fetch();
@@ -86,37 +90,47 @@ try {
             $updateSessionStmt->execute([$endNotes, $guidanceRec ?: null, $sessionId]);
         }
 
-        $db->prepare("UPDATE counseling_sessions SET status = 'completed' WHERE case_id = ? AND status IN ('ongoing', 'in_progress', 'scheduled')")
-           ->execute([$caseId]);
+        if ($caseId) {
+            $db->prepare("UPDATE counseling_sessions SET status = 'completed' WHERE case_id = ? AND status IN ('ongoing', 'in_progress', 'scheduled')")
+               ->execute([$caseId]);
+        }
+        if (!empty($session['referral_id'])) {
+            $db->prepare("UPDATE counseling_sessions SET status = 'completed' WHERE referral_id = ? AND status IN ('ongoing', 'in_progress', 'scheduled')")
+               ->execute([$session['referral_id']]);
+            $db->prepare("UPDATE referrals SET status = 'resolved' WHERE id = ?")
+               ->execute([$session['referral_id']]);
+        }
 
         // Save final session notes into case_notes if provided (internal, not visible to student)
-        if ($sessionNotes) {
+        if ($sessionNotes && $caseId) {
             $db->prepare("INSERT INTO case_notes (case_id, author_id, note_type, content, is_visible_to_student, created_at) VALUES (?, ?, 'session_notes', ?, 0, NOW())")
                ->execute([$caseId, $user['id'], "Session Notes: " . $sessionNotes]);
         }
 
         // Update cases table
-        $db->prepare("UPDATE cases 
-            SET status = 'resolved', 
-                resolution = ?, 
-                guidance_recommendations = ?,
-                resolution_process = 'Settled through Counseling Session',
-                sanctions = ?, 
-                resolved_at = NOW(), 
-                updated_at = NOW() 
-            WHERE id = ?")
-           ->execute([$resolution, $guidanceRec ?: null, $sanctions ?: null, $caseId]);
+        if ($caseId) {
+            $db->prepare("UPDATE cases 
+                SET status = 'resolved', 
+                    resolution = ?, 
+                    guidance_recommendations = ?,
+                    resolution_process = 'Settled through Counseling Session',
+                    sanctions = ?, 
+                    resolved_at = NOW(), 
+                    updated_at = NOW() 
+                WHERE id = ?")
+               ->execute([$resolution, $guidanceRec ?: null, $sanctions ?: null, $caseId]);
 
-        // Add resolution record in case_notes (visible to student)
-        $noteLog = "Case officially RESOLVED by Counselor {$counselorName}.\n\n• Resolution:\n{$resolution}";
-        if ($sanctions) {
-            $noteLog .= "\n\n• School Rule Sanction / Action Imposed:\n{$sanctions}";
+            // Add resolution record in case_notes (visible to student)
+            $noteLog = "Case officially RESOLVED by Counselor {$counselorName}.\n\n• Resolution:\n{$resolution}";
+            if ($sanctions) {
+                $noteLog .= "\n\n• School Rule Sanction / Action Imposed:\n{$sanctions}";
+            }
+            if ($guidanceRec) {
+                $noteLog .= "\n\n• Guidance Recommendations:\n{$guidanceRec}";
+            }
+            $db->prepare("INSERT INTO case_notes (case_id, author_id, note_type, content, is_visible_to_student, created_at) VALUES (?, ?, 'resolution', ?, 1, NOW())")
+               ->execute([$caseId, $user['id'], $noteLog]);
         }
-        if ($guidanceRec) {
-            $noteLog .= "\n\n• Guidance Recommendations:\n{$guidanceRec}";
-        }
-        $db->prepare("INSERT INTO case_notes (case_id, author_id, note_type, content, is_visible_to_student, created_at) VALUES (?, ?, 'resolution', ?, 1, NOW())")
-           ->execute([$caseId, $user['id'], $noteLog]);
 
         // Send student notification
         if ($studentId) {
@@ -142,6 +156,7 @@ try {
         $nextDate     = trim($raw['next_session_date'] ?? '');
         $nextType     = trim($raw['next_session_type'] ?? 'in-person');
         $nextLocation = trim($raw['next_session_location'] ?? 'Guidance Office');
+        $nextMeetingLink = trim($raw['next_session_meeting_link'] ?? '');
         $nextRemarks  = trim($raw['next_session_remarks'] ?? '');
 
         if (!$nextDate) {
@@ -166,42 +181,54 @@ try {
         }
 
         // Save session notes into case_notes if provided (internal, not visible to student)
-        if ($sessionNotes) {
+        if ($sessionNotes && $caseId) {
             $db->prepare("INSERT INTO case_notes (case_id, author_id, note_type, content, is_visible_to_student, created_at) VALUES (?, ?, 'session_notes', ?, 0, NOW())")
                ->execute([$caseId, $user['id'], "Session Notes: " . $sessionNotes]);
         }
 
-        // Keep case status as ongoing, update recommendations if provided
-        if ($guidanceRec) {
-            $db->prepare("UPDATE cases SET status = 'ongoing', guidance_recommendations = ?, updated_at = NOW() WHERE id = ?")
-               ->execute([$guidanceRec, $caseId]);
-            $db->prepare("INSERT INTO case_notes (case_id, author_id, note_type, content, is_visible_to_student, created_at) VALUES (?, ?, 'guidance_recommendation', ?, 1, NOW())")
-               ->execute([$caseId, $user['id'], "Guidance Recommendations: " . $guidanceRec]);
-        } else {
-            $db->prepare("UPDATE cases SET status = 'ongoing', updated_at = NOW() WHERE id = ?")
-               ->execute([$caseId]);
+        // Keep case / referral status as ongoing, update recommendations if provided
+        if ($caseId) {
+            if ($guidanceRec) {
+                $db->prepare("UPDATE cases SET status = 'ongoing', guidance_recommendations = ?, updated_at = NOW() WHERE id = ?")
+                   ->execute([$guidanceRec, $caseId]);
+                $db->prepare("INSERT INTO case_notes (case_id, author_id, note_type, content, is_visible_to_student, created_at) VALUES (?, ?, 'guidance_recommendation', ?, 1, NOW())")
+                   ->execute([$caseId, $user['id'], "Guidance Recommendations: " . $guidanceRec]);
+            } else {
+                $db->prepare("UPDATE cases SET status = 'ongoing', updated_at = NOW() WHERE id = ?")
+                   ->execute([$caseId]);
+            }
+        }
+        if (!empty($session['referral_id'])) {
+            $db->prepare("UPDATE referrals SET status = 'ongoing' WHERE id = ?")->execute([$session['referral_id']]);
         }
 
         // Insert new counseling session
-        $db->prepare("INSERT INTO counseling_sessions (case_id, student_id, counselor_id, session_date, status, session_type, location, notes, created_at) VALUES (?, ?, ?, ?, 'scheduled', ?, ?, ?, NOW())")
-           ->execute([$caseId, $studentId, $user['id'], $nextDate, $nextType, $nextLocation, $nextRemarks ?: null]);
+        $db->prepare("INSERT INTO counseling_sessions (case_id, referral_id, student_id, counselor_id, session_date, status, session_type, location, meeting_link, notes, created_at) VALUES (?, ?, ?, ?, ?, 'scheduled', ?, ?, ?, ?, NOW())")
+           ->execute([$caseId ?: null, $session['referral_id'] ?: null, $studentId, $user['id'], $nextDate, $nextType, $nextLocation, $nextMeetingLink ?: null, $nextRemarks ?: null]);
 
         $formattedDate = date('F d, Y \a\t g:i A', strtotime($nextDate));
-        $formattedMode = ucfirst(str_replace('-', ' ', $nextType));
+        $formattedMode = ($nextType === 'online' || $nextType === 'virtual') ? 'Online / Virtual' : 'In-Person';
 
         // Add record to case_notes
-        $noteLog = "Counseling session concluded for today. Case remains ONGOING.\nFollow-up session scheduled for {$formattedDate} ({$formattedMode}) at {$nextLocation}." . ($nextRemarks ? "\nRemarks: {$nextRemarks}" : "");
-        $db->prepare("INSERT INTO case_notes (case_id, author_id, note_type, content, is_visible_to_student, created_at) VALUES (?, ?, 'follow_up_scheduled', ?, 0, NOW())")
-           ->execute([$caseId, $user['id'], $noteLog]);
+        if ($caseId) {
+            $noteLog = "Counseling session concluded for today. Case remains ONGOING.\nFollow-up session scheduled for {$formattedDate} ({$formattedMode})" . (($nextType === 'online' || $nextType === 'virtual') && $nextMeetingLink ? " (Link: {$nextMeetingLink})" : " at {$nextLocation}") . ($nextRemarks ? "\nRemarks: {$nextRemarks}" : "");
+            $db->prepare("INSERT INTO case_notes (case_id, author_id, note_type, content, is_visible_to_student, created_at) VALUES (?, ?, 'follow_up_scheduled', ?, 0, NOW())")
+               ->execute([$caseId, $user['id'], $noteLog]);
+        }
 
         // Send detailed notification to student
         if ($studentId) {
             $notifTitle = "Follow-Up Counseling Session Scheduled";
-            $notifMsg   = "Your counseling session with Counselor {$counselorName} for Case #{$caseNumber} (\"{$caseSubj}\") has concluded for today.\n\nA follow-up counseling session has been scheduled:\n\n• Next Session: {$formattedDate}\n• Session Mode: {$formattedMode}\n• Location: {$nextLocation}\n";
+            $notifMsg   = "Your counseling session with Counselor {$counselorName} for " . ($caseNumber ? "#{$caseNumber}" : "your guidance record") . " (\"{$caseSubj}\") has concluded for today.\n\nA follow-up counseling session has been scheduled:\n\n• Next Session: {$formattedDate}\n• Session Mode: {$formattedMode}\n";
+            if (($nextType === 'online' || $nextType === 'virtual') && !empty($nextMeetingLink)) {
+                $notifMsg .= "• Virtual Meeting Link: {$nextMeetingLink}\n";
+            } else {
+                $notifMsg .= "• Location: {$nextLocation}\n";
+            }
             if ($nextRemarks) {
                 $notifMsg .= "• Counselor Remarks: {$nextRemarks}\n";
             }
-            $notifMsg .= "\nPlease be present at the Guidance Office at the scheduled time.";
+            $notifMsg .= "\nPlease be present and prepared at the scheduled time.";
 
             $db->prepare("INSERT INTO notifications (user_id, title, message, type, is_read, created_at) VALUES (?, ?, ?, 'session', 0, NOW())")
                ->execute([$studentId, $notifTitle, $notifMsg]);

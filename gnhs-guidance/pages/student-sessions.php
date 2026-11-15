@@ -40,14 +40,20 @@ function getStudentGuidanceRecommendations(array $s, PDO $db): string {
 // Active and ongoing sessions only (completed sessions belong in Sessions Archive)
 $sessions = $db->query("SELECT cs.*,
     u.first_name AS counselor_first, u.last_name AS counselor_last,
-    c.id AS case_id, c.case_number, c.subject AS case_subject, c.description AS case_description,
-    c.concern_type, c.priority AS case_priority, c.status AS case_status,
+    c.id AS case_id, 
+    COALESCE(c.case_number, r.ref_number, CONCAT('CS-', cs.id)) AS case_number, 
+    COALESCE(c.subject, CONCAT('Teacher Referral: ', REPLACE(r.concern_type, '_', ' '))) AS case_subject, 
+    COALESCE(c.description, r.observations) AS case_description,
+    COALESCE(c.concern_type, r.concern_type) AS concern_type, 
+    COALESCE(c.priority, r.urgency) AS case_priority, 
+    COALESCE(c.status, r.status) AS case_status,
     c.is_peer_report, c.reported_student_name, c.reported_student_grade,
     c.resolution, c.sanctions, c.guidance_recommendations,
     cs.recommendations AS session_recommendations
     FROM counseling_sessions cs 
     JOIN users u ON cs.counselor_id=u.id 
-    JOIN cases c ON cs.case_id=c.id
+    LEFT JOIN cases c ON cs.case_id=c.id
+    LEFT JOIN referrals r ON cs.referral_id=r.id
     WHERE cs.student_id=$uid AND cs.status NOT IN ('completed', 'cancelled')
     ORDER BY cs.session_date DESC")->fetchAll();
 
@@ -66,7 +72,7 @@ foreach ($sessions as $s) {
 
     $sessionData = [
         'id'                     => (int)$s['id'],
-        'case_id'                => (int)$s['case_id'],
+        'case_id'                => (int)($s['case_id'] ?? 0),
         'case_number'            => $s['case_number'],
         'case_subject'           => $s['case_subject'],
         'case_description'       => $s['case_description'],
@@ -80,6 +86,7 @@ foreach ($sessions as $s) {
         'session_time_formatted' => $dt->format('h:i A'),
         'counselor_name'         => trim($s['counselor_first'].' '.$s['counselor_last']),
         'location'               => $s['location'] ?? 'Guidance Office',
+        'meeting_link'           => $s['meeting_link'] ?? '',
         'session_type'           => ucfirst($s['session_type'] ?? 'In-person'),
         'status'                 => $s['status'],
         'recommendations'        => $recommendationsText,
@@ -92,6 +99,11 @@ foreach ($sessions as $s) {
         ? "<div style='font-size:11px;color:#be185d;margin-top:2px'><i class='fas fa-hand-holding-heart'></i> For: ".htmlspecialchars($s['reported_student_name']?:'Peer')."</div>" 
         : "";
 
+    $locDisplay = htmlspecialchars($s['location'] ?? 'Guidance Office');
+    if (!empty($s['meeting_link'])) {
+        $locDisplay .= " <a href='".htmlspecialchars($s['meeting_link'])."' target='_blank' class='btn-sm-primary' style='padding:3px 8px;font-size:11px;background:#2563eb;text-decoration:none;display:inline-flex;align-items:center;gap:3px;margin-left:4px;color:#fff' onclick='event.stopPropagation()' title='Open virtual meeting link'><i class='fas fa-video'></i> Join Link</a>";
+    }
+
     $rows .= "<tr class='session-overview-row' onclick='openSessionRowOverview(this)' data-session='{$jsonAttr}' title='Click this session line to view overview and case details'>
         <td>
           <strong style='color:var(--maroon);font-size:14px'>{$s['case_number']}</strong>
@@ -100,7 +112,7 @@ foreach ($sessions as $s) {
         <td>".$dt->format('M d, Y')."</td>
         <td style='font-weight:600'>".$dt->format('h:i A')."</td>
         <td>".htmlspecialchars($s['counselor_first'].' '.$s['counselor_last'])."</td>
-        <td><i class='fas fa-map-marker-alt' style='color:var(--maroon);font-size:11px'></i> ".htmlspecialchars($s['location'] ?? 'Guidance Office')."</td>
+        <td><i class='fas fa-map-marker-alt' style='color:var(--maroon);font-size:11px'></i> $locDisplay</td>
         <td>".ucfirst($s['session_type'] ?? 'In-person')."</td>
         <td>$statusBadge</td>
     </tr>";
@@ -267,6 +279,16 @@ function openSessionRowOverview(rowEl) {
           <label style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:2px">Session Mode</label>
           <span style="font-size:13.5px;font-weight:600;color:var(--text)"><i class="fas fa-handshake" style="color:var(--maroon);margin-right:4px"></i> \${escapeHtml(d.session_type || 'In-person')}</span>
         </div>
+        \${d.meeting_link ? `
+        <div style="grid-column: span 2; background:rgba(37,99,235,0.06); border:1.5px solid #bfdbfe; border-radius:8px; padding:12px 14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-top:6px">
+          <div>
+            <label style="font-size:11px;color:#1e40af;text-transform:uppercase;font-weight:700;display:block;margin-bottom:2px"><i class="fas fa-video"></i> Virtual Counseling Meeting Link</label>
+            <span style="font-size:13px;color:var(--text);word-break:break-all">\${escapeHtml(d.meeting_link)}</span>
+          </div>
+          <a href="\${escapeHtml(d.meeting_link)}" target="_blank" class="btn-sm-primary" style="background:#2563eb;color:#fff;text-decoration:none;display:inline-flex;align-items:center;gap:6px;padding:8px 14px;font-size:13px;font-weight:700;border-radius:6px;box-shadow:0 2px 8px rgba(37,99,235,0.3)">
+            <i class="fas fa-video"></i> Join Virtual Session &rarr;
+          </a>
+        </div>` : ''}
       </div>
     </div>
 

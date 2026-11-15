@@ -2,6 +2,15 @@
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/layout.php';
 $user = requireLogin('teacher');
+$db   = getDB();
+
+$students = $db->query("SELECT id, first_name, last_name, grade_section FROM users WHERE role='student' AND is_active=1 ORDER BY first_name ASC, last_name ASC")->fetchAll();
+$studentOpts = '';
+foreach ($students as $s) {
+    $fullName = htmlspecialchars(trim($s['first_name'] . ' ' . $s['last_name']));
+    $gs = htmlspecialchars($s['grade_section'] ?? '');
+    $studentOpts .= "<option value=\"{$fullName}\" data-grade-section=\"{$gs}\">{$fullName}" . ($gs ? " ({$gs})" : "") . "</option>";
+}
 
 $content = <<<HTML
 <div class="form-layout">
@@ -13,7 +22,10 @@ $content = <<<HTML
       <div class="form-group">
         <label>Student Full Name <span class="req">*</span></label>
         <div class="input-wrap"><i class="fas fa-user-graduate"></i>
-          <input type="text" id="studentName" placeholder="e.g. Juan Dela Cruz"/>
+          <input type="text" id="studentName" list="studentDataList" placeholder="e.g. Juan Dela Cruz" oninput="onStudentInput(this.value)" autocomplete="off"/>
+          <datalist id="studentDataList">
+            $studentOpts
+          </datalist>
         </div>
       </div>
 
@@ -235,6 +247,29 @@ function validateReferralSpam(text) {
     return { valid: false, message: 'Referral rejected: Observations contain gibberish or meaningless text. Please write valid observations.' };
   }
   return { valid: true, message: '' };
+}
+
+function onStudentInput(val) {
+  if (!val || val.length < 2) return;
+  const opts = document.querySelectorAll('#studentDataList option');
+  for (const opt of opts) {
+    if (opt.value.toLowerCase() === val.trim().toLowerCase()) {
+      const gs = opt.getAttribute('data-grade-section') || '';
+      const match = gs.match(/Grade\s*(\d+)\s*[-–]\s*(.+)/i);
+      if (match) {
+        const gEl = document.getElementById('gradeLevel');
+        if (gEl) {
+          gEl.value = match[1];
+          updateSections('sectionName');
+          setTimeout(() => {
+            const sEl = document.getElementById('sectionName');
+            if (sEl) sEl.value = match[2].trim();
+          }, 50);
+        }
+      }
+      break;
+    }
+  }
 }
 
 async function submitReferral() {

@@ -13,9 +13,13 @@ if (!$sessionId) {
 try {
     $db = getDB();
 
-    $stmt = $db->prepare("SELECT cs.*, c.case_number, c.subject AS case_subject, c.status AS case_status
+    $stmt = $db->prepare("SELECT cs.*, 
+        COALESCE(c.case_number, r.ref_number) AS case_number, 
+        COALESCE(c.subject, CONCAT('Teacher Referral: ', REPLACE(r.concern_type, '_', ' '))) AS case_subject, 
+        COALESCE(c.status, r.status) AS case_status
         FROM counseling_sessions cs
-        JOIN cases c ON cs.case_id = c.id
+        LEFT JOIN cases c ON cs.case_id = c.id
+        LEFT JOIN referrals r ON cs.referral_id = r.id
         WHERE cs.id = ?");
     $stmt->execute([$sessionId]);
     $session = $stmt->fetch();
@@ -35,16 +39,22 @@ try {
         WHERE id = ?");
     $updateStmt->execute([$now, $user['id'], $sessionId]);
 
-    // Update case status to ongoing if pending or under_review
-    if (in_array($session['case_status'], ['pending', 'under_review'])) {
+    // Update case / referral status to ongoing if pending or under_review
+    if (!empty($session['case_id']) && in_array($session['case_status'], ['pending', 'under_review'])) {
         $db->prepare("UPDATE cases SET status = 'ongoing', updated_at = NOW() WHERE id = ?")
            ->execute([$session['case_id']]);
     }
+    if (!empty($session['referral_id'])) {
+        $db->prepare("UPDATE referrals SET status = 'ongoing' WHERE id = ?")
+           ->execute([$session['referral_id']]);
+    }
 
-    // Add record note in case_notes
-    $noteContent = "In-person counseling session officially started by Counselor {$counselorName} at " . date('M d, Y g:i A') . " (" . ($session['location'] ?: 'Guidance Office') . ").";
-    $db->prepare("INSERT INTO case_notes (case_id, author_id, note_type, content, is_visible_to_student, created_at) VALUES (?, ?, 'session_started', ?, 0, NOW())")
-       ->execute([$session['case_id'], $user['id'], $noteContent]);
+    // Add record note in case_notes if case exists
+    if (!empty($session['case_id'])) {
+        $noteContent = "Counseling session officially started by Counselor {$counselorName} at " . date('M d, Y g:i A') . " (" . ($session['location'] ?: 'Guidance Office') . ").";
+        $db->prepare("INSERT INTO case_notes (case_id, author_id, note_type, content, is_visible_to_student, created_at) VALUES (?, ?, 'session_started', ?, 0, NOW())")
+           ->execute([$session['case_id'], $user['id'], $noteContent]);
+    }
 
     // Send student notification if student_id exists
     if (!empty($session['student_id'])) {

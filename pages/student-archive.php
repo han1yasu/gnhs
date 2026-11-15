@@ -106,6 +106,13 @@ ob_start();
                     <span class="badge-witness" style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;padding:5px 9px;border-radius:6px;font-weight:700;font-size:11.5px;display:inline-flex;align-items:center;gap:4px" title="Appeal under counselor review">
                       <i class="fas fa-clock-rotate-left"></i> Appealed
                     </span>
+                  <?php elseif (!empty($c['follow_up_msg'])): ?>
+                    <span class="badge-witness" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;padding:5px 9px;border-radius:6px;font-weight:700;font-size:11.5px;display:inline-flex;align-items:center;gap:4px" title="Appeal was reviewed and addressed by counselor">
+                      <i class="fas fa-check-circle"></i> Appeal Addressed
+                    </span>
+                    <button type="button" class="btn-sm-primary" style="background:var(--maroon);padding:5px 10px;font-size:12px;display:inline-flex;align-items:center;gap:5px" onclick="openAppealModal(<?= (int)$c['id'] ?>, '<?= htmlspecialchars($c['case_number']) ?>')">
+                      <i class="fas fa-reply"></i> Re-appeal
+                    </button>
                   <?php else: ?>
                     <button type="button" class="btn-sm-primary" style="background:var(--maroon);padding:5px 10px;font-size:12px;display:inline-flex;align-items:center;gap:5px" onclick="openAppealModal(<?= (int)$c['id'] ?>, '<?= htmlspecialchars($c['case_number']) ?>')">
                       <i class="fas fa-reply"></i> Appeal

@@ -12,19 +12,28 @@ try {
     $db = getDB();
 
     $stmt = $db->prepare("SELECT cs.*,
-        CASE WHEN c.is_anonymous = 1 THEN 'Anonymous Student' ELSE CONCAT(s.first_name, ' ', s.last_name) END AS student_name,
-        CASE WHEN c.is_anonymous = 1 THEN 'Confidential' ELSE s.id_number END AS id_number,
-        CASE WHEN c.is_anonymous = 1 THEN 'Confidential' ELSE s.grade_section END AS grade_section,
+        CASE 
+          WHEN c.id IS NOT NULL THEN (CASE WHEN c.is_anonymous = 1 THEN 'Anonymous Student' ELSE CONCAT(s.first_name, ' ', s.last_name) END)
+          ELSE COALESCE(CONCAT(s.first_name, ' ', s.last_name), r.student_name, 'Student')
+        END AS student_name,
+        CASE 
+          WHEN c.id IS NOT NULL THEN (CASE WHEN c.is_anonymous = 1 THEN 'Confidential' ELSE s.id_number END)
+          ELSE COALESCE(s.id_number, '—')
+        END AS id_number,
+        CASE 
+          WHEN c.id IS NOT NULL THEN (CASE WHEN c.is_anonymous = 1 THEN 'Confidential' ELSE s.grade_section END)
+          ELSE COALESCE(s.grade_section, r.grade_section, '—')
+        END AS grade_section,
         c.is_anonymous,
         c.is_peer_report,
         c.reported_student_name,
         c.reported_student_grade,
-        c.case_number,
-        c.subject AS case_subject,
-        c.concern_type,
-        c.description AS case_description,
-        c.priority AS case_priority,
-        c.status AS case_status,
+        COALESCE(c.case_number, r.ref_number) AS case_number,
+        COALESCE(c.subject, CONCAT('Teacher Referral: ', REPLACE(r.concern_type, '_', ' '))) AS case_subject,
+        COALESCE(c.concern_type, r.concern_type) AS concern_type,
+        COALESCE(c.description, r.observations) AS case_description,
+        COALESCE(c.priority, r.urgency) AS case_priority,
+        COALESCE(c.status, r.status) AS case_status,
         c.incident_date,
         c.preferred_contact,
         c.witnesses,
@@ -35,7 +44,8 @@ try {
         CONCAT(u.first_name, ' ', u.last_name) AS counselor_name
         FROM counseling_sessions cs
         LEFT JOIN users s ON cs.student_id = s.id
-        JOIN cases c ON cs.case_id = c.id
+        LEFT JOIN cases c ON cs.case_id = c.id
+        LEFT JOIN referrals r ON cs.referral_id = r.id
         LEFT JOIN users u ON cs.counselor_id = u.id
         WHERE cs.id = ?");
     $stmt->execute([$sessionId]);
@@ -55,21 +65,34 @@ try {
     $session['parsed_evidence'] = is_array($evidence) ? $evidence : [];
 
     // Fetch case notes
-    $notesStmt = $db->prepare("SELECT cn.*, CONCAT(u.first_name, ' ', u.last_name) AS author_name, u.role AS author_role
-        FROM case_notes cn
-        LEFT JOIN users u ON cn.author_id = u.id
-        WHERE cn.case_id = ?
-        ORDER BY cn.created_at ASC");
-    $notesStmt->execute([$session['case_id']]);
-    $notes = $notesStmt->fetchAll();
+    $notes = [];
+    if (!empty($session['case_id'])) {
+        $notesStmt = $db->prepare("SELECT cn.*, CONCAT(u.first_name, ' ', u.last_name) AS author_name, u.role AS author_role
+            FROM case_notes cn
+            LEFT JOIN users u ON cn.author_id = u.id
+            WHERE cn.case_id = ?
+            ORDER BY cn.created_at ASC");
+        $notesStmt->execute([$session['case_id']]);
+        $notes = $notesStmt->fetchAll();
+    }
 
-    // Fetch all sessions associated with this case
-    $allSessionsStmt = $db->prepare("SELECT id, session_date, status, session_type, location, notes, started_at, ended_at
-        FROM counseling_sessions
-        WHERE case_id = ?
-        ORDER BY session_date ASC");
-    $allSessionsStmt->execute([$session['case_id']]);
-    $allSessions = $allSessionsStmt->fetchAll();
+    // Fetch all sessions associated with this case or referral
+    if (!empty($session['case_id'])) {
+        $allSessionsStmt = $db->prepare("SELECT id, session_date, status, session_type, location, meeting_link, notes, started_at, ended_at
+            FROM counseling_sessions
+            WHERE case_id = ?
+            ORDER BY session_date ASC");
+        $allSessionsStmt->execute([$session['case_id']]);
+    } elseif (!empty($session['referral_id'])) {
+        $allSessionsStmt = $db->prepare("SELECT id, session_date, status, session_type, location, meeting_link, notes, started_at, ended_at
+            FROM counseling_sessions
+            WHERE referral_id = ?
+            ORDER BY session_date ASC");
+        $allSessionsStmt->execute([$session['referral_id']]);
+    } else {
+        $allSessionsStmt = null;
+    }
+    $allSessions = $allSessionsStmt ? $allSessionsStmt->fetchAll() : [];
 
     jsonOut([
         'success'      => true,

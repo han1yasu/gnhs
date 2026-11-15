@@ -35,13 +35,24 @@ if ($search) {
 }
 
 $sessions = $db->query("SELECT cs.*,
-    CASE WHEN c.is_anonymous = 1 THEN 'Anonymous Student' ELSE CONCAT(s.first_name,' ',s.last_name) END AS student_name,
-    CASE WHEN c.is_anonymous = 1 THEN 'Confidential' ELSE s.grade_section END AS grade_section,
-    c.case_number, c.subject AS case_subject, c.concern_type, c.priority AS case_priority,
-    c.is_peer_report, c.reported_student_name, c.reported_student_grade
+    CASE 
+      WHEN c.id IS NOT NULL THEN (CASE WHEN c.is_anonymous = 1 THEN 'Anonymous Student' ELSE CONCAT(s.first_name,' ',s.last_name) END)
+      ELSE COALESCE(CONCAT(s.first_name,' ',s.last_name), r.student_name, 'Student')
+    END AS student_name,
+    CASE 
+      WHEN c.id IS NOT NULL THEN (CASE WHEN c.is_anonymous = 1 THEN 'Confidential' ELSE s.grade_section END)
+      ELSE COALESCE(s.grade_section, r.grade_section, '—')
+    END AS grade_section,
+    COALESCE(c.case_number, r.ref_number, CONCAT('CS-', cs.id)) AS case_number,
+    COALESCE(c.subject, CONCAT('Teacher Referral: ', REPLACE(r.concern_type, '_', ' '))) AS case_subject,
+    COALESCE(c.concern_type, r.concern_type) AS concern_type,
+    COALESCE(c.priority, r.urgency) AS case_priority,
+    c.is_peer_report, c.reported_student_name, c.reported_student_grade,
+    r.ref_number
     FROM counseling_sessions cs
     LEFT JOIN users s ON cs.student_id=s.id
-    JOIN cases c ON cs.case_id=c.id
+    LEFT JOIN cases c ON cs.case_id=c.id
+    LEFT JOIN referrals r ON cs.referral_id=r.id
     $where
     ORDER BY 
       CASE WHEN cs.status = 'in_progress' THEN 1
@@ -114,19 +125,28 @@ foreach ($sessions as $s) {
     ]));
     $searchData = htmlspecialchars(strtolower(implode(' ', $searchTokens)), ENT_QUOTES);
 
+    $chatUrl = !empty($s['case_id']) 
+        ? "admin-chats.php?case_id={$s['case_id']}" 
+        : (!empty($s['referral_id']) ? "admin-referrals-chat.php?ref_id={$s['referral_id']}" : "admin-sessions.php");
+
+    $locStr = htmlspecialchars($s['location'] ?? 'Guidance Office');
+    if (!empty($s['meeting_link'])) {
+        $locStr .= " <a href='".htmlspecialchars($s['meeting_link'])."' target='_blank' style='color:#2563eb;font-weight:700;margin-left:4px;display:inline-flex;align-items:center;gap:3px;text-decoration:none' onclick='event.stopPropagation()' title='Open virtual meeting link'><i class='fas fa-video'></i> Link</a>";
+    }
+
     $rows .= "<tr class='session-row' data-search=\"$searchData\" data-status=\"{$s['status']}\" style='cursor:pointer' onclick='if(!event.target.closest(\"select\") && !event.target.closest(\"button\")) openSessionConsole({$s['id']})'>
         <td><strong style='color:var(--maroon);font-size:14px'>{$s['case_number']}</strong></td>
         <td>$studentCol</td>
         <td>".htmlspecialchars($s['grade_section']??'—')."</td>
         <td>".$dt->format('M d, Y')."</td>
         <td style='font-weight:600'>".$dt->format('h:i A')."</td>
-        <td><i class='fas fa-map-marker-alt' style='color:var(--maroon);font-size:11px'></i> ".htmlspecialchars($s['location'] ?? 'Guidance Office')."</td>
+        <td><i class='fas fa-map-marker-alt' style='color:var(--maroon);font-size:11px'></i> $locStr</td>
         <td>".ucfirst($s['session_type'] ?? 'In-person')."</td>
         <td>$statusBadge</td>
         <td>
           <div style='display:inline-flex;gap:6px;align-items:center'>
             $actionBtn
-            <button type='button' class='btn-row-action btn-action-chat' onclick=\"event.stopPropagation(); window.location.href='admin-chats.php?case_id={$s['case_id']}'\" title='Open chat with student' style='font-size:11.5px;padding:5px 9px'>
+            <button type='button' class='btn-row-action btn-action-chat' onclick=\"event.stopPropagation(); window.location.href='{$chatUrl}'\" title='Open chat' style='font-size:11.5px;padding:5px 9px'>
               <i class='fas fa-comment-dots'></i> Chat
             </button>
             <select class='status-select' style='font-size:12px;padding:5px 8px' onchange='updateSessionStatus({$s['id']},this.value,event)'>
@@ -286,9 +306,9 @@ $content = <<<HTML
         <div class="form-group">
           <label>Session Mode</label>
           <div class="select-wrap"><i class="fas fa-video"></i>
-            <select id="nextSessionType">
+            <select id="nextSessionType" onchange="const isO = (this.value==='online'||this.value==='virtual'); document.getElementById('nextSessionMeetingLinkGroup').style.display = isO ? 'block' : 'none'; if(isO && document.getElementById('nextSessionLocation').value==='Guidance Office'){document.getElementById('nextSessionLocation').value='Virtual Online Meeting';}">
               <option value="in-person">In-Person</option>
-              <option value="online">Online</option>
+              <option value="online">Online / Virtual</option>
             </select>
           </div>
         </div>
@@ -296,6 +316,11 @@ $content = <<<HTML
       <div class="form-group">
         <label>Location / Room</label>
         <div class="input-wrap"><i class="fas fa-map-marker-alt"></i><input type="text" id="nextSessionLocation" value="Guidance Office"></div>
+      </div>
+      <div class="form-group" id="nextSessionMeetingLinkGroup" style="display:none;margin-bottom:14px">
+        <label>Virtual Meeting Link <span class="req">*</span> <span style="font-size:11px;font-weight:normal;color:var(--text-3)">(Google Meet, Zoom, Teams, etc.)</span></label>
+        <div class="input-wrap"><i class="fas fa-link"></i><input type="url" id="nextSessionMeetingLink" placeholder="e.g. https://meet.google.com/xyz-abc"></div>
+        <small style="font-size:11.5px;color:var(--text-3);margin-top:4px;display:block">The student will receive this meeting link directly in their notification and dashboard.</small>
       </div>
       <div class="form-group" style="margin-bottom:0">
         <label>Next Session Remarks / Objectives</label>
@@ -725,6 +750,8 @@ function renderSessionConsole(data) {
         <span><i class="fas fa-graduation-cap"></i> \${escapeHtml(s.grade_section || '—')}</span>
         <span><i class="fas fa-id-card"></i> ID: \${escapeHtml(s.id_number || '—')}</span>
         <span><i class="fas fa-calendar"></i> Appointed: \${formattedDate} at \${formattedTime}</span>
+        <span><i class="fas fa-map-marker-alt"></i> \${escapeHtml(s.location || 'Guidance Office')} (\${escapeHtml(s.session_type || 'In-person')})</span>
+        \${s.meeting_link ? `<a href="\${escapeHtml(s.meeting_link)}" target="_blank" class="btn-sm-primary" style="background:#2563eb;color:#fff;text-decoration:none;display:inline-flex;align-items:center;gap:4px;padding:3px 9px;font-size:11.5px"><i class="fas fa-video"></i> Open Meeting Link</a>` : ''}
       </div>
     </div>
 
@@ -1365,8 +1392,17 @@ async function submitEndSessionDecision() {
     payload.next_session_date     = nextDate;
     payload.next_session_type     = document.getElementById('nextSessionType').value;
     payload.next_session_location = document.getElementById('nextSessionLocation').value.trim();
+    payload.next_session_meeting_link = document.getElementById('nextSessionMeetingLink')?.value.trim() || '';
     payload.next_session_remarks  = document.getElementById('nextSessionRemarks').value.trim();
     payload.guidance_recommendations = document.getElementById('nextSessionGuidanceRec')?.value.trim() || '';
+
+    if ((payload.next_session_type === 'online' || payload.next_session_type === 'virtual') && !payload.next_session_meeting_link) {
+      showToast('Please provide a virtual meeting link (e.g. Google Meet or Zoom) for online counseling.', 'error');
+      confirmBtn.disabled = false;
+      confirmBtn.innerHTML = '<i class="fas fa-calendar-check"></i> Save Schedule & Continue Case';
+      document.getElementById('nextSessionMeetingLink')?.focus();
+      return;
+    }
   } else {
     const resolution = document.getElementById('caseResolutionText').value.trim();
     if (!resolution) {

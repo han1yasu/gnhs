@@ -58,6 +58,9 @@ if (!$caseRows) $caseRows = "<tr><td colspan='6' class='empty-table-cell'>No cas
 $sessionHtml = '';
 if ($session) {
     $dt = new DateTime($session['session_date']);
+    $joinBtn = !empty($session['meeting_link']) 
+        ? "<div style='margin-top:8px'><a href='".htmlspecialchars($session['meeting_link'])."' target='_blank' class='btn-sm-primary' style='padding:5px 12px;font-size:12px;background:#2563eb;text-decoration:none;display:inline-flex;align-items:center;gap:6px;border-radius:6px;box-shadow:0 2px 6px rgba(37,99,235,0.25);color:#fff'><i class='fas fa-video'></i> Join Virtual Meeting</a></div>" 
+        : "";
     $sessionHtml = "<div class='session-card'>
         <div class='session-date'><span class='s-month'>".$dt->format('M')."</span><span class='s-day'>".$dt->format('d')."</span></div>
         <div class='session-info'>
@@ -65,6 +68,7 @@ if ($session) {
           <p>with ".htmlspecialchars($session['first_name'].' '.$session['last_name'])."</p>
           <div class='s-time'><i class='fas fa-clock'></i> ".$dt->format('h:i A')."</div>
           <div class='s-loc'><i class='fas fa-map-marker-alt'></i> ".htmlspecialchars($session['location'])."</div>
+          $joinBtn
         </div>
     </div>";
 } else {

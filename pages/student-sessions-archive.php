@@ -34,14 +34,20 @@ function getStudentGuidanceRecommendations(array $s, PDO $db): string {
 // Completed counseling sessions
 $sessions = $db->query("SELECT cs.*,
     u.first_name AS counselor_first, u.last_name AS counselor_last,
-    c.id AS case_id, c.case_number, c.subject AS case_subject, c.description AS case_description,
-    c.concern_type, c.priority AS case_priority, c.status AS case_status,
+    c.id AS case_id, 
+    COALESCE(c.case_number, r.ref_number, CONCAT('CS-', cs.id)) AS case_number, 
+    COALESCE(c.subject, CONCAT('Teacher Referral: ', REPLACE(r.concern_type, '_', ' '))) AS case_subject, 
+    COALESCE(c.description, r.observations) AS case_description,
+    COALESCE(c.concern_type, r.concern_type) AS concern_type, 
+    COALESCE(c.priority, r.urgency) AS case_priority, 
+    COALESCE(c.status, r.status) AS case_status,
     c.is_peer_report, c.reported_student_name, c.reported_student_grade,
     c.resolution, c.sanctions, c.guidance_recommendations,
     cs.recommendations AS session_recommendations
     FROM counseling_sessions cs 
     JOIN users u ON cs.counselor_id=u.id 
-    JOIN cases c ON cs.case_id=c.id
+    LEFT JOIN cases c ON cs.case_id=c.id
+    LEFT JOIN referrals r ON cs.referral_id=r.id
     WHERE cs.student_id=$uid AND cs.status = 'completed'
     ORDER BY cs.session_date DESC")->fetchAll();
 
@@ -54,7 +60,7 @@ foreach ($sessions as $s) {
 
     $sessionData = [
         'id'                     => (int)$s['id'],
-        'case_id'                => (int)$s['case_id'],
+        'case_id'                => (int)($s['case_id'] ?? 0),
         'case_number'            => $s['case_number'],
         'case_subject'           => $s['case_subject'],
         'case_description'       => $s['case_description'],
@@ -68,6 +74,7 @@ foreach ($sessions as $s) {
         'session_time_formatted' => $dt->format('h:i A'),
         'counselor_name'         => trim($s['counselor_first'].' '.$s['counselor_last']),
         'location'               => $s['location'] ?? 'Guidance Office',
+        'meeting_link'           => $s['meeting_link'] ?? '',
         'session_type'           => ucfirst($s['session_type'] ?? 'In-person'),
         'status'                 => $s['status'],
         'recommendations'        => $recommendationsText,

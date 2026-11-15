@@ -1394,18 +1394,25 @@ function buildReviewModal(c, notes, session) {
         <label>Schedule Counseling Session <span style="font-size:11px;font-weight:normal;color:var(--text-3)">(Present or future date/time only)</span></label>
         <div class="input-wrap"><i class="fas fa-calendar"></i><input type="datetime-local" id="session-dt" min="${new Date(Date.now() - new Date().getTimezoneOffset()*60000).toISOString().slice(0, 16)}"></div>
       </div>
-      <div class="form-group" style="margin-top:10px">
-        <label>Session Type</label>
-        <div class="select-wrap"><i class="fas fa-video"></i>
-          <select id="session-type-sel">
-            <option value="in-person">In-Person</option>
-            <option value="online">Online</option>
-          </select>
+      <div class="form-row" style="display:flex;gap:10px;margin-top:10px">
+        <div class="form-group" style="flex:1">
+          <label>Session Mode</label>
+          <div class="select-wrap"><i class="fas fa-video"></i>
+            <select id="session-type-sel" onchange="const isO = (this.value==='online'||this.value==='virtual'); if($('caseMeetingLinkGroup')) $('caseMeetingLinkGroup').style.display = isO ? 'block' : 'none'; if(isO && $('session-location') && $('session-location').value==='Guidance Office'){$('session-location').value='Virtual Online Meeting';}">
+              <option value="in-person">In-Person</option>
+              <option value="online">Online / Virtual</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group" style="flex:1">
+          <label>Location / Room</label>
+          <div class="input-wrap"><i class="fas fa-map-marker-alt"></i><input type="text" id="session-location" value="Guidance Office" placeholder="Guidance Office"></div>
         </div>
       </div>
-      <div class="form-group" style="margin-top:10px">
-        <label>Location / Link</label>
-        <div class="input-wrap"><i class="fas fa-map-marker-alt"></i><input type="text" id="session-location" value="Guidance Office" placeholder="Guidance Office or Zoom Link"></div>
+      <div class="form-group" id="caseMeetingLinkGroup" style="display:none;margin-top:10px">
+        <label>Virtual Meeting Link <span style="font-size:11px;font-weight:normal;color:var(--text-3)">(Google Meet, Zoom, Teams, etc.)</span></label>
+        <div class="input-wrap"><i class="fas fa-link"></i><input type="url" id="session-meeting-link" placeholder="e.g. https://meet.google.com/xyz-abc"></div>
+        <small style="font-size:11.5px;color:var(--text-3);margin-top:4px;display:block">The student will receive this meeting link directly in their notification and counseling dashboard.</small>
       </div>
       <div class="form-group" style="margin-top:20px;border-top:1px solid var(--border);padding-top:20px;display:flex;flex-direction:column;gap:10px">
         <button type="button" class="btn-message-student" onclick="goToCaseChat(${c.id || _activeCaseId})">
@@ -1435,6 +1442,7 @@ async function saveCase() {
   const session  = $('session-dt')?.value;
   const sessionType = $('session-type-sel')?.value || 'in-person';
   const location    = $('session-location')?.value || 'Guidance Office';
+  const meetingLink = $('session-meeting-link')?.value.trim() || '';
 
   if (status === 'resolved' && (!_currentReviewCase || !_currentReviewCase.resolution)) {
     openCaseResolutionModal();
@@ -1449,6 +1457,11 @@ async function saveCase() {
       $('session-dt')?.focus();
       return;
     }
+    if ((sessionType === 'online' || sessionType === 'virtual') && !meetingLink) {
+      showToast('Please provide a virtual meeting link (e.g. Google Meet or Zoom) for online counseling.', 'error');
+      $('session-meeting-link')?.focus();
+      return;
+    }
   }
 
   const btn = $('saveCaseBtn');
@@ -1459,7 +1472,7 @@ async function saveCase() {
       ? '/gnhs-guidance/gnhs-guidance/api/update_case.php'
       : '/gnhs-guidance/api/update_case.php';
     const res = await apiPost(apiUrl, {
-      case_id:_activeCaseId, priority, status, session_date:session, session_type:sessionType, location:location
+      case_id:_activeCaseId, priority, status, session_date:session, session_type:sessionType, location:location, meeting_link:meetingLink
     });
     if (res.success) {
       $('caseReviewModal').classList.add('hidden');

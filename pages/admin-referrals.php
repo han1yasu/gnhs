@@ -30,8 +30,15 @@ if ($search) {
     )";
 }
 
-$refs = $db->query("SELECT r.*, CONCAT(t.first_name,' ',t.last_name) AS teacher_name, t.email AS teacher_email
-    FROM referrals r JOIN users t ON r.teacher_id=t.id
+$refs = $db->query("SELECT r.*, CONCAT(t.first_name,' ',t.last_name) AS teacher_name, t.email AS teacher_email,
+    cs.id AS session_id, cs.session_date, cs.session_type, cs.location, cs.meeting_link, cs.status AS session_status
+    FROM referrals r 
+    JOIN users t ON r.teacher_id=t.id
+    LEFT JOIN counseling_sessions cs ON cs.id = (
+        SELECT id FROM counseling_sessions 
+        WHERE referral_id = r.id AND status IN ('scheduled', 'in_progress', 'ongoing') 
+        ORDER BY session_date DESC LIMIT 1
+    )
     $where ORDER BY
     FIELD(r.urgency,'urgent','moderate','low'),
     r.submitted_at DESC")->fetchAll();
@@ -70,6 +77,12 @@ foreach ($refs as $r) {
         'teacher_name' => $r['teacher_name'],
         'teacher_email'=> $r['teacher_email'] ?? '',
         'submitted_at' => date('M d, Y g:i A', strtotime($r['submitted_at'])),
+        'session_id'   => !empty($r['session_id']) ? (int)$r['session_id'] : null,
+        'session_date' => $r['session_date'] ?? null,
+        'session_type' => $r['session_type'] ?? null,
+        'location'     => $r['location'] ?? null,
+        'meeting_link' => $r['meeting_link'] ?? null,
+        'session_status' => $r['session_status'] ?? null,
     ], JSON_HEX_QUOT | JSON_HEX_APOS);
 
     $rows .= "<tr>
@@ -158,6 +171,63 @@ $content = <<<HTML
     <div id="refModalBody"></div>
   </div>
 </div>
+
+<!-- Schedule Referral Counseling Session Modal -->
+<div class="modal-overlay hidden" id="scheduleRefModal" onclick="if(event.target.id==='scheduleRefModal')this.classList.add('hidden')">
+  <div class="modal-box" style="max-width:560px;width:95%">
+    <button class="modal-close" onclick="document.getElementById('scheduleRefModal').classList.add('hidden')"><i class="fas fa-times"></i></button>
+    <div style="width:48px;height:48px;border-radius:12px;background:rgba(85,0,0,0.08);color:var(--maroon);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:20px">
+      <i class="fas fa-calendar-plus"></i>
+    </div>
+    <h2 class="modal-title" style="text-align:center">Schedule Counseling Session</h2>
+    <p class="modal-sub" id="schedRefSub" style="text-align:center;margin-bottom:18px"></p>
+
+    <input type="hidden" id="schedRefId">
+
+    <div class="form-group" style="margin-bottom:14px">
+      <label>Session Date &amp; Time <span class="req">*</span></label>
+      <div class="input-wrap"><i class="fas fa-calendar-alt"></i>
+        <input type="datetime-local" id="schedRefDate">
+      </div>
+    </div>
+
+    <div class="form-row" style="display:flex;gap:12px;margin-bottom:14px">
+      <div class="form-group" style="flex:1">
+        <label>Session Mode <span class="req">*</span></label>
+        <div class="select-wrap"><i class="fas fa-video"></i>
+          <select id="schedRefType" onchange="toggleRefMeetingField(this.value)">
+            <option value="in-person">In-Person</option>
+            <option value="virtual">Virtual / Online</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group" style="flex:1" id="schedRefLocGroup">
+        <label>Location / Room</label>
+        <div class="input-wrap"><i class="fas fa-map-marker-alt"></i>
+          <input type="text" id="schedRefLocation" value="Guidance Office" placeholder="Guidance Office Room 204">
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group" id="schedRefMeetingLinkGroup" style="display:none;margin-bottom:14px">
+      <label>Virtual Meeting Link <span class="req">*</span> <span style="font-size:11px;font-weight:normal;color:var(--text-3)">(Google Meet, Zoom, Teams, etc.)</span></label>
+      <div class="input-wrap"><i class="fas fa-link"></i>
+        <input type="url" id="schedRefMeetingLink" placeholder="e.g. https://meet.google.com/xyz-abc">
+      </div>
+      <small style="font-size:11.5px;color:var(--text-3);margin-top:4px;display:block">The student and teacher will receive this link directly in their notification and counseling dashboard.</small>
+    </div>
+
+    <div class="form-group" style="margin-bottom:18px">
+      <label>Counselor Remarks / Objectives (Optional)</label>
+      <textarea id="schedRefNotes" rows="3" class="form-control" style="width:100%;padding:10px;border-radius:8px;border:1.5px solid var(--border);font-size:13.5px;box-sizing:border-box" placeholder="Session goals, preparation instructions, or notes for the student..."></textarea>
+    </div>
+
+    <div style="display:flex;gap:12px">
+      <button type="button" class="btn-secondary" style="flex:1" onclick="document.getElementById('scheduleRefModal').classList.add('hidden')">Cancel</button>
+      <button type="button" class="btn-primary" id="btnConfirmSchedRef" style="flex:1" onclick="submitScheduleReferral()"><i class="fas fa-calendar-check"></i> Set Schedule</button>
+    </div>
+  </div>
+</div>
 HTML;
 
 // JS is outside heredoc to prevent PHP variable interpolation issues
@@ -220,6 +290,28 @@ function openRefModal(btn) {
             <i class="fas fa-comment-dots"></i> Message Teacher
           </button>
         </div>
+
+        <!-- Counseling Session Scheduling -->
+        <div class="form-group" style="margin-top:20px;border-top:1px solid var(--border);padding-top:18px">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-3);margin-bottom:8px">
+            <i class="fas fa-calendar-alt" style="color:var(--maroon)"></i> Counseling Session
+          </label>
+          ${ref.session_id ? `
+            <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px;margin-bottom:10px">
+              <div style="font-size:11px;font-weight:700;color:#1d4ed8;text-transform:uppercase;margin-bottom:3px">
+                <i class="fas fa-calendar-check"></i> Session Appointed (${ref.session_status || "Scheduled"})
+              </div>
+              <div style="font-size:13px;font-weight:700;color:var(--text)">${ref.session_date ? new Date(ref.session_date).toLocaleString([], {month:"short", day:"numeric", year:"numeric", hour:"2-digit", minute:"2-digit"}) : "Scheduled"}</div>
+              <div style="font-size:12px;color:var(--text-2);margin-top:3px">
+                Mode: <strong>${ref.session_type || "In-person"}</strong> &bull; ${ref.meeting_link ? `<a href="${ref.meeting_link}" target="_blank" style="color:#2563eb;font-weight:700"><i class="fas fa-video"></i> Join Virtual Link</a>` : (ref.location || "Guidance Office")}
+              </div>
+            </div>
+          ` : ""}
+          <button type="button" class="btn-primary" style="width:100%;background:var(--maroon);display:flex;align-items:center;justify-content:center;gap:8px;padding:10px 14px;font-size:13px" onclick="openScheduleRefModal(${ref.id}, \`${ref.student_name.replace(/[`\\\"]/g, "")}\`, \`${ref.grade_section.replace(/[`\\\"]/g, "")}\`)">
+            <i class="fas fa-calendar-plus"></i> ${ref.session_id ? "Reschedule / Set Session" : "Set Schedule (Counseling)"}
+          </button>
+        </div>
+
         <div class="review-actions" style="margin-top:16px;display:flex;gap:10px;">
           <button class="btn-secondary" style="flex:1" onclick="document.getElementById(\'refModal\').classList.add(\'hidden\')"><i class="fas fa-times"></i> Cancel</button>
           <button class="btn-primary" style="flex:1" id="saveRefBtn" onclick="updateRefStatus(${ref.id})"><i class="fas fa-save"></i> Save</button>
@@ -274,6 +366,104 @@ async function archiveReferralDirect(id) {
     }
   } catch(e) {
     showToast("Error archiving referral.", "error");
+  }
+}
+
+function openScheduleRefModal(refId, studentName, gradeSection) {
+  document.getElementById("schedRefId").value = refId;
+  document.getElementById("schedRefSub").textContent = "Student: " + studentName + " (" + gradeSection + ")";
+  
+  const nowLocal = new Date(Date.now() - new Date().getTimezoneOffset()*60000).toISOString().slice(0, 16);
+  const dtInput = document.getElementById("schedRefDate");
+  dtInput.min = nowLocal;
+  dtInput.value = "";
+  
+  document.getElementById("schedRefType").value = "in-person";
+  document.getElementById("schedRefLocation").value = "Guidance Office";
+  document.getElementById("schedRefMeetingLink").value = "";
+  document.getElementById("schedRefNotes").value = "";
+  document.getElementById("schedRefMeetingLinkGroup").style.display = "none";
+  document.getElementById("schedRefLocGroup").style.display = "block";
+  
+  document.getElementById("scheduleRefModal").classList.remove("hidden");
+}
+
+function toggleRefMeetingField(val) {
+  const isOnline = (val === "virtual" || val === "online");
+  document.getElementById("schedRefMeetingLinkGroup").style.display = isOnline ? "block" : "none";
+  if (isOnline) {
+    if (document.getElementById("schedRefLocation").value === "Guidance Office") {
+      document.getElementById("schedRefLocation").value = "Virtual Online Meeting";
+    }
+  } else {
+    if (document.getElementById("schedRefLocation").value === "Virtual Online Meeting") {
+      document.getElementById("schedRefLocation").value = "Guidance Office";
+    }
+  }
+}
+
+async function submitScheduleReferral() {
+  const refId = document.getElementById("schedRefId").value;
+  const sessionDate = document.getElementById("schedRefDate").value;
+  const sessionType = document.getElementById("schedRefType").value;
+  const location = document.getElementById("schedRefLocation").value.trim() || "Guidance Office";
+  const meetingLink = document.getElementById("schedRefMeetingLink").value.trim();
+  const notes = document.getElementById("schedRefNotes").value.trim();
+
+  if (!sessionDate) {
+    showToast("Please select a session date and time.", "error");
+    document.getElementById("schedRefDate").focus();
+    return;
+  }
+
+  const selectedDt = new Date(sessionDate);
+  if (selectedDt < new Date()) {
+    showToast("Session cannot be scheduled in the past. Please select a present or future date and time.", "error");
+    document.getElementById("schedRefDate").focus();
+    return;
+  }
+
+  if ((sessionType === "virtual" || sessionType === "online") && !meetingLink) {
+    showToast("Please provide a virtual meeting link (e.g. Google Meet or Zoom) for online counseling.", "error");
+    document.getElementById("schedRefMeetingLink").focus();
+    return;
+  }
+
+  const btn = document.getElementById("btnConfirmSchedRef");
+  btn.disabled = true;
+  btn.innerHTML = "<span class=\"spinner\"></span> Scheduling…";
+
+  try {
+    const apiUrl = window.location.pathname.includes("/gnhs-guidance/gnhs-guidance/")
+      ? "/gnhs-guidance/gnhs-guidance/api/schedule_referral_session.php"
+      : "/gnhs-guidance/api/schedule_referral_session.php";
+    const r = await fetch(apiUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        referral_id: refId,
+        session_date: sessionDate,
+        session_type: sessionType,
+        location: location,
+        meeting_link: meetingLink,
+        notes: notes
+      })
+    });
+    const d = await r.json();
+    if (d.success) {
+      showToast(d.message || "Counseling session scheduled successfully!", "success");
+      document.getElementById("scheduleRefModal").classList.add("hidden");
+      document.getElementById("refModal").classList.add("hidden");
+      setTimeout(() => window.location.reload(), 1200);
+    } else {
+      showToast(d.message || "Failed to schedule session.", "error");
+      btn.disabled = false;
+      btn.innerHTML = "<i class=\"fas fa-calendar-check\"></i> Set Schedule";
+    }
+  } catch(e) {
+    showToast("Error scheduling session.", "error");
+    btn.disabled = false;
+    btn.innerHTML = "<i class=\"fas fa-calendar-check\"></i> Set Schedule";
   }
 }
 </script>';

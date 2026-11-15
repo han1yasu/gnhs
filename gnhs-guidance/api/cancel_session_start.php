@@ -13,9 +13,13 @@ if (!$sessionId) {
 try {
     $db = getDB();
 
-    $stmt = $db->prepare("SELECT cs.*, c.case_number, c.subject AS case_subject, c.status AS case_status
+    $stmt = $db->prepare("SELECT cs.*, 
+        COALESCE(c.case_number, r.ref_number) AS case_number, 
+        COALESCE(c.subject, CONCAT('Teacher Referral: ', REPLACE(r.concern_type, '_', ' '))) AS case_subject, 
+        COALESCE(c.status, r.status) AS case_status
         FROM counseling_sessions cs
-        JOIN cases c ON cs.case_id = c.id
+        LEFT JOIN cases c ON cs.case_id = c.id
+        LEFT JOIN referrals r ON cs.referral_id = r.id
         WHERE cs.id = ?");
     $stmt->execute([$sessionId]);
     $session = $stmt->fetch();

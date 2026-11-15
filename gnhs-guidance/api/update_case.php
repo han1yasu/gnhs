@@ -10,6 +10,7 @@ $status   = trim($raw['status']       ?? '');
 $session  = trim($raw['session_date'] ?? '');
 $sessionType = trim($raw['session_type'] ?? 'in-person');
 $location = trim($raw['location'] ?? 'Guidance Office');
+$meetingLink = trim($raw['meeting_link'] ?? '');
 
 $resolution        = trim($raw['resolution'] ?? '');
 $resolutionProcess = trim($raw['resolution_process'] ?? '');
@@ -157,15 +158,21 @@ try {
             jsonOut(['success'=>false, 'message'=>'Counseling session cannot be scheduled in the past. Please select a present or future date and time.']);
         }
 
-        $db->prepare("INSERT INTO counseling_sessions (case_id,student_id,counselor_id,session_date,status,session_type,location,created_at) VALUES (?,?,?,?,'scheduled',?,?,NOW())")
-           ->execute([$caseId, $studentId, $user['id'], $session, $sessionType, $location]);
+        $db->prepare("INSERT INTO counseling_sessions (case_id,student_id,counselor_id,session_date,status,session_type,location,meeting_link,created_at) VALUES (?,?,?,?,'scheduled',?,?,?,NOW())")
+           ->execute([$caseId, $studentId, $user['id'], $session, $sessionType, $location, $meetingLink ?: null]);
 
         if ($studentId) {
             $formattedDate = date('F d, Y \a\t g:i A', $sessionTimestamp);
-            $formattedMode = ucfirst(str_replace('-', ' ', $sessionType));
+            $formattedMode = ($sessionType === 'online' || $sessionType === 'virtual') ? 'Online / Virtual' : 'In-Person';
 
             $sessionTitle = 'Counseling Session Scheduled';
-            $sessionMsg   = "A counseling session for Case #{$caseNumber} (\"{$caseSubject}\") has been scheduled with Counselor {$counselorName}.\n\n• Date & Time: {$formattedDate}\n• Session Mode: {$formattedMode}\n• Location / Link: {$location}\n\nPlease attend punctually at the scheduled date and time.";
+            $sessionMsg   = "A counseling session for Case #{$caseNumber} (\"{$caseSubject}\") has been scheduled with Counselor {$counselorName}.\n\n• Date & Time: {$formattedDate}\n• Session Mode: {$formattedMode}\n";
+            if (($sessionType === 'online' || $sessionType === 'virtual') && !empty($meetingLink)) {
+                $sessionMsg .= "• Virtual Meeting Link: {$meetingLink}\n";
+            } else {
+                $sessionMsg .= "• Location: {$location}\n";
+            }
+            $sessionMsg .= "\nPlease attend punctually at the scheduled date and time.";
 
             $db->prepare("INSERT INTO notifications (user_id, title, message, type, is_read, created_at) VALUES (?, ?, ?, 'session', 0, NOW())")
                ->execute([$studentId, $sessionTitle, $sessionMsg]);

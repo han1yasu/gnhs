@@ -43,15 +43,25 @@ if ($search) {
 }
 
 $sessions = $db->query("SELECT cs.*,
-    CASE WHEN c.is_anonymous = 1 THEN 'Anonymous Student' ELSE CONCAT(s.first_name,' ',s.last_name) END AS student_name,
-    CASE WHEN c.is_anonymous = 1 THEN 'Confidential' ELSE s.grade_section END AS grade_section,
+    CASE 
+      WHEN c.id IS NOT NULL THEN (CASE WHEN c.is_anonymous = 1 THEN 'Anonymous Student' ELSE CONCAT(s.first_name,' ',s.last_name) END)
+      ELSE COALESCE(CONCAT(s.first_name,' ',s.last_name), r.student_name, 'Student')
+    END AS student_name,
+    CASE 
+      WHEN c.id IS NOT NULL THEN (CASE WHEN c.is_anonymous = 1 THEN 'Confidential' ELSE s.grade_section END)
+      ELSE COALESCE(s.grade_section, r.grade_section, '—')
+    END AS grade_section,
     s.id_number,
-    c.case_number, c.subject AS case_subject, c.concern_type, c.priority AS case_priority,
+    COALESCE(c.case_number, r.ref_number, CONCAT('CS-', cs.id)) AS case_number,
+    COALESCE(c.subject, CONCAT('Teacher Referral: ', REPLACE(r.concern_type, '_', ' '))) AS case_subject,
+    COALESCE(c.concern_type, r.concern_type) AS concern_type,
+    COALESCE(c.priority, r.urgency) AS case_priority,
     c.is_peer_report, c.reported_student_name, c.reported_student_grade,
     c.resolution, c.sanctions, c.resolution_process, c.resolved_at
     FROM counseling_sessions cs
     LEFT JOIN users s ON cs.student_id=s.id
-    JOIN cases c ON cs.case_id=c.id
+    LEFT JOIN cases c ON cs.case_id=c.id
+    LEFT JOIN referrals r ON cs.referral_id=r.id
     $where
     ORDER BY COALESCE(cs.ended_at, cs.session_date) DESC, cs.session_date DESC")->fetchAll();
 

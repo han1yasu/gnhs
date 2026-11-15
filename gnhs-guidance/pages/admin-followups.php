@@ -15,20 +15,50 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['action'])) {
     $cRow = $cStmt->fetch();
 
     if ($_POST['action'] === 'resolve_followup') {
+        $counselorResponse = trim($_POST['counselor_response'] ?? '');
+        
         $db->prepare("UPDATE cases SET is_follow_up=0, updated_at=NOW() WHERE id=?")->execute([$caseId]);
+        
+        // Log counselor remarks if provided
+        if (!empty($counselorResponse)) {
+            $db->prepare("INSERT INTO case_notes (case_id, author_id, note_type, content, is_visible_to_student, created_at) VALUES (?, ?, 'follow_up_addressed', ?, 1, NOW())")
+               ->execute([$caseId, $user['id'], "Follow-Up / Appeal Addressed: " . $counselorResponse]);
+        }
+        
+        // Notify student that their follow-up / appeal has been addressed
+        if ($cRow && !empty($cRow['student_id'])) {
+            $counselorName = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')) ?: 'Guidance Counselor';
+            $notifTitle = "Follow-Up Addressed: Case #{$cRow['case_number']}";
+            $notifMsg = "Your follow-up / appeal for Case #{$cRow['case_number']} has been reviewed and marked as addressed by Counselor {$counselorName}.";
+            if (!empty($counselorResponse)) {
+                $notifMsg .= "\n\nCounselor Remarks: \"{$counselorResponse}\"";
+            }
+            $notifMsg .= "\n\nThis case remains settled in your Case Archive.";
+            
+            $db->prepare("INSERT INTO notifications (user_id, title, message, type, is_read, created_at) VALUES (?, ?, ?, 'case_update', 0, NOW())")
+               ->execute([$cRow['student_id'], $notifTitle, $notifMsg]);
+        }
+        
         header('Location: admin-followups.php?addressed=1');
         exit;
     } elseif ($_POST['action'] === 'reopen_case') {
+        $counselorResponse = trim($_POST['counselor_response'] ?? '');
         $db->prepare("UPDATE cases SET status='pending', is_follow_up=0, updated_at=NOW() WHERE id=?")->execute([$caseId]);
         
+        if (!empty($counselorResponse)) {
+            $db->prepare("INSERT INTO case_notes (case_id, author_id, note_type, content, is_visible_to_student, created_at) VALUES (?, ?, 'case_reopened', ?, 1, NOW())")
+               ->execute([$caseId, $user['id'], "Case Reopened upon Appeal: " . $counselorResponse]);
+        }
+        
         // Notify student that their appeal has been accepted and case is reopened
-        if ($cRow) {
-            $db->prepare("INSERT INTO notifications (user_id, title, message, type) VALUES (?, ?, ?, 'case_update')")
-               ->execute([
-                   $cRow['student_id'],
-                   "Case Reopened: {$cRow['case_number']}",
-                   "Your appeal for Case {$cRow['case_number']} has been accepted by the Guidance Counselor. The case is now active under review."
-               ]);
+        if ($cRow && !empty($cRow['student_id'])) {
+            $notifTitle = "Case Reopened: Case #{$cRow['case_number']}";
+            $notifMsg = "Your appeal for Case #{$cRow['case_number']} has been accepted by the Guidance Counselor. The case is now active under review.";
+            if (!empty($counselorResponse)) {
+                $notifMsg .= "\n\nCounselor Note: \"{$counselorResponse}\"";
+            }
+            $db->prepare("INSERT INTO notifications (user_id, title, message, type, is_read, created_at) VALUES (?, ?, ?, 'case_update', 0, NOW())")
+               ->execute([$cRow['student_id'], $notifTitle, $notifMsg]);
             header('Location: admin-cases.php?reopened=1&case=' . urlencode($cRow['case_number']));
             exit;
         }
@@ -120,15 +150,21 @@ ob_start();
       <div style="background:var(--bg2);padding:12px;border-radius:8px;font-size:13.5px;color:var(--text);border:1px solid var(--border);max-height:140px;overflow-y:auto" id="vOriginal"></div>
     </div>
     
-    <div style="margin-bottom:20px;">
+    <div style="margin-bottom:16px;">
       <label style="font-size:12px;font-weight:700;color:#991b1b;text-transform:uppercase;display:block;margin-bottom:4px">Student's Appeal Explanation</label>
       <div style="background:#fef2f2;padding:14px;border-radius:8px;border:1.5px solid #fecaca;font-size:13.5px;color:#7f1d1d;line-height:1.5" id="vMessage"></div>
     </div>
     
-    <form method="POST" style="display:flex;gap:12px;">
+    <form method="POST">
       <input type="hidden" name="case_id" id="vCaseId">
-      <button type="submit" name="action" value="reopen_case" class="btn-primary" style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px"><i class="fas fa-folder-open"></i> Re-open Case (Pending)</button>
-      <button type="submit" name="action" value="resolve_followup" class="btn-secondary" style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px"><i class="fas fa-check"></i> Mark Addressed</button>
+      <div style="margin-bottom:16px;">
+        <label style="font-size:12px;font-weight:700;color:var(--text-2);text-transform:uppercase;display:block;margin-bottom:4px">Counselor Remarks / Feedback to Student (Optional)</label>
+        <textarea name="counselor_response" id="vResponse" rows="3" class="form-control" style="width:100%;padding:10px;border-radius:8px;border:1.5px solid var(--border);font-size:13.5px;box-sizing:border-box" placeholder="Add remarks or explanation for the student regarding this follow-up appeal..."></textarea>
+      </div>
+      <div style="display:flex;gap:12px;">
+        <button type="submit" name="action" value="reopen_case" class="btn-primary" style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px"><i class="fas fa-folder-open"></i> Re-open Case (Pending)</button>
+        <button type="submit" name="action" value="resolve_followup" class="btn-secondary" style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px"><i class="fas fa-check"></i> Mark Addressed</button>
+      </div>
     </form>
   </div>
 </div>
@@ -139,6 +175,8 @@ function viewFollowUp(data) {
     document.getElementById('vCaseNum').textContent = 'Case #' + data.case_number;
     document.getElementById('vOriginal').textContent = data.description || '(No description provided)';
     document.getElementById('vMessage').textContent = data.follow_up_msg || '(No explanation)';
+    const respEl = document.getElementById('vResponse');
+    if (respEl) respEl.value = '';
     document.getElementById('viewModal').classList.remove('hidden');
 }
 </script>

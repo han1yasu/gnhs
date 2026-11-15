@@ -74,3 +74,4 @@ fputcsv($out, [
 
 fclose($out);
 exit;
+

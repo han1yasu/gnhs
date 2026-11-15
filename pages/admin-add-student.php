@@ -1287,20 +1287,18 @@ function parseAndPreviewCsv(csvText, fileName, fileSize) {
       tr.className = isValid ? 'csv-row-valid' : 'csv-row-invalid';
       const fullName = [last, first, middle, suffix].filter(Boolean).join(', ');
       
-      tr.innerHTML = `
-        <td style="text-align:center;font-weight:700;color:var(--text-3)">${i}</td>
-        <td><strong>${escapeHtml(first)} ${escapeHtml(last)}</strong> ${suffix ? escapeHtml(suffix) : ''}</td>
-        <td><code style="font-size:11.5px">${escapeHtml(lrn || '—')}</code></td>
-        <td style="font-size:11.5px">${escapeHtml(email || '—')}</td>
-        <td>Grade ${escapeHtml(gradeNum || '—')}</td>
-        <td>${escapeHtml(section || '—')}</td>
-        <td><code style="font-size:11px">${escapeHtml(pass)}</code></td>
-        <td>
-          ${isValid 
+      tr.innerHTML = '<td style="text-align:center;font-weight:700;color:var(--text-3)">' + i + '</td>'
+        + '<td><strong>' + escapeHtml(first) + ' ' + escapeHtml(last) + '</strong> ' + (suffix ? escapeHtml(suffix) : '') + '</td>'
+        + '<td><code style="font-size:11.5px">' + escapeHtml(lrn || '—') + '</code></td>'
+        + '<td style="font-size:11.5px">' + escapeHtml(email || '—') + '</td>'
+        + '<td>Grade ' + escapeHtml(gradeNum || '—') + '</td>'
+        + '<td>' + escapeHtml(section || '—') + '</td>'
+        + '<td><code style="font-size:11px">' + escapeHtml(pass) + '</code></td>'
+        + '<td>'
+        + (isValid 
             ? '<span class="badge-valid"><i class="fas fa-check-circle"></i> Ready</span>' 
-            : '<span class="badge-invalid" title="' + escapeHtml(errors.join(', ')) + '"><i class="fas fa-times-circle"></i> ' + escapeHtml(errors[0]) + '</span>'}
-        </td>
-      `;
+            : '<span class="badge-invalid" title="' + escapeHtml(errors.join(', ')) + '"><i class="fas fa-times-circle"></i> ' + escapeHtml(errors[0]) + '</span>')
+        + '</td>';
       tbody.appendChild(tr);
     }
   }
@@ -1308,9 +1306,9 @@ function parseAndPreviewCsv(csvText, fileName, fileSize) {
   // Update header and badges
   document.getElementById('csvFileNameText').textContent = fileName;
   const kbSize = Math.round(fileSize / 1024);
-  document.getElementById('csvFileMetaText').textContent = `${rawRows.length - 1} rows parsed • ${kbSize} KB`;
-  document.getElementById('csvValidCountBadge').innerHTML = `<i class="fas fa-check-circle"></i> ${validCount} Valid`;
-  document.getElementById('csvErrorCountBadge').innerHTML = `<i class="fas fa-exclamation-circle"></i> ${errorCount} Errors`;
+  document.getElementById('csvFileMetaText').textContent = (rawRows.length - 1) + ' rows parsed • ' + kbSize + ' KB';
+  document.getElementById('csvValidCountBadge').innerHTML = '<i class="fas fa-check-circle"></i> ' + validCount + ' Valid';
+  document.getElementById('csvErrorCountBadge').innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + errorCount + ' Errors';
   document.getElementById('btnImportCountText').textContent = validCount;
 
   const btnImport = document.getElementById('btnConfirmBatchImport');
@@ -1328,7 +1326,7 @@ async function executeBatchImport() {
   }
 
   const btn = document.getElementById('btnConfirmBatchImport');
-  if (!confirm(`Are you sure you want to enroll and create accounts for ${_validCsvStudents.length} valid students?`)) {
+  if (!confirm('Are you sure you want to enroll and create accounts for ' + _validCsvStudents.length + ' valid students?')) {
     return;
   }
 
@@ -1350,24 +1348,25 @@ async function executeBatchImport() {
       document.getElementById('csvPreviewContainer').style.display = 'none';
       const resultCard = document.getElementById('csvResultCard');
       resultCard.style.display = 'block';
-      document.getElementById('csvResultTitle').textContent = `Success! ${res.imported} Student Accounts Created.`;
+      document.getElementById('csvResultTitle').textContent = 'Success! ' + res.imported + ' Student Accounts Created.';
       
-      let subMsg = `Successfully enrolled ${res.imported} out of ${res.total} students into the Guidance system database.`;
+      let subMsg = 'Successfully enrolled ' + res.imported + ' out of ' + res.total + ' students into the Guidance system database.';
       if (res.skipped > 0) {
-        subMsg += ` Note: ${res.skipped} students were skipped (already registered LRN or email).`;
+        subMsg += ' Note: ' + res.skipped + ' students were skipped (already registered LRN or email).';
       }
       document.getElementById('csvResultSubtitle').textContent = subMsg;
       resultCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     } else {
       alert('Import failed: ' + (res.message || 'Unknown server error.'));
       btn.disabled = false;
-      btn.innerHTML = `<i class="fas fa-user-check"></i> Import Valid Students (${_validCsvStudents.length})`;
+      btn.innerHTML = '<i class="fas fa-user-check"></i> Import Valid Students (' + _validCsvStudents.length + ')';
     }
   } catch(err) {
     alert('Network or server error while executing import: ' + err.message);
     btn.disabled = false;
-    btn.innerHTML = `<i class="fas fa-user-check"></i> Import Valid Students (${_validCsvStudents.length})`;
+    btn.innerHTML = '<i class="fas fa-user-check"></i> Import Valid Students (' + _validCsvStudents.length + ')';
   }
+}
 }
 
 function resetCsvUpload() {

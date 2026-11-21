@@ -365,6 +365,12 @@ $counselorName = $user['first_name'] . ' ' . $user['last_name'];
       color: #ffffff;
     }
     .btn-print:hover { background: var(--maroon-dark); transform: translateY(-1px); }
+    .btn-pdf {
+      background: #2563eb;
+      color: #ffffff;
+    }
+    .btn-pdf:hover { background: #1d4ed8; transform: translateY(-1px); }
+    .btn-pdf:disabled { opacity: 0.7; cursor: wait; transform: none; }
     .btn-csv {
       background: #16a34a;
       color: #ffffff;
@@ -557,6 +563,21 @@ $counselorName = $user['first_name'] . ' ' . $user['last_name'];
       color: var(--text-3);
     }
 
+    body.pdf-exporting {
+      padding: 0 !important;
+      background: #ffffff !important;
+    }
+    body.pdf-exporting .print-actions { display: none !important; }
+    body.pdf-exporting .report-sheet {
+      border: none !important;
+      box-shadow: none !important;
+      border-radius: 0 !important;
+      padding: 0 !important;
+      max-width: 100% !important;
+    }
+    body.pdf-exporting .rep-table { page-break-inside: auto; }
+    body.pdf-exporting .rep-table tr { page-break-inside: avoid; break-inside: avoid; }
+
     @media print {
       body {
         padding: 0;
@@ -572,31 +593,47 @@ $counselorName = $user['first_name'] . ' ' . $user['last_name'];
       .rep-table { page-break-inside: auto; }
       .rep-table tr { page-break-inside: avoid; page-break-after: auto; }
       @page {
-        margin: 1.5cm;
         size: A4 portrait;
+        margin: 14mm 14mm 18mm 14mm;
+        @top-left { content: ""; }
+        @top-center { content: ""; }
+        @top-right { content: ""; }
+        @bottom-left { content: ""; }
+        @bottom-center { content: ""; }
+        @bottom-right {
+          content: "Page " counter(page) " of " counter(pages);
+          font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+          font-size: 9pt;
+          font-weight: 600;
+          color: #64748b;
+        }
       }
     }
   </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
 
   <!-- Screen Actions Bar (hidden when printing) -->
   <div class="print-actions">
     <div>
-      <button class="btn-action btn-close" onclick="window.close()"><i class="fas fa-arrow-left"></i> Back to System</button>
+      <button type="button" class="btn-action btn-close" onclick="window.close()"><i class="fas fa-arrow-left"></i> Back to System</button>
     </div>
-    <div style="display:flex;gap:10px">
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
       <a href="export_analytics.php?format=csv&range=<?= urlencode($range) ?>&date_from=<?= urlencode($dateFrom) ?>&date_to=<?= urlencode($dateTo) ?>&include_cases=<?= $incCases ?>&include_referrals=<?= $incRefs ?>" class="btn-action btn-csv">
         <i class="fas fa-file-csv"></i> Download CSV / Excel
       </a>
-      <button class="btn-action btn-print" onclick="window.print()">
-        <i class="fas fa-print"></i> Print Report / Save PDF
+      <button type="button" class="btn-action btn-pdf" id="btnSavePdf" onclick="downloadReportPdf()">
+        <i class="fas fa-file-pdf"></i> Save as PDF
+      </button>
+      <button type="button" class="btn-action btn-print" onclick="window.print()">
+        <i class="fas fa-print"></i> Print Report
       </button>
     </div>
   </div>
 
   <!-- Printable Report Document Sheet -->
-  <div class="report-sheet">
+  <div class="report-sheet" id="reportSheet">
     <!-- Header -->
     <div class="rep-header">
       <div class="rep-logo-wrap">
@@ -784,6 +821,63 @@ $counselorName = $user['first_name'] . ' ' . $user['last_name'];
     </div>
   </div>
 
+  <script>
+    function downloadReportPdf() {
+      var btn = document.getElementById('btnSavePdf');
+      var origHtml = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating PDF...';
+      }
+
+      document.body.classList.add('pdf-exporting');
+      var element = document.getElementById('reportSheet');
+      var filename = 'GNHS_Guidance_Analytics_Report_' + new Date().toISOString().slice(0, 10) + '.pdf';
+
+      var opt = {
+        margin:      [14, 14, 18, 14],
+        filename:    filename,
+        image:       { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, letterRendering: true, scrollY: 0 },
+        jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak:   { mode: ['avoid-all', 'css', 'legacy'] }
+      };
+
+      html2pdf().set(opt).from(element).toPdf().get('pdf').then(function (pdf) {
+        var totalPages = pdf.internal.getNumberOfPages();
+        var pageWidth = pdf.internal.pageSize.getWidth();
+        var pageHeight = pdf.internal.pageSize.getHeight();
+        for (var i = 1; i <= totalPages; i++) {
+          pdf.setPage(i);
+          pdf.setFont('helvetica', 'normal');
+          pdf.setFontSize(9);
+          pdf.setTextColor(100, 116, 139);
+          pdf.text('Page ' + i + ' of ' + totalPages, pageWidth - 14, pageHeight - 8, { align: 'right' });
+        }
+      }).save().then(function () {
+        document.body.classList.remove('pdf-exporting');
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = origHtml;
+        }
+      }).catch(function (err) {
+        console.error(err);
+        document.body.classList.remove('pdf-exporting');
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = origHtml;
+        }
+        alert('Could not generate PDF directly. Please use the Print Report button instead.');
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      var params = new URLSearchParams(window.location.search);
+      if (params.get('auto_pdf') === '1') {
+        setTimeout(downloadReportPdf, 450);
+      }
+    });
+  </script>
 </body>
 </html>
 

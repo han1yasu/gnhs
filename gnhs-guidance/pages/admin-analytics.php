@@ -758,11 +758,14 @@ canvas {
       </div>
 
       <!-- Step 3: Export Actions -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <button type="button" class="btn-primary" onclick="triggerAnalyticsExport('report')" style="padding:12px 14px;justify-content:center;display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--maroon) 0%,#7a0c0c 100%)">
-          <i class="fas fa-print"></i> Printable Report (PDF)
+          <i class="fas fa-print"></i> Print Report
         </button>
-        <button type="button" class="btn-primary" onclick="triggerAnalyticsExport('csv')" style="padding:12px 14px;justify-content:center;display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,#059669 0%,#047857 100%)">
+        <button type="button" class="btn-primary" onclick="triggerAnalyticsExport('pdf')" style="padding:12px 14px;justify-content:center;display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,#2563eb 0%,#1d4ed8 100%)">
+          <i class="fas fa-file-pdf"></i> Save as PDF
+        </button>
+        <button type="button" class="btn-primary" onclick="triggerAnalyticsExport('csv')" style="grid-column:span 2;padding:12px 14px;justify-content:center;display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,#059669 0%,#047857 100%)">
           <i class="fas fa-file-csv"></i> Download CSV / Excel
         </button>
       </div>
@@ -1519,18 +1522,22 @@ function triggerAnalyticsExport(format) {
   var isNested = window.location.pathname.startsWith('/gnhs-guidance');
   var baseApi = isNested ? '/gnhs-guidance/api/export_analytics.php' : '/api/export_analytics.php';
 
+  var actualFormat = (format === 'pdf') ? 'report' : format;
   var params = new URLSearchParams({
-    format: format,
+    format: actualFormat,
     range: rangeVal,
     date_from: dateFrom,
     date_to: dateTo,
     include_cases: incCases,
     include_referrals: incRefs
   });
+  if (format === 'pdf') {
+    params.set('auto_pdf', '1');
+  }
 
   var exportUrl = baseApi + '?' + params.toString();
 
-  if (format === 'report') {
+  if (actualFormat === 'report') {
     window.open(exportUrl, '_blank');
   } else {
     window.location.href = exportUrl;

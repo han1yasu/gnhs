@@ -585,32 +585,36 @@ $counselorName = $user['first_name'] . ' ' . $user['last_name'];
     }
     body.pdf-exporting .print-actions { display: none !important; }
     body.pdf-exporting .report-sheet {
-      width: 720px !important;
-      max-width: 720px !important;
+      width: 670px !important;
+      max-width: 670px !important;
       margin: 0 auto !important;
       padding: 0 !important;
       border: none !important;
       box-shadow: none !important;
       border-radius: 0 !important;
     }
+    body.pdf-exporting .rep-meta {
+      flex-wrap: wrap !important;
+      gap: 6px 14px !important;
+      font-size: 10.5px !important;
+    }
     body.pdf-exporting .rep-header { padding-bottom: 14px !important; margin-bottom: 16px !important; }
-    body.pdf-exporting .rep-logo { width: 56px !important; height: 56px !important; }
-    body.pdf-exporting .rep-deped-text { font-size: 10px !important; }
-    body.pdf-exporting .rep-school-name { font-size: 17px !important; }
-    body.pdf-exporting .rep-office-name { font-size: 11px !important; }
-    body.pdf-exporting .rep-title-block { padding: 12px 16px !important; margin-bottom: 16px !important; }
-    body.pdf-exporting .rep-title { font-size: 15px !important; }
-    body.pdf-exporting .rep-meta { font-size: 11px !important; gap: 14px !important; }
-    body.pdf-exporting .kpi-grid { gap: 8px !important; margin-bottom: 18px !important; }
+    body.pdf-exporting .rep-logo { width: 54px !important; height: 54px !important; }
+    body.pdf-exporting .rep-deped-text { font-size: 9.5px !important; }
+    body.pdf-exporting .rep-school-name { font-size: 16px !important; }
+    body.pdf-exporting .rep-office-name { font-size: 10.5px !important; }
+    body.pdf-exporting .rep-title-block { padding: 12px 14px !important; margin-bottom: 14px !important; }
+    body.pdf-exporting .rep-title { font-size: 14.5px !important; }
+    body.pdf-exporting .kpi-grid { gap: 8px !important; margin-bottom: 16px !important; }
     body.pdf-exporting .kpi-box { padding: 10px 6px !important; }
-    body.pdf-exporting .kpi-val { font-size: 19px !important; }
-    body.pdf-exporting .kpi-lbl { font-size: 9px !important; }
-    body.pdf-exporting .two-col { gap: 14px !important; margin-bottom: 16px !important; }
-    body.pdf-exporting .sec-head { font-size: 12px !important; margin: 14px 0 8px !important; }
-    body.pdf-exporting .rep-table { font-size: 10px !important; table-layout: fixed; width: 100% !important; }
-    body.pdf-exporting .rep-table th { padding: 6px 5px !important; font-size: 9px !important; }
-    body.pdf-exporting .rep-table td { padding: 5px 5px !important; word-wrap: break-word; overflow-wrap: break-word; }
-    body.pdf-exporting .badge { font-size: 8.5px !important; padding: 2px 5px !important; }
+    body.pdf-exporting .kpi-val { font-size: 18px !important; }
+    body.pdf-exporting .kpi-lbl { font-size: 8.5px !important; }
+    body.pdf-exporting .two-col { gap: 12px !important; margin-bottom: 14px !important; }
+    body.pdf-exporting .sec-head { font-size: 11.5px !important; margin: 14px 0 8px !important; }
+    body.pdf-exporting .rep-table { font-size: 9.5px !important; table-layout: fixed; width: 100% !important; }
+    body.pdf-exporting .rep-table th { padding: 5px 4px !important; font-size: 8.5px !important; }
+    body.pdf-exporting .rep-table td { padding: 5px 4px !important; word-wrap: break-word; overflow-wrap: break-word; }
+    body.pdf-exporting .badge { font-size: 8px !important; padding: 2px 4px !important; white-space: nowrap; }
     body.pdf-exporting .sign-block { margin-top: 28px !important; }
     body.pdf-exporting .sign-col { width: 200px !important; }
     body.pdf-exporting .rep-table { page-break-inside: auto; }
@@ -776,13 +780,13 @@ $counselorName = $user['first_name'] . ' ' . $user['last_name'];
       <table class="rep-table">
         <thead>
           <tr>
-            <th style="width:75px">Case #</th>
-            <th style="width:90px">Date</th>
+            <th style="width:64px">Case #</th>
+            <th style="width:78px">Date</th>
             <th>Student / Identity</th>
             <th>Grade &amp; Section</th>
             <th>Concern Category</th>
-            <th style="width:65px">Priority</th>
-            <th style="width:80px">Status</th>
+            <th style="width:58px">Priority</th>
+            <th style="width:74px">Status</th>
           </tr>
         </thead>
         <tbody>
@@ -815,14 +819,14 @@ $counselorName = $user['first_name'] . ' ' . $user['last_name'];
       <table class="rep-table">
         <thead>
           <tr>
-            <th style="width:75px">Ref #</th>
-            <th style="width:90px">Date</th>
+            <th style="width:58px">Ref #</th>
+            <th style="width:74px">Date</th>
             <th>Student Name</th>
             <th>Grade &amp; Section</th>
             <th>Referring Teacher</th>
             <th>Concern Type</th>
-            <th style="width:70px">Urgency</th>
-            <th style="width:80px">Status</th>
+            <th style="width:58px">Urgency</th>
+            <th style="width:68px">Status</th>
           </tr>
         </thead>
         <tbody>
@@ -874,7 +878,7 @@ $counselorName = $user['first_name'] . ' ' . $user['last_name'];
       var filename = 'GNHS_Guidance_Analytics_Report_' + new Date().toISOString().slice(0, 10) + '.pdf';
 
       var opt = {
-        margin:      [14, 14, 18, 14],
+        margin:      [12, 12, 16, 12],
         filename:    filename,
         image:       { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, letterRendering: true, scrollX: 0, scrollY: 0 },

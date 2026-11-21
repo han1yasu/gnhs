@@ -509,6 +509,8 @@ $counselorName = $user['first_name'] . ' ' . $user['last_name'];
       display: flex;
       align-items: center;
       gap: 8px;
+      page-break-after: avoid;
+      break-after: avoid;
     }
 
     /* Tables */
@@ -580,13 +582,12 @@ $counselorName = $user['first_name'] . ' ' . $user['last_name'];
     body.pdf-exporting {
       padding: 0 !important;
       background: #ffffff !important;
-      width: 680px !important;
     }
     body.pdf-exporting .print-actions { display: none !important; }
     body.pdf-exporting .report-sheet {
-      width: 680px !important;
-      max-width: 680px !important;
-      margin: 0 !important;
+      width: 720px !important;
+      max-width: 720px !important;
+      margin: 0 auto !important;
       padding: 0 !important;
       border: none !important;
       box-shadow: none !important;
@@ -876,7 +877,7 @@ $counselorName = $user['first_name'] . ' ' . $user['last_name'];
         margin:      [14, 14, 18, 14],
         filename:    filename,
         image:       { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, letterRendering: true, scrollY: 0, windowWidth: 680, width: 680 },
+        html2canvas: { scale: 2, useCORS: true, letterRendering: true, scrollX: 0, scrollY: 0 },
         jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' },
         pagebreak:   { mode: ['avoid-all', 'css', 'legacy'] }
       };

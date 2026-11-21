@@ -16,9 +16,13 @@ try {
 
     // Verify access to the case
     if ($user['role'] === 'student') {
-        $stmt = $db->prepare("SELECT id FROM cases WHERE id=? AND student_id=?");
+        $stmt = $db->prepare("SELECT id, status FROM cases WHERE id=? AND student_id=?");
         $stmt->execute([$caseId, $user['id']]);
-        if (!$stmt->fetch()) jsonOut(['success'=>false,'message'=>'Access denied.'], 403);
+        $caseAccess = $stmt->fetch();
+        if (!$caseAccess) jsonOut(['success'=>false,'message'=>'Access denied.'], 403);
+        if (in_array(strtolower($caseAccess['status'] ?? ''), ['resolved', 'closed'], true)) {
+            jsonOut(['success'=>false,'message'=>'This case is resolved and archived. Chat is view-only.'], 403);
+        }
     } else if ($user['role'] !== 'admin') {
         jsonOut(['success'=>false,'message'=>'Access denied.'], 403);
     }

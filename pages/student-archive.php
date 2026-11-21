@@ -15,7 +15,7 @@ $cases = $stmt->fetchAll();
 
 // Fetch archived teacher referrals for this student
 $refStmt = $db->prepare("SELECT r.*, CONCAT(t.first_name, ' ', t.last_name) AS teacher_name,
-    cs.session_date, cs.recommendations AS session_recommendations, cs.notes AS session_notes,
+    cs.session_date, cs.ended_at AS session_ended_at, cs.recommendations AS session_recommendations, cs.notes AS session_notes,
     u.first_name AS counselor_first, u.last_name AS counselor_last
     FROM referrals r
     JOIN users t ON r.teacher_id = t.id
@@ -28,7 +28,7 @@ $refStmt = $db->prepare("SELECT r.*, CONCAT(t.first_name, ' ', t.last_name) AS t
         OR LOWER(TRIM(r.student_name)) = LOWER(:fullName) 
         OR LOWER(TRIM(r.student_name)) = LOWER(:revFullName)
     ) AND r.status IN ('resolved', 'closed')
-    ORDER BY r.updated_at DESC, r.submitted_at DESC");
+    ORDER BY COALESCE(cs.ended_at, r.submitted_at) DESC, r.submitted_at DESC");
 $refStmt->execute([':uid' => $user['id'], ':fullName' => $studentFullName, ':revFullName' => $revStudentName]);
 $archivedRefs = $refStmt->fetchAll();
 
@@ -187,7 +187,7 @@ ob_start();
         <tbody>
           <?php foreach ($archivedRefs as $ar): 
              $type = ucfirst(str_replace('_',' ',$ar['concern_type']));
-             $arDate = $ar['updated_at'] ? date('M d, Y h:i A', strtotime($ar['updated_at'])) : date('M d, Y', strtotime($ar['submitted_at']));
+             $arDate = !empty($ar['session_ended_at']) ? date('M d, Y h:i A', strtotime($ar['session_ended_at'])) : date('M d, Y', strtotime($ar['submitted_at']));
              $arJson = htmlspecialchars(json_encode([
                  'ref_number'     => $ar['ref_number'],
                  'teacher_name'   => $ar['teacher_name'],

@@ -333,7 +333,7 @@ async function submitAppeal() {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
     
     try {
-        const res = await fetch('/gnhs-guidance/api/submit_appeal.php', {
+        const res = await fetch('../api/submit_appeal.php', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ case_id: id, message: desc })
@@ -402,15 +402,15 @@ function openArchivedRefModal(btn) {
   document.getElementById('archivedRefModalBody').innerHTML = `
     <div style="border-bottom:1px solid var(--border);padding-bottom:14px;margin-bottom:18px;padding-right:48px;position:relative">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
-        <span style="background:var(--maroon-pale);color:var(--maroon);font-weight:900;font-size:14px;padding:3px 10px;border-radius:6px;border:1px solid var(--maroon-tint)">#\${ref.ref_number}</span>
+        <span style="background:var(--maroon-pale);color:var(--maroon);font-weight:900;font-size:14px;padding:3px 10px;border-radius:6px;border:1px solid var(--maroon-tint)">#${ref.ref_number}</span>
         <span class="status-badge status-resolved">Resolved</span>
       </div>
       <h2 style="font-size:18px;font-weight:800;color:var(--text);margin:0 0 8px 0;display:flex;align-items:center;gap:8px">
-        <i class="fas fa-archive" style="color:var(--maroon)"></i> Archived Referral from Teacher \${ref.teacher_name}
+        <i class="fas fa-archive" style="color:var(--maroon)"></i> Archived Referral from Teacher ${ref.teacher_name}
       </h2>
       <div style="font-size:12.5px;color:var(--text-3);display:flex;align-items:center;gap:18px;flex-wrap:wrap">
-        <span><i class="fas fa-tag" style="color:var(--maroon);margin-right:4px"></i> Concern: <strong style="color:var(--text)">\${typeLabel}</strong></span>
-        <span><i class="fas fa-calendar-check" style="color:var(--maroon);margin-right:4px"></i> Resolved on: <strong style="color:var(--text)">\${ref.resolved_at}</strong></span>
+        <span><i class="fas fa-tag" style="color:var(--maroon);margin-right:4px"></i> Concern: <strong style="color:var(--text)">${typeLabel}</strong></span>
+        <span><i class="fas fa-calendar-check" style="color:var(--maroon);margin-right:4px"></i> Resolved on: <strong style="color:var(--text)">${ref.resolved_at}</strong></span>
       </div>
     </div>
 
@@ -419,11 +419,11 @@ function openArchivedRefModal(btn) {
         <i class="fas fa-check-circle"></i> Official Guidance Resolution Outcome
       </div>
       <div style="font-size:13.5px;color:#14532d;line-height:1.6">
-        This teacher referral regarding <strong>\${typeLabel}</strong> was addressed and concluded by Counselor <strong>\${ref.counselor_name}</strong>.
+        This teacher referral regarding <strong>${typeLabel}</strong> was addressed and concluded by Counselor <strong>${ref.counselor_name}</strong>.
       </div>
-      \${ref.session_recommendations ? `
+      ${ref.session_recommendations ? `
         <div style="margin-top:10px;padding-top:10px;border-top:1px dashed #86efac;font-size:13px;color:#14532d">
-          <strong>Guidance Recommendations:</strong><br>\${ref.session_recommendations}
+          <strong>Guidance Recommendations:</strong><br>${ref.session_recommendations}
         </div>` : ''}
     </div>
 
@@ -431,7 +431,7 @@ function openArchivedRefModal(btn) {
       <div style="font-size:12px;font-weight:800;color:var(--maroon);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px">
         <i class="fas fa-quote-left" style="color:var(--maroon)"></i> Teacher's Original Observations
       </div>
-      <div style="font-size:13.5px;line-height:1.6;color:var(--text);white-space:pre-wrap;background:var(--bg);padding:12px;border-radius:8px">\${ref.observations}</div>
+      <div style="font-size:13.5px;line-height:1.6;color:var(--text);white-space:pre-wrap;background:var(--bg);padding:12px;border-radius:8px">${ref.observations}</div>
     </div>
 
     <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;padding-top:14px;border-top:1px solid var(--border)">

@@ -38,6 +38,9 @@ function getDB(): PDO {
             $pdo->exec("SET time_zone = '+08:00'");
         } catch(Exception $e) {}
 
+        // Run heavy schema/data migrations only once per environment
+        $schemaFlag = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'gnhs_schema_v2_' . md5(__DIR__ . DB_NAME) . '.flag';
+        if (!file_exists($schemaFlag)) {
         // Ensure database timestamps match Philippine Standard Time (PHT, UTC+8)
         try {
             $pdo->exec("CREATE TABLE IF NOT EXISTS system_migrations (migration_key VARCHAR(100) PRIMARY KEY, migrated_at DATETIME)");
@@ -138,6 +141,8 @@ function getDB(): PDO {
                 INDEX(status)
             )");
         } catch(Exception $e){}
+        @file_put_contents($schemaFlag, date('c'));
+        }
     }
     return $pdo;
 }

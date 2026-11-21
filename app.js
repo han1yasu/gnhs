@@ -777,10 +777,12 @@ document.addEventListener('click', e => {
 });
 
 async function markAllRead() {
-  try { await fetch('/gnhs-guidance/api/get_notifications.php?mark_read=1'); } catch {}
+  const isNested = window.location.pathname.startsWith('/gnhs-guidance/gnhs-guidance');
+  const apiBase = isNested ? '/gnhs-guidance/gnhs-guidance/api/get_notifications.php' : '/gnhs-guidance/api/get_notifications.php';
+  try { await fetch(apiBase + '?mark_read=1'); } catch {}
   $$('.np-item.unread').forEach(el => el.classList.remove('unread'));
   $$('.notif-dot').forEach(d => d.classList.add('hidden'));
-  showToast('All notifications marked as read.','info');
+  location.reload();
 }
 
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•

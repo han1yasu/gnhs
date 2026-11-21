@@ -80,15 +80,16 @@ function executeGeminiPrompt(string $apiKey, string $prompt): string {
         'generationConfig' => ['maxOutputTokens' => 300, 'temperature' => 0.3]
     ]);
 
-    // Support current Gemini flash models with automatic fallback
-    $models = ['gemini-2.5-flash', 'gemini-3.8-flash', 'gemini-flash-latest', 'gemini-1.5-flash'];
+    // Use single fast model with short timeout so submissions never stall
+    $models = ['gemini-2.5-flash'];
     foreach ($models as $model) {
         $ch = curl_init("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key=" . urlencode($apiKey));
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_POST           => true,
             CURLOPT_POSTFIELDS     => $payload,
-            CURLOPT_TIMEOUT        => 8,
+            CURLOPT_CONNECTTIMEOUT => 2,
+            CURLOPT_TIMEOUT        => 3,
             CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
         ]);

@@ -46,16 +46,16 @@ if (!$concernType || !$subject || !$description) {
 
 require_once __DIR__ . '/../includes/summarizer.php';
 
-// Validate description quality: min 30 chars, max 400 words, min 30 words, spam/gibberish detection
-$quality = validateContentQuality($description, 30, 400, 30);
+// Validate description quality: min 30 chars, max 400 words, min 150 words, spam/gibberish detection
+$quality = validateContentQuality($description, 30, 400, 150);
 if (!$quality['valid']) {
     jsonOut(['success'=>false, 'message'=>$quality['message']]);
 }
 
 $descWords = preg_split('/\s+/u', trim($description), -1, PREG_SPLIT_NO_EMPTY);
 $descWordCount = count($descWords);
-if ($descWordCount < 30) {
-    jsonOut(['success'=>false, 'message'=>"Description must be at least 30 words long (currently {$descWordCount} words). Please provide more detail about your concern."]);
+if ($descWordCount < 150) {
+    jsonOut(['success'=>false, 'message'=>"Description must be at least 150 words long (currently {$descWordCount} words). Please provide more detail about your concern."]);
 }
 if ($descWordCount > 400) {
     jsonOut(['success'=>false, 'message'=>"Description must not exceed 400 words (currently {$descWordCount} words). Please shorten your description."]);

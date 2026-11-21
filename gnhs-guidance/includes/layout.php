@@ -1002,10 +1002,15 @@ function escapeHtmlNotif(str) {
 }
 
 async function markAllRead() {
-  await fetch('/gnhs-guidance/api/get_notifications.php?mark_read=1');
+  const isNested = window.location.pathname.startsWith('/gnhs-guidance/gnhs-guidance');
+  const apiBase = isNested ? '/gnhs-guidance/gnhs-guidance/api/get_notifications.php' : '/gnhs-guidance/api/get_notifications.php';
+  try {
+    await fetch(apiBase + '?mark_read=1');
+  } catch (e) {}
   document.getElementById('notifDot')?.classList.add('hidden');
   document.querySelectorAll('.notif-item.unread').forEach(function(el){ el.classList.remove('unread'); });
   currentNotifsList.forEach(function(item){ item.is_read = 1; });
+  location.reload();
 }
 
 // Close notif dropdown on click outside

@@ -120,9 +120,9 @@ $content = <<<HTML
 
       <div class="form-group">
         <label>Describe Your Concern <span class="req">*</span></label>
-        <textarea id="description" rows="6" maxlength="4000" placeholder="Please describe your concern in detail (minimum 30 words, max 400 words). Everything you share is confidential."></textarea>
+        <textarea id="description" rows="6" maxlength="4000" placeholder="Please describe your concern in detail (minimum 150 words, max 400 words). Everything you share is confidential."></textarea>
         <div class="word-count-bar" style="display:flex;justify-content:space-between;align-items:center;font-size:12.5px;margin-top:7px;padding:4px 2px;position:static">
-          <span id="wordCountNotice" style="color:var(--text-3)"><i class="fas fa-info-circle"></i> Minimum 30 words required (<span id="wordCountLive">0</span> / 30 words)</span>
+          <span id="wordCountNotice" style="color:var(--text-3)"><i class="fas fa-info-circle"></i> Minimum 150 words required (<span id="wordCountLive">0</span> / 150 words)</span>
           <span id="wordCountBadge" style="font-weight:700;color:var(--text-2)"><span id="wordCount">0</span> / 400 words</span>
         </div>
       </div>
@@ -270,9 +270,9 @@ document.getElementById('description')?.addEventListener('input', function(){
   if (wordEl) wordEl.textContent = wordCount;
   
   if (noticeEl) {
-    if (wordCount < 30) {
+    if (wordCount < 150) {
       noticeEl.style.color = '#dc2626';
-      noticeEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> Minimum 30 words required (' + wordCount + ' / 30 words)';
+      noticeEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> Minimum 150 words required (' + wordCount + ' / 150 words)';
     } else if (wordCount > 400) {
       noticeEl.style.color = '#dc2626';
       noticeEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> Word limit exceeded (' + wordCount + ' / 400 words)';
@@ -283,7 +283,7 @@ document.getElementById('description')?.addEventListener('input', function(){
   }
   
   if (badgeEl) {
-    if (wordCount > 400 || wordCount < 30) {
+    if (wordCount > 400 || wordCount < 150) {
       badgeEl.style.color = '#dc2626';
     } else {
       badgeEl.style.color = '#16a34a';
@@ -312,8 +312,8 @@ function updateWitnessCount(el) {
 function validateConcernSpam(text) {
   const clean = (text || '').trim();
   const words = clean.split(/\s+/).filter(w => w.length > 0);
-  if (words.length < 30) {
-    return { valid: false, message: 'Description must be at least 30 words long to provide sufficient detail (currently ' + words.length + ' words). Please describe your concern in more detail.' };
+  if (words.length < 150) {
+    return { valid: false, message: 'Description must be at least 150 words long to provide sufficient detail (currently ' + words.length + ' words). Please describe your concern in more detail.' };
   }
   if (words.length > 400) {
     return { valid: false, message: 'Description exceeds the 400-word ceiling (currently ' + words.length + ' words). Please shorten your description.' };

@@ -123,25 +123,25 @@ foreach ($sessions as $s) {
     $searchData = htmlspecialchars(strtolower(implode(' ', array_filter($searchTokens))), ENT_QUOTES);
 
     $chatUrl = !empty($s['case_id'])
-        ? "admin-chats.php?case_id=" . (int)$s['case_id']
-        : (!empty($s['referral_id']) ? "admin-referrals-chat.php?referral_id=" . (int)$s['referral_id'] : '');
+        ? "admin-chats.php?archive_id=" . (int)$s['case_id']
+        : (!empty($s['referral_id']) ? "admin-referrals-chat.php?archive_id=" . (int)$s['referral_id'] : '');
     $chatBtnHtml = $chatUrl
-        ? "<button type='button' class='btn-row-action btn-action-chat' onclick=\"event.stopPropagation(); window.location.href='{$chatUrl}'\" title='View conversation (read-only)' style='font-size:11px;padding:5px 8px;white-space:nowrap;flex-shrink:0'><i class='fas fa-comment-dots'></i></button>"
+        ? "<button type='button' class='btn-row-action btn-action-chat' onclick=\"event.stopPropagation(); window.location.href='{$chatUrl}'\" title='View archived conversation (read-only)' style='font-size:11px;padding:5px 8px;white-space:nowrap;flex-shrink:0'><i class='fas fa-comment-dots'></i></button>"
         : "";
 
     $rows .= "<tr class='session-row' data-search=\"$searchData\" style='cursor:pointer' onclick='if(!event.target.closest(\"button\")) openSessionConsole({$s['id']})'>
         <td style='white-space:nowrap'><strong style='color:var(--maroon);font-size:13px'>#{$s['case_number']}</strong></td>
-        <td>$studentCol</td>
-        <td>" . htmlspecialchars($s['grade_section'] ?? '—') . "</td>
+        <td style='max-width:125px'>$studentCol</td>
+        <td style='max-width:95px'>" . htmlspecialchars($s['grade_section'] ?? '—') . "</td>
         <td style='white-space:nowrap'>" . $dt->format('M d, Y') . "<div style='font-size:11px;color:var(--text-3);font-weight:600'>" . $dt->format('h:i A') . "</div></td>
-        <td>" . ucfirst($s['session_type'] ?? 'In-person') . "<div style='font-size:11px;color:var(--text-3)'><i class='fas fa-map-marker-alt'></i> " . htmlspecialchars($s['location'] ?? 'Guidance Office') . "</div></td>
-        <td style='max-width:155px'>$procBadge $resSnippet</td>
+        <td style='max-width:115px'>" . ucfirst($s['session_type'] ?? 'In-person') . "<div style='font-size:11px;color:var(--text-3)'><i class='fas fa-map-marker-alt'></i> " . htmlspecialchars($s['location'] ?? 'Guidance Office') . "</div></td>
+        <td style='max-width:145px'>$procBadge $resSnippet</td>
         <td>$sanctBadge</td>
-        <td style='white-space:nowrap'><span class='status-badge status-resolved' style='font-size:11px;padding:3px 8px'><i class='fas fa-check-circle'></i> Completed</span></td>
+        <td style='white-space:nowrap'><span class='status-badge status-resolved' style='font-size:11px;padding:3px 7px'><i class='fas fa-check-circle'></i> Completed</span></td>
         <td style='white-space:nowrap'>
           <div style='display:inline-flex;gap:5px;align-items:center;white-space:nowrap'>
-            <button type='button' class='btn-sm-primary' onclick='openSessionConsole({$s['id']})' style='display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:5px 9px;white-space:nowrap'>
-              <i class='fas fa-clipboard-list'></i> View Record
+            <button type='button' class='btn-sm-primary' onclick='openSessionConsole({$s['id']})' title='View full session record' style='display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:5px 9px;white-space:nowrap'>
+              <i class='fas fa-clipboard-list'></i> View
             </button>
             $chatBtnHtml
           </div>

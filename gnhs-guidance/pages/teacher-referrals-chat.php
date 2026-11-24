@@ -885,10 +885,10 @@ function renderInboxItems(items) {
 }
 
 function isRefReadOnly(ri, refId) {
-  const status = (ri && ri.status ? String(ri.status) : '').toLowerCase();
-  if (status) return (status === 'resolved' || status === 'closed');
   const archiveId = new URLSearchParams(window.location.search).get('archive_id');
   if (archiveId && String(archiveId) === String(refId)) return true;
+  const status = (ri && ri.status ? String(ri.status) : '').toLowerCase();
+  if (status === 'resolved' || status === 'closed') return true;
   return false;
 }
 

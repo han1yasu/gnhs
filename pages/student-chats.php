@@ -905,12 +905,10 @@ function renderInboxItems(items) {
 }
 
 function isCaseReadOnly(ci, caseId) {
-  const status = (ci && ci.status ? String(ci.status) : '').toLowerCase();
-  if (status) {
-    return (status === 'resolved' || status === 'closed');
-  }
   const archiveId = new URLSearchParams(window.location.search).get('archive_id');
   if (archiveId && String(archiveId) === String(caseId)) return true;
+  const status = (ci && ci.status ? String(ci.status) : '').toLowerCase();
+  if (status === 'resolved' || status === 'closed') return true;
   return false;
 }
 

@@ -19,6 +19,9 @@ if ($caseId > 0 && !$refId) {
     $cStmt = $db->prepare("SELECT c.*, CONCAT(s.first_name, ' ', s.last_name) AS full_student_name, s.grade_section AS student_grade_sec FROM cases c JOIN users s ON c.student_id = s.id WHERE c.id = ?");
     $cStmt->execute([$caseId]);
     $caseData = $cStmt->fetch(PDO::FETCH_ASSOC);
+    if ($caseData && !empty($caseData['is_anonymous'])) {
+        jsonOut(['success' => false, 'message' => 'Student is anonymous, advisory teacher cannot be determined.']);
+    }
     if ($caseData) {
         $stName = trim($caseData['full_student_name']);
         $sec = trim($caseData['student_grade_sec'] ?: ($caseData['grade_section'] ?? ''));

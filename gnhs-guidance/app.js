@@ -976,7 +976,16 @@ function goToCaseChat(caseId) {
   }
 }
 
-function goToTeacherChatFromCase(caseId) {
+function goToTeacherChatFromCase(caseId, isAnonymous) {
+  const isAnon = Boolean(isAnonymous) || (
+    _currentReviewCase &&
+    String(_currentReviewCase.id) === String(caseId) &&
+    (_currentReviewCase.is_anonymous == 1 || _currentReviewCase.is_anonymous === '1' || _currentReviewCase.is_anonymous === true)
+  );
+  if (isAnon) {
+    showToast('Student is anonymous, advisory teacher cannot be determined.', 'error');
+    return;
+  }
   if (!caseId) return;
   const isNested = window.location.pathname.startsWith('/gnhs-guidance');
   const targetPage = 'admin-referrals-chat.php';
@@ -1433,7 +1442,7 @@ function buildReviewModal(c, notes, session) {
         <button type="button" class="btn-message-student" onclick="goToCaseChat(${c.id || _activeCaseId})">
           <i class="fas fa-comment-dots"></i> Message Student
         </button>
-        <button type="button" class="btn-message-teacher" onclick="goToTeacherChatFromCase(${c.id || _activeCaseId})">
+        <button type="button" class="btn-message-teacher" onclick="goToTeacherChatFromCase(${c.id || _activeCaseId}, ${!!(c.is_anonymous == 1 || c.is_anonymous === '1' || c.is_anonymous === true)})">
           <i class="fas fa-chalkboard-teacher"></i> Message Teacher
         </button>
       </div>

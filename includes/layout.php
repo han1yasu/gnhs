@@ -818,7 +818,7 @@ async function loadNotifs() {
         icon = 'fa-folder-open';
         iconBg = 'var(--maroon-tint)';
         iconColor = 'var(--maroon)';
-      } else if (n.type === 'chat') {
+      } else if (n.type === 'chat' || n.type === 'referral_chat') {
         icon = 'fa-comments';
         iconBg = '#d1fae5';
         iconColor = '#059669';
@@ -932,6 +932,19 @@ function openNotifOverview(index) {
     actionUrl = role === 'admin' ? '/gnhs-guidance/pages/admin-cases.php' : '/gnhs-guidance/pages/student-cases.php';
     actionLabel = 'View Case Details';
     actionIcon = 'fa-folder-open';
+  } else if (type === 'referral_chat' || (type === 'chat' && role === 'teacher')) {
+    badgeText = 'Referral Messages';
+    badgeBg = '#ecfdf5';
+    badgeColor = '#047857';
+    iconHtml = '<i class="fas fa-comments"></i>';
+    iconBg = '#d1fae5';
+    iconColor = '#065f46';
+    const isDouble = window.location.pathname.includes('/gnhs-guidance/gnhs-guidance/');
+    const isSingle = !isDouble && window.location.pathname.startsWith('/gnhs-guidance/');
+    const pagePrefix = isDouble ? '/gnhs-guidance/gnhs-guidance/pages/' : (isSingle ? '/gnhs-guidance/pages/' : '/pages/');
+    actionUrl = role === 'admin' ? (pagePrefix + 'admin-referrals-chat.php') : (pagePrefix + 'teacher-referrals-chat.php');
+    actionLabel = 'Open Referral Chat';
+    actionIcon = 'fa-comments';
   } else if (type === 'chat') {
     badgeText = 'Messages';
     badgeBg = '#ecfdf5';

@@ -422,8 +422,9 @@ function openArchivedRefModal(btn) {
         This teacher referral regarding <strong>${typeLabel}</strong> was addressed and concluded by Counselor <strong>${ref.counselor_name}</strong>.
       </div>
       ${ref.session_recommendations ? `
-        <div style="margin-top:10px;padding-top:10px;border-top:1px dashed #86efac;font-size:13px;color:#14532d">
-          <strong>Guidance Recommendations:</strong><br>${ref.session_recommendations}
+        <div style="margin-top:10px;padding-top:10px;border-top:1px dashed #86efac;font-size:13px;color:#1e3a8a;background:#eff6ff;padding:10px 12px;border-radius:8px;border:1px solid #bfdbfe">
+          <strong style="color:#1d4ed8;display:block;margin-bottom:4px"><i class="fas fa-lightbulb"></i> Guidance Recommendations &amp; Advice for You:</strong>
+          <div style="white-space:pre-wrap;line-height:1.5">${ref.session_recommendations}</div>
         </div>` : ''}
     </div>
 

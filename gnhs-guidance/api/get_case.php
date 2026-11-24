@@ -48,10 +48,16 @@ try {
     $nStmt->execute([$id]);
     $notes = $nStmt->fetchAll();
 
-    // Session
-    $sStmt = $db->prepare("SELECT * FROM counseling_sessions WHERE case_id=? AND status='scheduled' ORDER BY session_date ASC LIMIT 1");
+    // Session (active or most recent completed session for archived recommendations)
+    $sStmt = $db->prepare("SELECT * FROM counseling_sessions WHERE case_id=? ORDER BY (status IN ('in_progress','scheduled','ongoing')) DESC, session_date DESC, id DESC LIMIT 1");
     $sStmt->execute([$id]);
     $session = $sStmt->fetch();
+    if (empty(trim((string)($case['guidance_recommendations'] ?? ''))) && $session && !empty(trim((string)($session['recommendations'] ?? '')))) {
+        $case['guidance_recommendations'] = $session['recommendations'];
+    }
+    if ($session && !in_array($session['status'] ?? '', ['scheduled', 'in_progress', 'ongoing'], true)) {
+        $session = false;
+    }
 
     jsonOut(['success'=>true,'case'=>$case,'notes'=>$notes,'session'=>$session]);
 } catch (Exception $e) {

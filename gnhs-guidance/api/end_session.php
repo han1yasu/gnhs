@@ -167,6 +167,9 @@ try {
         if ($studentId) {
             $notifTitle = "Case #{$caseNumber} Officially Resolved";
             $notifMsg   = "Your counseling case #{$caseNumber} (\"{$caseSubj}\") has been officially marked as RESOLVED by Counselor {$counselorName}.\n\n• Case Resolution:\n{$resolution}\n";
+            if ($guidanceRec) {
+                $notifMsg .= "\n• Guidance Recommendations & Advice for You:\n{$guidanceRec}\n";
+            }
             if ($sanctions) {
                 $notifMsg .= "\n• Regulated School Rule Sanction / Disciplinary Action:\n{$sanctions}\n";
             }

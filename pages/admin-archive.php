@@ -291,6 +291,7 @@ async function viewArchivedCase(id) {
           +(c.resolution_process ? '<span style="font-size:11px;font-weight:700;background:#dcfce7;color:#166534;border:1px solid #86efac;padding:2px 8px;border-radius:12px">'+escapeHtml(c.resolution_process)+'</span>' : '')
           +'</div>'
           +'<div style="font-size:13px;color:#166534;white-space:pre-wrap">'+escapeHtml(c.resolution)+'</div>'
+          +(c.guidance_recommendations ? '<div style="margin-top:8px;padding-top:8px;border-top:1px dashed #86efac"><strong style="color:#1d4ed8;font-size:12px;display:block;margin-bottom:2px"><i class="fas fa-lightbulb"></i> Guidance Recommendations &amp; Advice for Student:</strong><div style="font-size:12.5px;color:#1e3a8a;white-space:pre-wrap">'+escapeHtml(c.guidance_recommendations)+'</div></div>' : '')
           +(c.sanctions ? '<div style="margin-top:8px;padding-top:8px;border-top:1px dashed #86efac"><strong style="color:#991b1b;font-size:12px;display:block;margin-bottom:2px"><i class="fas fa-gavel"></i> Regulated School Rule Sanction / Action:</strong><div style="font-size:12.5px;color:#7f1d1d;white-space:pre-wrap">'+escapeHtml(c.sanctions)+'</div></div>' : '')+'</div>' : '')
         +(notes.length ? '<div style="margin-top:14px"><label style="font-size:13px;font-weight:800;color:var(--text-2);display:block;margin-bottom:8px">Counselor Notes</label>'
           +notes.map(n=>'<div class="case-note-item '+(n.is_visible_to_student=='1'?'note-response':'note-counselor')+'">'+n.content+'</div>').join('')+'</div>' : '');

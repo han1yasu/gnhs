@@ -1401,6 +1401,11 @@ function buildReviewModal(c, notes, session) {
           ${c.resolution_process ? `<span style="font-size:10.5px;font-weight:700;background:#dcfce7;color:#166534;border:1px solid #86efac;padding:2px 8px;border-radius:12px"><i class="fas fa-hand-holding-heart"></i> ${escapeHtml(c.resolution_process)}</span>` : ''}
         </div>
         <div style="font-size:13px;color:#166534;line-height:1.45;white-space:pre-wrap">${escapeHtml(c.resolution)}</div>
+        ${c.guidance_recommendations ? `
+          <div style="margin-top:8px;padding-top:8px;border-top:1px dashed #86efac">
+            <strong style="color:#1d4ed8;font-size:12px;display:block;margin-bottom:2px"><i class="fas fa-lightbulb"></i> Guidance Recommendations &amp; Advice for Student:</strong>
+            <div style="font-size:12.5px;color:#1e3a8a;line-height:1.45;white-space:pre-wrap">${escapeHtml(c.guidance_recommendations)}</div>
+          </div>` : ''}
         ${c.sanctions ? `
           <div style="margin-top:8px;padding-top:8px;border-top:1px dashed #86efac">
             <strong style="color:#991b1b;font-size:12px;display:block;margin-bottom:2px"><i class="fas fa-gavel"></i> School Rule Sanction / Action:</strong>
@@ -1978,12 +1983,21 @@ async function openCaseModal(caseId) {
             <div style="margin-bottom:14px;background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:16px">
               <div style="font-weight:800;color:#166534;font-size:13.5px;margin-bottom:6px"><i class="fas fa-check-circle"></i> Official Case Resolution</div>
               <div style="font-size:14px;color:#14532d;line-height:1.6;white-space:pre-wrap">${escapeHtml(c.resolution)}</div>
+              ${c.guidance_recommendations ? `
+                <div style="margin-top:12px;padding:12px 14px;border-radius:8px;background:#eff6ff;border:1px solid #bfdbfe">
+                  <div style="font-weight:800;color:#1d4ed8;font-size:12.5px;margin-bottom:4px;display:flex;align-items:center;gap:6px"><i class="fas fa-lightbulb"></i> Guidance Recommendations &amp; Advice for You:</div>
+                  <div style="font-size:13.5px;color:#1e3a8a;line-height:1.55;white-space:pre-wrap">${escapeHtml(c.guidance_recommendations)}</div>
+                </div>` : ''}
               ${c.sanctions ? `
                 <div style="margin-top:10px;padding-top:10px;border-top:1px dashed #86efac">
                   <div style="font-weight:800;color:#991b1b;font-size:12px;margin-bottom:4px"><i class="fas fa-gavel"></i> School Rule Sanction / Action:</div>
                   <div style="font-size:13px;color:#7f1d1d;line-height:1.5;white-space:pre-wrap">${escapeHtml(c.sanctions)}</div>
                 </div>` : ''}
-            </div>` : ''}
+            </div>` : (c.guidance_recommendations ? `
+            <div style="margin-bottom:14px;padding:14px 16px;border-radius:10px;background:#eff6ff;border:1.5px solid #bfdbfe">
+              <div style="font-weight:800;color:#1d4ed8;font-size:13px;margin-bottom:6px;display:flex;align-items:center;gap:6px"><i class="fas fa-lightbulb"></i> Guidance Recommendations &amp; Advice for You</div>
+              <div style="font-size:13.5px;color:#1e3a8a;line-height:1.55;white-space:pre-wrap">${escapeHtml(c.guidance_recommendations)}</div>
+            </div>` : '')}
 
           <div style="margin-top:14px">
             <button type="button" class="btn-message-counselor" onclick="goToCaseChat(${c.id || _activeCaseId})">

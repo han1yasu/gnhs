@@ -1008,7 +1008,7 @@ async function openCaseReview(caseId, caseNum, status, priority, subject, descri
   if (body) body.innerHTML = spinner;
 
   try {
-    const res = await fetch(gnhsApi('get_case.php?id=' + caseId));
+    const res = await fetch(gnhsApi('get_case.php?id=' + caseId + '&_t=' + Date.now()), { cache: 'no-store' });
     const d   = await res.json();
     if (d.success) buildReviewModal(d.case, d.notes, d.session);
     else {
@@ -1907,7 +1907,7 @@ async function openCaseModal(caseId) {
   if (body) body.innerHTML='<div style="text-align:center;padding:40px"><span class="spinner" style="border-color:rgba(85,0,0,.2);border-top-color:var(--maroon);display:inline-block"></span></div>';
 
   try {
-    const res = await fetch(gnhsApi('get_case.php?id=' + caseId));
+    const res = await fetch(gnhsApi('get_case.php?id=' + caseId + '&_t=' + Date.now()), { cache: 'no-store' });
     const d   = await res.json();
     if (d.success) {
       const c=d.case, notes=d.notes||[], session=d.session;

@@ -1449,9 +1449,9 @@ async function saveCase() {
   const priority = document.querySelector('.prio-opt.selected')?.dataset.prio || document.querySelector('.prio-opt.selected')?.textContent.trim().toLowerCase().replace(/\s+/,'');
   const status   = $('case-status-sel')?.value;
   const session  = $('session-dt')?.value;
-  const sessionType = $('session-type-sel')?.value || 'in-person';
-  const location    = $('session-location')?.value || 'Guidance Office';
-  const meetingLink = $('session-meeting-link')?.value.trim() || '';
+  const sessionType     = $('session-type-sel')?.value || 'in-person';
+  const sessionLocation = $('session-location')?.value || 'Guidance Office';
+  const meetingLink     = $('session-meeting-link')?.value.trim() || '';
 
   if (status === 'resolved' && (!_currentReviewCase || !_currentReviewCase.resolution)) {
     openCaseResolutionModal();
@@ -1478,12 +1478,12 @@ async function saveCase() {
 
   try {
     const res = await apiPost(gnhsApi('update_case.php'), {
-      case_id:_activeCaseId, priority, status, session_date:session, session_type:sessionType, location:location, meeting_link:meetingLink
+      case_id:_activeCaseId, priority, status, session_date:session, session_type:sessionType, location:sessionLocation, meeting_link:meetingLink
     });
     if (res.success) {
       $('caseReviewModal').classList.add('hidden');
       showToast('Case updated successfully!','success');
-      setTimeout(() => location.reload(), 200);
+      setTimeout(() => window.location.reload(), 200);
     } else { showToast(res.message||'Update failed.','error'); setLoading(btn,false); }
   } catch {
     showToast('Failed to update case. Please try again.','error');
@@ -1826,7 +1826,7 @@ async function submitCaseResolution() {
       closeCaseResolutionModal();
       $('caseReviewModal')?.classList.add('hidden');
       showToast('Case officially resolved and sessions archived!', 'success');
-      setTimeout(() => location.reload(), 200);
+      setTimeout(() => window.location.reload(), 200);
     } else {
       showToast(res.message || 'Failed to resolve case.', 'error');
       if (btn) {

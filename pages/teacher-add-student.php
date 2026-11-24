@@ -1178,8 +1178,8 @@ function parseCsvText(text) {
     } else if (char === ',' && !insideQuote) {
       row.push(current.trim());
       current = '';
-    } else if ((char === '\r' || char === '\n') && !insideQuote) {
-      if (char === '\r' && nextChar === '\n') {
+    } else if ((char === '\\r' || char === '\\n') && !insideQuote) {
+      if (char === '\\r' && nextChar === '\\n') {
         i++;
       }
       row.push(current.trim());

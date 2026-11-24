@@ -8,7 +8,7 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
     $idNumber = htmlspecialchars($user['id_number'] ?? '');
     $grade    = htmlspecialchars($user['grade_section'] ?? '');
     $avatarPhoto = $user['avatar_photo'] ?? null;
-    $avatarOnError = "onerror=\"if(!this.dataset.t){this.dataset.t='1';this.src=this.src.includes('/gnhs-guidance/uploads/')?this.src.replace('/gnhs-guidance/uploads/','/uploads/'):this.src.replace('/uploads/','/gnhs-guidance/uploads/');}else{this.style.display='none';var fb=this.parentElement.querySelector('.avatar-fallback');if(fb)fb.style.display='flex';}\"";
+    $avatarOnError = "onerror=\"handleAvatarError(this)\"";
 
     // Sidebar links grouped by category per role
     $navLinks = [
@@ -205,6 +205,34 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" rel="stylesheet"/>
+  <script>
+    window.handleAvatarError = function(img) {
+      if (!img) return;
+      var step = parseInt(img.dataset.errStep || '0', 10);
+      var src = img.getAttribute('src') || '';
+      var candidates = [];
+      if (src.indexOf('/gnhs-guidance/gnhs-guidance/uploads/') !== -1) {
+        candidates.push(src.replace('/gnhs-guidance/gnhs-guidance/uploads/', '/gnhs-guidance/uploads/'));
+        candidates.push(src.replace('/gnhs-guidance/gnhs-guidance/uploads/', '/uploads/'));
+      } else if (src.indexOf('/gnhs-guidance/uploads/') !== -1) {
+        candidates.push(src.replace('/gnhs-guidance/uploads/', '/gnhs-guidance/gnhs-guidance/uploads/'));
+        candidates.push(src.replace('/gnhs-guidance/uploads/', '/uploads/'));
+      } else if (src.indexOf('/uploads/') !== -1) {
+        candidates.push(src.replace('/uploads/', '/gnhs-guidance/uploads/'));
+        candidates.push(src.replace('/uploads/', '/gnhs-guidance/gnhs-guidance/uploads/'));
+      }
+      if (step < candidates.length) {
+        img.dataset.errStep = String(step + 1);
+        img.src = candidates[step];
+        return;
+      }
+      img.style.display = 'none';
+      if (img.parentElement) {
+        var fb = img.parentElement.querySelector('.avatar-fallback');
+        if (fb) fb.style.display = 'flex';
+      }
+    };
+  </script>
   <style>
     /* Critical global dark mode safeguards */
     [data-theme="dark"] .user-card,

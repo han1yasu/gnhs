@@ -178,7 +178,7 @@ if ($advisoryClass) {
         $init = strtoupper($s['first_name'][0].($s['last_name'][0]??''));
         $photo = $s['avatar_photo'] ?? null;
         $avatarEl = $photo
-            ? "<img src='".htmlspecialchars($photo)."' style='width:40px;height:40px;border-radius:10px;object-fit:cover;'/>"
+            ? "<div style='width:40px;height:40px;border-radius:10px;overflow:hidden;position:relative;flex-shrink:0'><span class='avatar-fallback' style='display:none;width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,var(--maroon),var(--maroon-mid));color:#fff;font-size:13px;font-weight:900;align-items:center;justify-content:center'>$init</span><img src='".htmlspecialchars($photo)."' onerror='handleAvatarError(this)' style='width:40px;height:40px;border-radius:10px;object-fit:cover;display:block;'/></div>"
             : "<div style='width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,var(--maroon),var(--maroon-mid));color:#fff;font-size:13px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0'>$init</div>";
         $name = htmlspecialchars($s['first_name'].' '.$s['last_name']);
         

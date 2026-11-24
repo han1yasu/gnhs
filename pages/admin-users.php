@@ -56,7 +56,7 @@ foreach ($users as $u) {
         : "<button class='btn-icon btn-action-activate' id='btn-status-{$u['id']}' onclick='openActivateConfirmModal({$u['id']},\"$name\",\"$email\")' title='Activate Account'><i class='fas fa-user-check'></i></button>";
 
     $avatarEl = !empty($u['avatar_photo'])
-        ? "<div class='user-card-avatar' style='background:none;padding:0;overflow:hidden'><img src='".htmlspecialchars($u['avatar_photo'])."' style='width:60px;height:60px;object-fit:cover;object-position:center top;border-radius:16px;display:block;'/></div>"
+        ? "<div class='user-card-avatar' style='padding:0;overflow:hidden;position:relative'><span class='avatar-fallback' style='display:none;width:100%;height:100%;align-items:center;justify-content:center'>$initials</span><img src='".htmlspecialchars($u['avatar_photo'])."' onerror='handleAvatarError(this)' style='width:60px;height:60px;object-fit:cover;object-position:center top;border-radius:16px;display:block;'/></div>"
         : "<div class='user-card-avatar'>$initials</div>";
         
     $cards .= "<div class='user-card' data-user-id='{$u['id']}'>
@@ -456,25 +456,9 @@ $bannerHtml
       </div>
 
       <!-- Quick Preset Badge -->
-      <div style="background:var(--bg2);border:1px dashed var(--border);border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;font-size:12px;gap:8px">
+      <div style="background:var(--bg2);border:1px dashed var(--border);border-radius:10px;padding:10px 14px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;font-size:12px;gap:8px">
         <span style="color:var(--text-2)"><i class="fas fa-lightbulb" style="color:#eab308;margin-right:4px"></i> Default suggestion: <strong style="font-family:monospace;background:var(--bg);padding:2px 6px;border-radius:4px;border:1px solid var(--border)">GNHS@2026</strong></span>
         <button type="button" onclick="useDefaultPassword('GNHS@2026')" style="padding:4px 10px;font-size:11px;border-radius:6px;border:1px solid var(--border);background:var(--bg2);cursor:pointer;font-weight:700;color:var(--maroon);white-space:nowrap">Use Default</button>
-      </div>
-
-      <!-- Backup for Forgotten Startup Questions Checkbox -->
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:18px;text-align:left">
-        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;margin:0;font-size:13px;font-weight:600;color:var(--text)">
-          <input type="checkbox" id="reset-clear-sec-questions" style="margin-top:3px;accent-color:var(--maroon);width:16px;height:16px" checked />
-          <div>
-            <div style="display:flex;align-items:center;gap:6px">
-              <i class="fas fa-shield-halved" style="color:var(--maroon);font-size:13px"></i>
-              <span id="resetClearQuestionsTitle">Reset Startup Security Questions (Backup)</span>
-            </div>
-            <div id="resetClearQuestionsSub" style="font-size:11.5px;color:var(--text-3);font-weight:400;margin-top:3px;line-height:1.4">
-              Backup for students who forgot their password and security questions on startup. Clears their forgotten questions and prompts them to choose fresh questions upon next login.
-            </div>
-          </div>
-        </label>
       </div>
 
       <div class="form-actions" style="display:flex;gap:10px;justify-content:flex-end">
@@ -970,23 +954,6 @@ function openAdminResetPasswordModal(userId, name, email, role) {
       badge.className = 'user-card-role role-' + (role ? role.toLowerCase() : 'student');
     }
 
-    const chkQuestions = document.getElementById('reset-clear-sec-questions');
-    const qTitle = document.getElementById('resetClearQuestionsTitle');
-    const qSub = document.getElementById('resetClearQuestionsSub');
-    const isStudent = !role || role.toLowerCase() === 'student';
-    if (chkQuestions) {
-      chkQuestions.checked = isStudent;
-    }
-    if (qTitle && qSub) {
-      if (isStudent) {
-        qTitle.textContent = 'Reset Startup Security Questions (Backup)';
-        qSub.textContent = 'Backup for students who forgot their password and security questions on startup. Clears their forgotten questions and prompts them to choose fresh questions upon next login.';
-      } else {
-        qTitle.textContent = 'Reset Security Recovery Questions';
-        qSub.textContent = 'Clears security recovery questions so user can configure new ones upon their next login.';
-      }
-    }
-
     const p1 = document.getElementById('reset-new-pass');
     const p2 = document.getElementById('reset-confirm-pass');
     if (p1) { p1.value = ''; p1.type = 'password'; }
@@ -1119,7 +1086,6 @@ function checkPasswordMatch() {
 async function submitResetPassword() {
   const p1 = document.getElementById('reset-new-pass')?.value.trim();
   const p2 = document.getElementById('reset-confirm-pass')?.value.trim();
-  const clearQuestions = document.getElementById('reset-clear-sec-questions')?.checked ? 1 : 0;
   const btn = document.getElementById('saveResetPwBtn');
 
   hideEl('resetPwMsg');
@@ -1157,7 +1123,7 @@ async function submitResetPassword() {
     const res = await postFn(endpoint, {
       user_id: _resetTargetUserId,
       password: p1,
-      reset_questions: clearQuestions
+      reset_questions: 0
     });
 
     if (res && res.success) {

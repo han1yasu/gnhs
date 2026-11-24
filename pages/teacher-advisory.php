@@ -390,7 +390,7 @@ HTML;
             $initials = htmlspecialchars($s['avatar_initials'] ?? strtoupper($s['first_name'][0]));
 
             $avatarHtml = $photo 
-                ? '<img src="'.htmlspecialchars($photo).'" style="width:100%;height:100%;object-fit:cover;">' 
+                ? '<span class="avatar-fallback" style="display:none;width:100%;height:100%;align-items:center;justify-content:center">'.$initials.'</span><img src="'.htmlspecialchars($photo).'" onerror="handleAvatarError(this)" style="width:100%;height:100%;object-fit:cover;">' 
                 : $initials;
 
             $sCases = $studentCasesMap[$sid] ?? [];
@@ -712,7 +712,7 @@ function openStudentConcernsModal(studentId) {
 
   const container = document.getElementById("modalSummaryBody");
   const avatarEl = student.avatar_photo 
-    ? "<img src=\"" + student.avatar_photo + "\" style=\"width:100%;height:100%;object-fit:cover;border-radius:12px\" />"
+    ? "<div style=\"width:48px;height:48px;border-radius:12px;overflow:hidden;position:relative\"><span class=\"avatar-fallback\" style=\"display:none;width:48px;height:48px;border-radius:12px;background:var(--maroon-pale);color:var(--maroon);align-items:center;justify-content:center;font-weight:900;font-size:16px\">" + (student.avatar_initials || "S") + "</span><img src=\"" + student.avatar_photo + "\" onerror=\"handleAvatarError(this)\" style=\"width:100%;height:100%;object-fit:cover;border-radius:12px\" /></div>"
     : "<div style=\"width:48px;height:48px;border-radius:12px;background:var(--maroon-pale);color:var(--maroon);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px\">" + (student.avatar_initials || "S") + "</div>";
 
   let casesHtml = "";
@@ -786,7 +786,7 @@ function openCaseSummaryModal(caseId) {
 
   const container = document.getElementById("modalSummaryBody");
   const avatarEl = c.avatar_photo 
-    ? "<img src=\"" + c.avatar_photo + "\" style=\"width:100%;height:100%;object-fit:cover;border-radius:12px\" />"
+    ? "<div style=\"width:48px;height:48px;border-radius:12px;overflow:hidden;position:relative\"><span class=\"avatar-fallback\" style=\"display:none;width:48px;height:48px;border-radius:12px;background:var(--maroon-pale);color:var(--maroon);align-items:center;justify-content:center;font-weight:900;font-size:16px\">" + (c.avatar_initials || "?") + "</span><img src=\"" + c.avatar_photo + "\" onerror=\"handleAvatarError(this)\" style=\"width:100%;height:100%;object-fit:cover;border-radius:12px\" /></div>"
     : "<div style=\"width:48px;height:48px;border-radius:12px;background:var(--maroon-pale);color:var(--maroon);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px\">" + (c.avatar_initials || "?") + "</div>";
 
   const referralBtn = c.is_anonymous ? "" : ""

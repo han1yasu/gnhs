@@ -740,7 +740,7 @@
   </div>
 
   <script src="theme.js?v=20261115_02"></script>
-  <script src="app.js?v=20261115_02"></script>
+  <script src="app.js?v=20261125_01"></script>
   <script>
     const GNHS_GRADE_SECTIONS = {
       '7':  ['Bonifacio', 'Burgos', 'Del Pilar', 'Diego Silang', 'Luna', 'Mabini', 'Malvar', 'Rizal'],
@@ -807,11 +807,20 @@
     let _selectedGoogleAccount = null;
     let _previousStepBeforeGoogle = 'step-choose';
 
+    window.openLoginModal = function() {
+      const m = document.getElementById('loginModal');
+      if (m) {
+        m.style.display = '';
+        m.classList.remove('hidden');
+        if (typeof showStep === 'function') showStep('step-choose');
+      }
+    };
+
     window.closeLoginModal = function() {
       const m = document.getElementById('loginModal');
       if (m) {
         m.classList.add('hidden');
-        m.style.display = 'none';
+        m.style.display = '';
       }
       document.body.style.overflow = '';
     };

@@ -53,16 +53,22 @@ function showToast(msg, type = 'success') {
 // LANDING â€” LOGIN MODAL
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 function openLoginModal() {
-  const m = $('loginModal'); if (m) { m.classList.remove('hidden'); showStep('step-choose'); }
+  const m = $('loginModal');
+  if (m) {
+    m.style.display = '';
+    m.classList.remove('hidden');
+    showStep('step-choose');
+  }
 }
 function closeLoginModal() {
   const m = document.getElementById('loginModal');
   if (m) {
     m.classList.add('hidden');
-    m.style.display = 'none';
+    m.style.display = '';
   }
   document.body.style.overflow = '';
 }
+window.openLoginModal = openLoginModal;
 window.closeLoginModal = closeLoginModal;
 function closeOnOverlay(e) { if (e.target.id==='loginModal') closeLoginModal(); }
 

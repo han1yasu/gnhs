@@ -35,27 +35,31 @@
       flex-shrink: 0 !important;
       margin: 0 6px !important;
       padding: 0 !important;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.06) !important;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06) !important;
     }
+
     .navbar .theme-toggle-btn:hover {
       background: var(--maroon-pale, #fff5f5) !important;
       color: var(--maroon, #550000) !important;
       border-color: var(--maroon-tint, #fce8e8) !important;
       transform: translateY(-1px) !important;
-      box-shadow: 0 3px 10px rgba(85,0,0,0.12) !important;
+      box-shadow: 0 3px 10px rgba(85, 0, 0, 0.12) !important;
     }
+
     [data-theme="dark"] .navbar .theme-toggle-btn {
       background: rgba(255, 255, 255, 0.1) !important;
       color: #fbbf24 !important;
       border-color: rgba(255, 255, 255, 0.18) !important;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.3) !important;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3) !important;
     }
+
     [data-theme="dark"] .navbar .theme-toggle-btn:hover {
       background: rgba(251, 191, 36, 0.18) !important;
       color: #f59e0b !important;
       border-color: rgba(251, 191, 36, 0.4) !important;
       box-shadow: 0 2px 12px rgba(251, 191, 36, 0.25) !important;
     }
+
     @media (max-width: 768px) {
       .navbar .theme-toggle-btn {
         width: 38px !important;
@@ -90,7 +94,8 @@
       <a href="#features" class="nav-link">Features</a>
       <a href="#about" class="nav-link">About</a>
       <a href="#contact" class="nav-link">Contact</a>
-      <button type="button" class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()" title="Toggle Dark / Light Mode" aria-label="Toggle Theme">
+      <button type="button" class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()"
+        title="Toggle Dark / Light Mode" aria-label="Toggle Theme">
         <i class="fas fa-moon" id="themeToggleIcon"></i>
       </button>
       <button class="btn-login" onclick="openLoginModal()"><i class="fas fa-sign-in-alt"></i> Login</button>
@@ -256,7 +261,8 @@
     <div style="display:flex;gap:20px;justify-content:center;flex-wrap:wrap;">
       <div
         style="background:rgba(255,255,255,.12);color:#fff;border:2px solid rgba(255,255,255,.25);padding:14px 28px;border-radius:12px;font-weight:700;display:flex;align-items:center;gap:10px">
-        <i class="fas fa-map-marker-alt"></i> Jurado Compound, Guinayang, San Mateo, Rizal</div>
+        <i class="fas fa-map-marker-alt"></i> Jurado Compound, Guinayang, San Mateo, Rizal
+      </div>
       <button class="btn-login" style="background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.4)"
         onclick="openLoginModal()"><i class="fas fa-sign-in-alt"></i> Login to System</button>
     </div>
@@ -284,11 +290,14 @@
         <div class="modal-logo"><i class="fas fa-graduation-cap"></i></div>
         <h2 class="modal-title">Welcome to <span>GNHS</span></h2>
         <p class="modal-sub">Guidance Case Management System</p>
-        <div id="timeoutAlertBanner" style="display:none;margin-bottom:16px;background:#fef2f2;border:1px solid #f87171;color:#991b1b;padding:12px 14px;border-radius:10px;font-size:13px;font-weight:600;text-align:left">
-          <i class="fas fa-clock" style="color:#dc2626;margin-right:6px"></i> Your session expired due to 15 minutes of inactivity. Please log in again.
+        <div id="timeoutAlertBanner"
+          style="display:none;margin-bottom:16px;background:#fef2f2;border:1px solid #f87171;color:#991b1b;padding:12px 14px;border-radius:10px;font-size:13px;font-weight:600;text-align:left">
+          <i class="fas fa-clock" style="color:#dc2626;margin-right:6px"></i> Your session expired due to 15 minutes of
+          inactivity. Please log in again.
         </div>
         <div class="action-cards" style="display:flex;flex-direction:column;width:100%;gap:12px;">
-          <div class="action-card" onclick="goToRoleSelect('login')" style="padding:16px 20px;display:flex;align-items:center;justify-content:center;gap:14px;text-align:left;width:100%;background:linear-gradient(135deg,var(--maroon),var(--maroon-mid));color:#fff;border-radius:14px;box-shadow:0 8px 20px rgba(85,0,0,0.22);cursor:pointer;">
+          <div class="action-card" onclick="goToRoleSelect('login')"
+            style="padding:16px 20px;display:flex;align-items:center;justify-content:center;gap:14px;text-align:left;width:100%;background:linear-gradient(135deg,var(--maroon),var(--maroon-mid));color:#fff;border-radius:14px;box-shadow:0 8px 20px rgba(85,0,0,0.22);cursor:pointer;">
             <i class="fas fa-sign-in-alt" style="font-size:22px;color:#fff;margin-bottom:0"></i>
             <div style="flex:1">
               <strong style="font-size:16px;display:block;color:#fff">Login to System</strong>
@@ -300,23 +309,29 @@
 
         <div style="display:flex;align-items:center;margin:16px 0 10px;gap:10px;">
           <div style="flex:1;height:1px;background:var(--border);"></div>
-          <span style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:0.5px;">OR</span>
+          <span
+            style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:0.5px;">OR</span>
           <div style="flex:1;height:1px;background:var(--border);"></div>
         </div>
 
         <button type="button" class="btn-google-sign-in" onclick="openGoogleAccountChooser()">
           <svg width="18" height="18" viewBox="0 0 48 48">
-            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+            <path fill="#EA4335"
+              d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+            <path fill="#4285F4"
+              d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+            <path fill="#FBBC05"
+              d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+            <path fill="#34A853"
+              d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
           </svg>
           <span>Google</span>
         </button>
       </div>
       <div class="modal-step hidden" id="step-role">
         <div class="modal-top-nav">
-          <button type="button" class="modal-back" onclick="goBack('step-choose')"><i class="fas fa-arrow-left"></i> Back</button>
+          <button type="button" class="modal-back" onclick="goBack('step-choose')"><i class="fas fa-arrow-left"></i>
+            Back</button>
           <button type="button" class="modal-close" onclick="closeLoginModal()"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-logo"><i class="fas fa-users"></i></div>
@@ -340,21 +355,26 @@
       </div>
       <div class="modal-step hidden" id="step-login">
         <div class="modal-top-nav">
-          <button type="button" class="modal-back" onclick="goBack('step-role')"><i class="fas fa-arrow-left"></i> Back</button>
+          <button type="button" class="modal-back" onclick="goBack('step-role')"><i class="fas fa-arrow-left"></i>
+            Back</button>
           <button type="button" class="modal-close" onclick="closeLoginModal()"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-logo" id="login-role-badge"><i class="fas fa-user-graduate"></i></div>
-        <h3 style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:2px;text-align:center;">Account Login</h3>
+        <h3 style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:2px;text-align:center;">Account Login
+        </h3>
         <p class="modal-sub" id="login-role-label" style="margin-top:0;">Student Login</p>
         <div id="login-msg" style="display:none"></div>
         <div class="form-group"><label id="login-id-label">Email Address <span class="req">*</span></label>
           <div class="input-wrap"><i class="fas fa-envelope"></i><input type="text" id="login-email-input"
-              placeholder="Enter your email" required onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('login-pass')?.focus();}" /></div>
+              placeholder="Enter your email" required
+              onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('login-pass')?.focus();}" />
+          </div>
         </div>
         <div class="form-group"><label>Password <span class="req">*</span></label>
           <div class="input-wrap"><i class="fas fa-lock"></i><input type="password" id="login-pass"
-              placeholder="Enter your password" required onkeydown="if(event.key==='Enter'){event.preventDefault();handleLogin();}" /><button class="toggle-pass" type="button"
-              onclick="togglePass('login-pass')"><i class="fas fa-eye"></i></button></div>
+              placeholder="Enter your password" required
+              onkeydown="if(event.key==='Enter'){event.preventDefault();handleLogin();}" /><button class="toggle-pass"
+              type="button" onclick="togglePass('login-pass')"><i class="fas fa-eye"></i></button></div>
         </div>
         <div class="form-options">
           <label class="checkbox-label"><input type="checkbox"> Remember me</label>
@@ -364,16 +384,21 @@
 
         <div style="display:flex;align-items:center;margin:18px 0 12px;gap:10px;">
           <div style="flex:1;height:1px;background:var(--border);"></div>
-          <span style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:0.5px;">OR</span>
+          <span
+            style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:0.5px;">OR</span>
           <div style="flex:1;height:1px;background:var(--border);"></div>
         </div>
 
         <button type="button" class="btn-google-sign-in" onclick="openGoogleAccountChooser()">
           <svg width="18" height="18" viewBox="0 0 48 48">
-            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+            <path fill="#EA4335"
+              d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+            <path fill="#4285F4"
+              d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+            <path fill="#FBBC05"
+              d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+            <path fill="#34A853"
+              d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
           </svg>
           <span>Google</span>
         </button>
@@ -381,23 +406,32 @@
 
       <!-- SHOPEE-STYLE GOOGLE ACCOUNT CHOOSER STEP -->
       <div class="modal-step hidden" id="step-google-chooser">
-        <div class="google-top-bar" style="display:flex;align-items:center;justify-content:space-between;width:100%;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid var(--border);position:relative;box-sizing:border-box;">
+        <div class="google-top-bar"
+          style="display:flex;align-items:center;justify-content:space-between;width:100%;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid var(--border);position:relative;box-sizing:border-box;">
           <div class="google-top-left" style="display:flex;align-items:center;gap:10px;min-width:0;">
-            <button type="button" class="modal-back google-back-btn" onclick="goBackFromGoogle()" title="Go back to previous step" style="position:static !important;top:auto !important;right:auto !important;margin:0 !important;display:inline-flex;align-items:center;gap:6px;background:rgba(0,0,0,0.04);border:1px solid var(--border);border-radius:8px;color:var(--text-2);font-weight:700;font-size:12.5px;cursor:pointer;padding:5px 9px;transition:.2s;line-height:1.2;">
+            <button type="button" class="modal-back google-back-btn" onclick="goBackFromGoogle()"
+              title="Go back to previous step"
+              style="position:static !important;top:auto !important;right:auto !important;margin:0 !important;display:inline-flex;align-items:center;gap:6px;background:rgba(0,0,0,0.04);border:1px solid var(--border);border-radius:8px;color:var(--text-2);font-weight:700;font-size:12.5px;cursor:pointer;padding:5px 9px;transition:.2s;line-height:1.2;">
               <i class="fas fa-arrow-left" style="font-size:11px;"></i> <span>Back</span>
             </button>
             <div style="width:1px;height:16px;background:var(--border);flex-shrink:0;"></div>
-            <div class="google-brand" style="display:inline-flex;align-items:center;gap:8px;font-size:13.5px;font-weight:700;color:var(--text);margin:0;white-space:nowrap;">
+            <div class="google-brand"
+              style="display:inline-flex;align-items:center;gap:8px;font-size:13.5px;font-weight:700;color:var(--text);margin:0;white-space:nowrap;">
               <svg width="18" height="18" viewBox="0 0 48 48" style="flex-shrink:0;">
-                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-                <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                <path fill="#EA4335"
+                  d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+                <path fill="#4285F4"
+                  d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+                <path fill="#FBBC05"
+                  d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+                <path fill="#34A853"
+                  d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
               </svg>
               <span>Sign in with Google</span>
             </div>
           </div>
-          <button type="button" class="modal-close" onclick="closeLoginModal()" title="Close" style="position:static !important;top:auto !important;right:auto !important;margin:0 !important;cursor:pointer;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,0.05);color:var(--text-2);display:inline-flex;align-items:center;justify-content:center;border:none;flex-shrink:0;">
+          <button type="button" class="modal-close" onclick="closeLoginModal()" title="Close"
+            style="position:static !important;top:auto !important;right:auto !important;margin:0 !important;cursor:pointer;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,0.05);color:var(--text-2);display:inline-flex;align-items:center;justify-content:center;border:none;flex-shrink:0;">
             <i class="fas fa-times"></i>
           </button>
         </div>
@@ -417,10 +451,12 @@
           </div>
 
           <p class="google-privacy-footer">
-            Before using this app, you can review GNHS Guidance's <a href="#">Privacy Policy</a> and <a href="#">Terms of Service</a>.
+            Before using this app, you can review GNHS Guidance's <a href="#">Privacy Policy</a> and <a href="#">Terms
+              of Service</a>.
           </p>
           <div style="text-align:center;margin-top:14px;padding-top:12px;border-top:1px dashed var(--border);">
-            <button type="button" onclick="goBackFromGoogle()" style="background:none;border:none;color:var(--text-2);font-weight:700;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:6px;transition:.2s;">
+            <button type="button" onclick="goBackFromGoogle()"
+              style="background:none;border:none;color:var(--text-2);font-weight:700;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:6px;transition:.2s;">
               <i class="fas fa-arrow-left"></i> <span>Back to Login Options</span>
             </button>
           </div>
@@ -440,16 +476,20 @@
             <label>Email Address <span class="req">*</span></label>
             <div class="input-wrap">
               <i class="fas fa-envelope"></i>
-              <input type="email" id="google-custom-email" placeholder="e.g. name@gmail.com or name@deped.gov.ph" required onkeydown="if(event.key==='Enter')submitGoogleCustomEmail()" />
+              <input type="email" id="google-custom-email" placeholder="e.g. name@gmail.com or name@deped.gov.ph"
+                required onkeydown="if(event.key==='Enter')submitGoogleCustomEmail()" />
             </div>
-            <span style="font-size:11.5px;color:var(--text-3);margin-top:4px;display:block;">Personal Gmail for Students &bull; DepEd / Gmail for Teachers</span>
+            <span style="font-size:11.5px;color:var(--text-3);margin-top:4px;display:block;">Personal Gmail for Students
+              &bull; DepEd / Gmail for Teachers</span>
           </div>
 
           <div style="display:flex;justify-content:space-between;align-items:center;margin-top:22px">
-            <button type="button" class="btn-ghost" onclick="showGoogleAccountList()" style="font-size:13px;padding:8px 14px">
+            <button type="button" class="btn-ghost" onclick="showGoogleAccountList()"
+              style="font-size:13px;padding:8px 14px">
               Back to accounts
             </button>
-            <button type="button" class="btn-submit" onclick="submitGoogleCustomEmail()" style="width:auto;padding:10px 24px;border-radius:20px;background:#1a73e8;color:#fff;border:none;font-weight:700">
+            <button type="button" class="btn-submit" onclick="submitGoogleCustomEmail()"
+              style="width:auto;padding:10px 24px;border-radius:20px;background:#1a73e8;color:#fff;border:none;font-weight:700">
               Next &nbsp;<i class="fas fa-arrow-right"></i>
             </button>
           </div>
@@ -468,7 +508,8 @@
           </div>
 
           <h2 class="google-chooser-title" style="font-size:20px;text-align:left">Google Verification</h2>
-          <p class="google-chooser-sub" style="margin-bottom:16px;text-align:left">A 6-digit code was sent to your Gmail inbox to verify your account</p>
+          <p class="google-chooser-sub" style="margin-bottom:16px;text-align:left">A 6-digit code was sent to your Gmail
+            inbox to verify your account</p>
 
           <div id="google-otp-msg" style="display:none"></div>
 
@@ -476,16 +517,21 @@
             <label>6-Digit Verification Code <span class="req">*</span></label>
             <div class="input-wrap">
               <i class="fas fa-key"></i>
-              <input type="text" id="google-otp-code-input" placeholder="000000" maxlength="6" pattern="[0-9]*" inputmode="numeric" style="letter-spacing:6px;font-size:18px;font-weight:800;text-align:center" onkeydown="if(event.key==='Enter')verifyGoogleLoginOtp()" />
+              <input type="text" id="google-otp-code-input" placeholder="000000" maxlength="6" pattern="[0-9]*"
+                inputmode="numeric" style="letter-spacing:6px;font-size:18px;font-weight:800;text-align:center"
+                onkeydown="if(event.key==='Enter')verifyGoogleLoginOtp()" />
             </div>
-            <span style="font-size:11.5px;color:var(--text-3);margin-top:4px;display:block;">Check your Gmail inbox or spam. No password required!</span>
+            <span style="font-size:11.5px;color:var(--text-3);margin-top:4px;display:block;">Check your Gmail inbox or
+              spam. No password required!</span>
           </div>
 
           <div style="display:flex;justify-content:space-between;align-items:center;margin-top:22px">
-            <button type="button" class="btn-ghost" onclick="loginWithGoogleCode(true)" style="font-size:12px;background:none;border:none;color:var(--text-3);cursor:pointer;font-weight:700">
+            <button type="button" class="btn-ghost" onclick="loginWithGoogleCode(true)"
+              style="font-size:12px;background:none;border:none;color:var(--text-3);cursor:pointer;font-weight:700">
               Resend code
             </button>
-            <button type="button" class="btn-submit" id="btnVerifyGoogleOtp" onclick="verifyGoogleLoginOtp()" style="width:auto;padding:10px 24px;border-radius:20px;background:#1a73e8;color:#fff;border:none;font-weight:700">
+            <button type="button" class="btn-submit" id="btnVerifyGoogleOtp" onclick="verifyGoogleLoginOtp()"
+              style="width:auto;padding:10px 24px;border-radius:20px;background:#1a73e8;color:#fff;border:none;font-weight:700">
               Verify & Sign In &nbsp;<i class="fas fa-arrow-right"></i>
             </button>
           </div>
@@ -495,19 +541,24 @@
       <!-- EMAIL CODE (OTP) LOGIN STEP -->
       <div class="modal-step hidden" id="step-email-otp">
         <div class="modal-top-nav">
-          <button type="button" class="modal-back" onclick="goBack('step-login')"><i class="fas fa-arrow-left"></i> Back</button>
+          <button type="button" class="modal-back" onclick="goBack('step-login')"><i class="fas fa-arrow-left"></i>
+            Back</button>
           <button type="button" class="modal-close" onclick="closeLoginModal()"><i class="fas fa-times"></i></button>
         </div>
-        <div class="modal-logo" style="background:var(--maroon-pale);color:var(--maroon)"><i class="fas fa-envelope-circle-check"></i></div>
+        <div class="modal-logo" style="background:var(--maroon-pale);color:var(--maroon)"><i
+            class="fas fa-envelope-circle-check"></i></div>
         <h2 class="modal-title">Sign in with Email Code</h2>
         <p class="modal-sub" id="email-otp-sub">Personal Gmail for Students &bull; DepEd / Gmail for Teachers</p>
 
         <!-- Role Selector Tab for Email Login -->
-        <div style="display:flex;background:var(--bg2);padding:4px;border-radius:10px;border:1px solid var(--border);margin-bottom:14px;gap:6px;">
-          <button type="button" id="otpRoleTabStudent" onclick="setOtpRole('student')" style="flex:1;border:none;border-radius:8px;padding:8px 10px;font-size:12.5px;font-weight:700;cursor:pointer;transition:.2s;background:var(--maroon);color:#fff;">
+        <div
+          style="display:flex;background:var(--bg2);padding:4px;border-radius:10px;border:1px solid var(--border);margin-bottom:14px;gap:6px;">
+          <button type="button" id="otpRoleTabStudent" onclick="setOtpRole('student')"
+            style="flex:1;border:none;border-radius:8px;padding:8px 10px;font-size:12.5px;font-weight:700;cursor:pointer;transition:.2s;background:var(--maroon);color:#fff;">
             <i class="fas fa-user-graduate"></i> Student
           </button>
-          <button type="button" id="otpRoleTabTeacher" onclick="setOtpRole('teacher')" style="flex:1;border:none;border-radius:8px;padding:8px 10px;font-size:12.5px;font-weight:700;cursor:pointer;transition:.2s;background:transparent;color:var(--text-2);">
+          <button type="button" id="otpRoleTabTeacher" onclick="setOtpRole('teacher')"
+            style="flex:1;border:none;border-radius:8px;padding:8px 10px;font-size:12.5px;font-weight:700;cursor:pointer;transition:.2s;background:transparent;color:var(--text-2);">
             <i class="fas fa-chalkboard-teacher"></i> Teacher
           </button>
         </div>
@@ -520,9 +571,11 @@
             <label>Email Address <span class="req">*</span></label>
             <div class="input-wrap">
               <i class="fas fa-envelope"></i>
-              <input type="email" id="otp-email-input" placeholder="e.g. name@gmail.com or name@deped.gov.ph" required autocomplete="email" onkeydown="if(event.key==='Enter')requestEmailCode()" />
+              <input type="email" id="otp-email-input" placeholder="e.g. name@gmail.com or name@deped.gov.ph" required
+                autocomplete="email" onkeydown="if(event.key==='Enter')requestEmailCode()" />
             </div>
-            <span style="font-size:11.5px;color:var(--text-3);margin-top:4px;display:block;">We will send a secure 6-digit verification code to this inbox.</span>
+            <span style="font-size:11.5px;color:var(--text-3);margin-top:4px;display:block;">We will send a secure
+              6-digit verification code to this inbox.</span>
           </div>
           <button type="button" class="btn-submit" id="btnSendOtp" onclick="requestEmailCode()">
             <i class="fas fa-paper-plane"></i> Send 6-Digit Code
@@ -531,21 +584,26 @@
 
         <!-- Stage 2: Enter Code -->
         <div id="email-otp-stage-2" style="display:none">
-          <div style="background:var(--bg2);padding:12px 14px;border-radius:10px;border:1px solid var(--border);margin-bottom:16px;font-size:13px;display:flex;align-items:center;justify-content:space-between">
+          <div
+            style="background:var(--bg2);padding:12px 14px;border-radius:10px;border:1px solid var(--border);margin-bottom:16px;font-size:13px;display:flex;align-items:center;justify-content:space-between">
             <div>
               <span style="color:var(--text-3);font-size:11px;display:block;">Code sent to:</span>
               <strong id="otp-target-email-label" style="color:var(--maroon)"></strong>
             </div>
-            <button type="button" onclick="editOtpEmail()" style="background:none;border:none;color:var(--maroon);font-weight:700;font-size:12px;cursor:pointer">Change</button>
+            <button type="button" onclick="editOtpEmail()"
+              style="background:none;border:none;color:var(--maroon);font-weight:700;font-size:12px;cursor:pointer">Change</button>
           </div>
 
           <div class="form-group">
             <label>Enter 6-Digit Verification Code <span class="req">*</span></label>
             <div class="input-wrap">
               <i class="fas fa-key"></i>
-              <input type="text" id="otp-code-input" placeholder="000000" maxlength="6" pattern="[0-9]*" inputmode="numeric" style="letter-spacing:6px;font-size:20px;font-weight:800;text-align:center" onkeydown="if(event.key==='Enter')verifyEmailCode()" />
+              <input type="text" id="otp-code-input" placeholder="000000" maxlength="6" pattern="[0-9]*"
+                inputmode="numeric" style="letter-spacing:6px;font-size:20px;font-weight:800;text-align:center"
+                onkeydown="if(event.key==='Enter')verifyEmailCode()" />
             </div>
-            <span style="font-size:11.5px;color:var(--text-3);margin-top:4px;display:block;">Please check your inbox or spam folder. Code expires in 10 minutes.</span>
+            <span style="font-size:11.5px;color:var(--text-3);margin-top:4px;display:block;">Please check your inbox or
+              spam folder. Code expires in 10 minutes.</span>
           </div>
 
           <button type="button" class="btn-submit" id="btnVerifyOtp" onclick="verifyEmailCode()">
@@ -553,7 +611,8 @@
           </button>
 
           <div style="text-align:center;margin-top:14px">
-            <button type="button" id="btnResendOtp" onclick="requestEmailCode(true)" style="background:none;border:none;color:var(--text-3);font-size:12px;font-weight:700;cursor:pointer">
+            <button type="button" id="btnResendOtp" onclick="requestEmailCode(true)"
+              style="background:none;border:none;color:var(--text-3);font-size:12px;font-weight:700;cursor:pointer">
               Didn't receive code? Resend Code
             </button>
           </div>
@@ -563,10 +622,12 @@
       <!-- EMAIL SIGNUP COMPLETION STEP (for new users signing in for the first time via email) -->
       <div class="modal-step hidden" id="step-email-complete">
         <div class="modal-top-nav">
-          <button type="button" class="modal-back" onclick="showStep('step-email-otp')"><i class="fas fa-arrow-left"></i> Back</button>
+          <button type="button" class="modal-back" onclick="showStep('step-email-otp')"><i
+              class="fas fa-arrow-left"></i> Back</button>
           <button type="button" class="modal-close" onclick="closeLoginModal()"><i class="fas fa-times"></i></button>
         </div>
-        <div class="modal-logo" style="background:var(--maroon-pale);color:var(--maroon)"><i class="fas fa-user-plus"></i></div>
+        <div class="modal-logo" style="background:var(--maroon-pale);color:var(--maroon)"><i
+            class="fas fa-user-plus"></i></div>
         <h2 class="modal-title">Complete Your Profile</h2>
         <p class="modal-sub">Welcome! Please fill in your basic info to enter GNHS Guidance.</p>
 
@@ -586,14 +647,16 @@
         <div class="form-group" id="otp-complete-grade-group">
           <label id="otp-complete-grade-label">Grade Level & Section <span class="req">*</span></label>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px" id="otp-complete-grade-row">
-            <select id="otp-complete-grade" onchange="otpUpdateSections()" style="padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;background:var(--card-bg);color:var(--text)">
+            <select id="otp-complete-grade" onchange="otpUpdateSections()"
+              style="padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;background:var(--card-bg);color:var(--text)">
               <option value="">Select Grade</option>
               <option value="7">Grade 7</option>
               <option value="8">Grade 8</option>
               <option value="9">Grade 9</option>
               <option value="10">Grade 10</option>
             </select>
-            <select id="otp-complete-section" style="padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;background:var(--card-bg);color:var(--text)">
+            <select id="otp-complete-section"
+              style="padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;background:var(--card-bg);color:var(--text)">
               <option value="">Select Section</option>
             </select>
           </div>
@@ -601,7 +664,8 @@
 
         <div class="form-group">
           <label id="otp-complete-id-label">Student ID / LRN (Optional)</label>
-          <input type="text" id="otp-complete-id-number" placeholder="Enter ID number (or leave blank for auto-generate)" />
+          <input type="text" id="otp-complete-id-number"
+            placeholder="Enter ID number (or leave blank for auto-generate)" />
         </div>
 
         <button type="button" class="btn-submit" id="btnFinishOtpSignup" onclick="finishOtpSignup()">
@@ -612,13 +676,16 @@
       <!-- RESET PASSWORD MODAL: 3-STEP EMAIL OTP CONFIRMATION & NEW PASSWORD -->
       <div class="modal-step hidden" id="step-forgot">
         <div class="modal-top-nav">
-          <button type="button" class="modal-back" onclick="goBack('step-login')"><i class="fas fa-arrow-left"></i> Back</button>
+          <button type="button" class="modal-back" onclick="goBack('step-login')"><i class="fas fa-arrow-left"></i>
+            Back</button>
           <button type="button" class="modal-close" onclick="closeLoginModal()"><i class="fas fa-times"></i></button>
         </div>
 
-        <div class="modal-logo" style="background:var(--maroon-pale);color:var(--maroon)"><i class="fas fa-key"></i></div>
+        <div class="modal-logo" style="background:var(--maroon-pale);color:var(--maroon)"><i class="fas fa-key"></i>
+        </div>
         <h2 class="modal-title" id="forgot-modal-title">Reset Password</h2>
-        <p class="modal-sub" id="forgot-modal-sub">Enter your registered Email or Student ID / LRN to receive a 6-digit confirmation code.</p>
+        <p class="modal-sub" id="forgot-modal-sub">Enter your registered Email or Student ID / LRN to receive a 6-digit
+          confirmation code.</p>
 
         <div id="forgot-msg" style="display:none;margin-bottom:14px"></div>
 
@@ -628,9 +695,11 @@
             <label>Registered Email or Student LRN / ID <span class="req">*</span></label>
             <div class="input-wrap">
               <i class="fas fa-envelope"></i>
-              <input type="text" id="forgot-email-input" placeholder="e.g. name@gmail.com or 12-digit LRN" required onkeydown="if(event.key==='Enter')sendResetEmailCode()" />
+              <input type="text" id="forgot-email-input" placeholder="e.g. name@gmail.com or 12-digit LRN" required
+                onkeydown="if(event.key==='Enter')sendResetEmailCode()" />
             </div>
-            <span style="font-size:11.5px;color:var(--text-3);margin-top:4px;display:block;">A 6-digit verification code will be sent to confirm your email.</span>
+            <span style="font-size:11.5px;color:var(--text-3);margin-top:4px;display:block;">A 6-digit verification code
+              will be sent to confirm your email.</span>
           </div>
 
           <button type="button" class="btn-submit" id="btnSendResetCode" onclick="sendResetEmailCode()">
@@ -640,21 +709,26 @@
 
         <!-- STAGE 2: ENTER 6-DIGIT CODE -->
         <div id="forgot-stage-2" style="display:none">
-          <div style="background:var(--bg2);padding:12px 14px;border-radius:10px;border:1px solid var(--border);margin-bottom:16px;font-size:13px;display:flex;align-items:center;justify-content:space-between">
+          <div
+            style="background:var(--bg2);padding:12px 14px;border-radius:10px;border:1px solid var(--border);margin-bottom:16px;font-size:13px;display:flex;align-items:center;justify-content:space-between">
             <div>
               <span style="color:var(--text-3);font-size:11px;display:block;">Code sent to:</span>
               <strong id="forgot-target-email-label" style="color:var(--maroon)"></strong>
             </div>
-            <button type="button" onclick="editResetEmail()" style="background:none;border:none;color:var(--maroon);font-weight:700;font-size:12px;cursor:pointer">Change</button>
+            <button type="button" onclick="editResetEmail()"
+              style="background:none;border:none;color:var(--maroon);font-weight:700;font-size:12px;cursor:pointer">Change</button>
           </div>
 
           <div class="form-group">
             <label>Enter 6-Digit Confirmation Code <span class="req">*</span></label>
             <div class="input-wrap">
               <i class="fas fa-shield-alt"></i>
-              <input type="text" id="forgot-code-input" placeholder="000000" maxlength="6" pattern="[0-9]*" inputmode="numeric" style="letter-spacing:6px;font-size:22px;font-weight:800;text-align:center" onkeydown="if(event.key==='Enter')verifyResetEmailCode()" />
+              <input type="text" id="forgot-code-input" placeholder="000000" maxlength="6" pattern="[0-9]*"
+                inputmode="numeric" style="letter-spacing:6px;font-size:22px;font-weight:800;text-align:center"
+                onkeydown="if(event.key==='Enter')verifyResetEmailCode()" />
             </div>
-            <span style="font-size:11.5px;color:var(--text-3);margin-top:4px;display:block;">Please check your inbox or spam folder. Code expires in 10 minutes.</span>
+            <span style="font-size:11.5px;color:var(--text-3);margin-top:4px;display:block;">Please check your inbox or
+              spam folder. Code expires in 10 minutes.</span>
           </div>
 
           <button type="button" class="btn-submit" id="btnVerifyResetCode" onclick="verifyResetEmailCode()">
@@ -662,7 +736,8 @@
           </button>
 
           <div style="text-align:center;margin-top:14px">
-            <button type="button" id="btnResendResetCode" onclick="sendResetEmailCode(true)" style="background:none;border:none;color:var(--text-3);font-size:12px;font-weight:700;cursor:pointer">
+            <button type="button" id="btnResendResetCode" onclick="sendResetEmailCode(true)"
+              style="background:none;border:none;color:var(--text-3);font-size:12px;font-weight:700;cursor:pointer">
               Didn't receive code? Resend Code
             </button>
           </div>
@@ -674,8 +749,10 @@
             <label>New Password <span class="req">*</span></label>
             <div class="input-wrap">
               <i class="fas fa-lock"></i>
-              <input type="password" id="forgot-new-password" placeholder="Enter new strong password" required oninput="validateResetPasswordStrength()" />
-              <button class="toggle-pass" type="button" onclick="togglePass('forgot-new-password')"><i class="fas fa-eye"></i></button>
+              <input type="password" id="forgot-new-password" placeholder="Enter new strong password" required
+                oninput="validateResetPasswordStrength()" />
+              <button class="toggle-pass" type="button" onclick="togglePass('forgot-new-password')"><i
+                  class="fas fa-eye"></i></button>
             </div>
           </div>
 
@@ -683,21 +760,28 @@
             <label>Confirm New Password <span class="req">*</span></label>
             <div class="input-wrap">
               <i class="fas fa-lock"></i>
-              <input type="password" id="forgot-confirm-password" placeholder="Re-type new password" required oninput="validateResetPasswordStrength()" onkeydown="if(event.key==='Enter')submitNewPasswordReset()" />
-              <button class="toggle-pass" type="button" onclick="togglePass('forgot-confirm-password')"><i class="fas fa-eye"></i></button>
+              <input type="password" id="forgot-confirm-password" placeholder="Re-type new password" required
+                oninput="validateResetPasswordStrength()" onkeydown="if(event.key==='Enter')submitNewPasswordReset()" />
+              <button class="toggle-pass" type="button" onclick="togglePass('forgot-confirm-password')"><i
+                  class="fas fa-eye"></i></button>
             </div>
           </div>
 
           <!-- Live Password Requirements Checklist -->
-          <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:12px;text-align:left">
-            <div style="font-weight:700;color:var(--text);margin-bottom:6px"><i class="fas fa-shield-halved" style="color:var(--maroon);margin-right:4px"></i> Password Standards:</div>
+          <div
+            style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:12px;text-align:left">
+            <div style="font-weight:700;color:var(--text);margin-bottom:6px"><i class="fas fa-shield-halved"
+                style="color:var(--maroon);margin-right:4px"></i> Password Standards:</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
               <div id="pwReqLen" style="color:#94a3b8"><i class="fas fa-circle-xmark"></i> At least 8 characters</div>
               <div id="pwReqUpper" style="color:#94a3b8"><i class="fas fa-circle-xmark"></i> 1 uppercase letter</div>
               <div id="pwReqNum" style="color:#94a3b8"><i class="fas fa-circle-xmark"></i> 1 number (0-9)</div>
-              <div id="pwReqSpecial" style="color:#94a3b8"><i class="fas fa-circle-xmark"></i> 1 special char (!@#$)</div>
+              <div id="pwReqSpecial" style="color:#94a3b8"><i class="fas fa-circle-xmark"></i> 1 special char (!@#$)
+              </div>
             </div>
-            <div id="pwReqMatch" style="color:#94a3b8;margin-top:6px;border-top:1px dashed var(--border);padding-top:6px"><i class="fas fa-circle-xmark"></i> Passwords must match</div>
+            <div id="pwReqMatch"
+              style="color:#94a3b8;margin-top:6px;border-top:1px dashed var(--border);padding-top:6px"><i
+                class="fas fa-circle-xmark"></i> Passwords must match</div>
           </div>
 
           <button type="button" class="btn-submit" id="btnSaveNewPassword" onclick="submitNewPasswordReset()">
@@ -706,7 +790,8 @@
         </div>
 
         <div style="margin-top:16px;text-align:center">
-          <a href="#" onclick="showStep('step-login')" style="color:var(--maroon);font-size:12.5px;font-weight:700;display:inline-flex;align-items:center;gap:6px;text-decoration:none">
+          <a href="#" onclick="showStep('step-login')"
+            style="color:var(--maroon);font-size:12.5px;font-weight:700;display:inline-flex;align-items:center;gap:6px;text-decoration:none">
             <i class="fas fa-arrow-left"></i> Back to Login
           </a>
         </div>
@@ -714,18 +799,25 @@
       <!-- NOTICE FOR ACCOUNT CREATION (STUDENT SELF-REGISTRATION DISABLED) -->
       <div class="modal-step hidden" id="step-register">
         <div class="modal-top-nav">
-          <button type="button" class="modal-back" onclick="goBack('step-role')"><i class="fas fa-arrow-left"></i> Back</button>
+          <button type="button" class="modal-back" onclick="goBack('step-role')"><i class="fas fa-arrow-left"></i>
+            Back</button>
           <button type="button" class="modal-close" onclick="closeLoginModal()"><i class="fas fa-times"></i></button>
         </div>
-        <div class="modal-logo" style="background:var(--maroon-pale);color:var(--maroon)"><i class="fas fa-id-card-clip"></i></div>
+        <div class="modal-logo" style="background:var(--maroon-pale);color:var(--maroon)"><i
+            class="fas fa-id-card-clip"></i></div>
         <h2 class="modal-title">Account Creation Notice</h2>
         <p class="modal-sub">Student accounts are provisioned directly by the school.</p>
-        
-        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:18px;text-align:left;font-size:13px;color:var(--text-2);line-height:1.6">
-          <strong style="color:var(--text);display:block;margin-bottom:6px"><i class="fas fa-info-circle" style="color:var(--maroon);margin-right:6px"></i> How accounts are issued:</strong>
+
+        <div
+          style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:18px;text-align:left;font-size:13px;color:var(--text-2);line-height:1.6">
+          <strong style="color:var(--text);display:block;margin-bottom:6px"><i class="fas fa-info-circle"
+              style="color:var(--maroon);margin-right:6px"></i> How accounts are issued:</strong>
           <ul style="margin:0 0 0 18px;padding:0">
-            <li><strong>Students:</strong> Your account is created by your <strong>Advisory Teacher</strong> or the <strong>Guidance Office</strong> using your 12-digit LRN.</li>
-            <li><strong>Teachers &amp; Staff:</strong> Accounts are configured and issued by the <strong>Guidance Counselor</strong>.</li>
+            <li><strong>Students:</strong> Your account is created by your <strong>Advisory Teacher</strong> or the
+              <strong>Guidance Office</strong> using your 12-digit LRN.
+            </li>
+            <li><strong>Teachers &amp; Staff:</strong> Accounts are configured and issued by the <strong>Guidance
+                Counselor</strong>.</li>
           </ul>
         </div>
 
@@ -740,12 +832,12 @@
   </div>
 
   <script src="theme.js?v=20261115_02"></script>
-  <script src="app.js?v=20261115_02"></script>
+  <script src="app.js?v=20261125_01"></script>
   <script>
     const GNHS_GRADE_SECTIONS = {
-      '7':  ['Bonifacio', 'Burgos', 'Del Pilar', 'Diego Silang', 'Luna', 'Mabini', 'Malvar', 'Rizal'],
-      '8':  ['Abrahams', 'Basho', 'Confucius', 'Ghandi', 'Goswami', 'Kalidasa', 'Mandela', 'Mencius', 'Tagore', 'Valmiki', 'Voltaire'],
-      '9':  ['Bohr', 'Curie', 'Dalton', 'Darwin', 'Einstein', 'Faraday', 'Galileo', 'Newton'],
+      '7': ['Bonifacio', 'Burgos', 'Del Pilar', 'Diego Silang', 'Luna', 'Mabini', 'Malvar', 'Rizal'],
+      '8': ['Abrahams', 'Basho', 'Confucius', 'Ghandi', 'Goswami', 'Kalidasa', 'Mandela', 'Mencius', 'Tagore', 'Valmiki', 'Voltaire'],
+      '9': ['Bohr', 'Curie', 'Dalton', 'Darwin', 'Einstein', 'Faraday', 'Galileo', 'Newton'],
       '10': ['Aguinaldo', 'Aquino', 'Garcia', 'Laurel', 'Macapagal', 'Magsaysay']
     };
     function regUpdateSections() {
@@ -758,7 +850,7 @@
     }
 
     // ── API POST HELPER ──
-    window._apiPost = async function(url, data) {
+    window._apiPost = async function (url, data) {
       const r = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -771,7 +863,7 @@
     function getSavedAccounts() {
       try {
         return JSON.parse(localStorage.getItem('gnhs_saved_accounts') || '[]');
-      } catch(e) {
+      } catch (e) {
         return [];
       }
     }
@@ -785,20 +877,20 @@
           email: acc.email.toLowerCase(),
           name: acc.name || acc.email.split('@')[0],
           role: acc.role || 'student',
-          initials: acc.initials || (acc.name ? acc.name.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase() : 'G')
+          initials: acc.initials || (acc.name ? acc.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'G')
         });
         if (list.length > 5) list = list.slice(0, 5);
         localStorage.setItem('gnhs_saved_accounts', JSON.stringify(list));
-      } catch(e) {}
+      } catch (e) { }
     }
 
-    window.removeSavedAccount = function(email, e) {
+    window.removeSavedAccount = function (email, e) {
       if (e) e.stopPropagation();
       try {
         let list = getSavedAccounts().filter(a => a.email.toLowerCase() !== email.toLowerCase());
         localStorage.setItem('gnhs_saved_accounts', JSON.stringify(list));
         renderGoogleAccountsList();
-      } catch(e) {}
+      } catch (e) { }
     };
 
     // ── SHOPEE-STYLE GOOGLE ACCOUNT CHOOSER LOGIC ──
@@ -807,16 +899,25 @@
     let _selectedGoogleAccount = null;
     let _previousStepBeforeGoogle = 'step-choose';
 
-    window.closeLoginModal = function() {
+    window.openLoginModal = function () {
+      const m = document.getElementById('loginModal');
+      if (m) {
+        m.style.display = '';
+        m.classList.remove('hidden');
+        if (typeof showStep === 'function') showStep('step-choose');
+      }
+    };
+
+    window.closeLoginModal = function () {
       const m = document.getElementById('loginModal');
       if (m) {
         m.classList.add('hidden');
-        m.style.display = 'none';
+        m.style.display = '';
       }
       document.body.style.overflow = '';
     };
 
-    window.goBackFromGoogle = function() {
+    window.goBackFromGoogle = function () {
       const sList = document.getElementById('googleStageList');
       const sEmail = document.getElementById('googleStageEmail');
       const sOtp = document.getElementById('googleStageOtp');
@@ -838,7 +939,7 @@
       }
     };
 
-    window.openGoogleAccountChooser = function() {
+    window.openGoogleAccountChooser = function () {
       // Remember which step the user came from
       const visible = Array.from(document.querySelectorAll('.modal-step:not(.hidden)')).pop();
       if (visible && visible.id !== 'step-google-chooser') {
@@ -873,7 +974,7 @@
       }
     };
 
-    window.showGoogleAccountList = function() {
+    window.showGoogleAccountList = function () {
       const sList = document.getElementById('googleStageList');
       const sEmail = document.getElementById('googleStageEmail');
       const sOtp = document.getElementById('googleStageOtp');
@@ -885,7 +986,7 @@
       renderGoogleAccountsList();
     };
 
-    window.renderGoogleAccountsList = function() {
+    window.renderGoogleAccountsList = function () {
       const container = document.getElementById('googleAccountsList');
       if (!container) return;
 
@@ -894,7 +995,7 @@
 
       if (accounts.length > 0) {
         accounts.forEach(acc => {
-          const initials = acc.initials || (acc.name ? acc.name.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase() : 'G');
+          const initials = acc.initials || (acc.name ? acc.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'G');
           html += `
             <div class="google-account-item" onclick="selectGoogleAccount('${encodeURIComponent(acc.email)}', '${encodeURIComponent(acc.name)}', '${encodeURIComponent(acc.role)}', '${encodeURIComponent(initials)}')">
               <div class="google-account-left">
@@ -924,7 +1025,7 @@
       container.innerHTML = html;
     };
 
-    window.showGoogleEmailInput = function() {
+    window.showGoogleEmailInput = function () {
       const sList = document.getElementById('googleStageList');
       const sEmail = document.getElementById('googleStageEmail');
       const sOtp = document.getElementById('googleStageOtp');
@@ -940,7 +1041,7 @@
       }
     };
 
-    window.submitGoogleCustomEmail = function() {
+    window.submitGoogleCustomEmail = function () {
       const inp = document.getElementById('google-custom-email');
       const email = inp?.value.trim().toLowerCase();
       const msgEl = document.getElementById('google-email-msg');
@@ -962,7 +1063,7 @@
       selectGoogleAccount(email, name, role, initials);
     };
 
-    window.selectGoogleAccount = function(rawEmail, rawName, rawRole, rawInitials) {
+    window.selectGoogleAccount = function (rawEmail, rawName, rawRole, rawInitials) {
       const email = decodeURIComponent(rawEmail);
       const name = decodeURIComponent(rawName);
       const role = decodeURIComponent(rawRole);
@@ -972,7 +1073,7 @@
       loginWithGoogleCode();
     };
 
-    window.loginWithGoogleCode = async function(isResend = false) {
+    window.loginWithGoogleCode = async function (isResend = false) {
       if (!_selectedGoogleAccount || !_selectedGoogleAccount.email) return;
       const email = _selectedGoogleAccount.email;
       const role = _selectedGoogleAccount.role || (email.endsWith('deped.gov.ph') ? 'teacher' : 'student');
@@ -1047,7 +1148,7 @@
             msgOtpEl.style.display = 'block';
           }
         }
-      } catch(e) {
+      } catch (e) {
         const errText = 'Server connection error. Please try again.';
         if (msgListEl) { msgListEl.textContent = errText; msgListEl.className = 'error-msg'; msgListEl.style.display = 'block'; }
         if (msgEmailEl) { msgEmailEl.textContent = errText; msgEmailEl.className = 'error-msg'; msgEmailEl.style.display = 'block'; }
@@ -1055,7 +1156,7 @@
     };
 
     // Google Identity Services native token callback handler
-    window.handleGoogleCredentialResponse = async function(response) {
+    window.handleGoogleCredentialResponse = async function (response) {
       if (!response || !response.credential) return;
       try {
         const caller = typeof apiPost === 'function' ? apiPost : window._apiPost;
@@ -1077,7 +1178,7 @@
       }
     };
 
-    window.verifyGoogleLoginOtp = async function() {
+    window.verifyGoogleLoginOtp = async function () {
       if (!_selectedGoogleAccount || !_selectedGoogleAccount.email) return;
       const email = _selectedGoogleAccount.email;
       const codeInput = document.getElementById('google-otp-code-input');
@@ -1135,7 +1236,7 @@
             msgEl.style.display = 'block';
           }
         }
-      } catch(e) {
+      } catch (e) {
         if (btn) {
           btn.disabled = false;
           btn.innerHTML = btn.dataset.orig || btn.innerHTML;
@@ -1148,7 +1249,7 @@
       }
     };
 
-    window.goToRegisterFromGoogle = function(email, firstName = '', lastName = '') {
+    window.goToRegisterFromGoogle = function (email, firstName = '', lastName = '') {
       _regVerifiedEmail = email;
       const role = email.endsWith('deped.gov.ph') ? 'teacher' : ((typeof _role !== 'undefined' && _role) ? _role : 'student');
       _action = 'register';
@@ -1177,7 +1278,7 @@
     // ── REGISTRATION EMAIL LEGITIMACY VERIFICATION LOGIC ──
     let _regVerifiedEmail = '';
 
-    window.sendRegEmailCode = async function(isResend = false) {
+    window.sendRegEmailCode = async function (isResend = false) {
       const emailInput = document.getElementById('reg-email');
       const email = emailInput?.value.trim().toLowerCase();
       const msgEl = document.getElementById('reg-msg');
@@ -1232,7 +1333,7 @@
             msgEl.style.display = 'block';
           }
         }
-      } catch(e) {
+      } catch (e) {
         if (btn) {
           btn.disabled = false;
           btn.innerHTML = btn.dataset.orig || btn.innerHTML;
@@ -1245,7 +1346,7 @@
       }
     };
 
-    window.verifyRegEmailCode = async function() {
+    window.verifyRegEmailCode = async function () {
       const emailInput = document.getElementById('reg-email');
       const email = emailInput?.value.trim().toLowerCase();
       const codeInput = document.getElementById('reg-verify-code');
@@ -1304,7 +1405,7 @@
             msgEl.style.display = 'block';
           }
         }
-      } catch(e) {
+      } catch (e) {
         if (btn) {
           btn.disabled = false;
           btn.innerHTML = btn.dataset.orig || btn.innerHTML;
@@ -1317,7 +1418,7 @@
       }
     };
 
-    window.resetRegEmailVerification = function() {
+    window.resetRegEmailVerification = function () {
       _regVerifiedEmail = '';
       const stageVerify = document.getElementById('reg-stage-verify');
       const stageSetup = document.getElementById('reg-stage-setup');
@@ -1333,7 +1434,7 @@
       if (emailInput) emailInput.focus();
     };
 
-    window.handleRegister = async function() {
+    window.handleRegister = async function () {
       const email = _regVerifiedEmail || document.getElementById('reg-email')?.value.trim().toLowerCase();
       const firstName = document.getElementById('reg-fname')?.value.trim();
       const middleName = document.getElementById('reg-mname')?.value.trim();
@@ -1474,7 +1575,7 @@
             msgEl.style.display = 'block';
           }
         }
-      } catch(e) {
+      } catch (e) {
         if (btn) {
           btn.disabled = false;
           btn.innerHTML = btn.dataset.orig || btn.innerHTML;
@@ -1641,7 +1742,7 @@
 
       // Smooth click navigation & instant shaded tab update
       navLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
+        link.addEventListener('click', function (e) {
           const href = this.getAttribute('href');
           if (href && href.startsWith('#')) {
             e.preventDefault();

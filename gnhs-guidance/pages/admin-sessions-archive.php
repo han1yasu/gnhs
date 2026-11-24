@@ -23,15 +23,18 @@ if ($search) {
     $sqUnderscore = addslashes(str_replace(' ', '_', $search));
     $where .= " AND (
         LOWER(c.case_number) LIKE LOWER('%$sq%')
-        OR LOWER(c.subject) LIKE LOWER('%$sq%')
-        OR LOWER(c.description) LIKE LOWER('%$sq%')
         OR LOWER(c.concern_type) LIKE LOWER('%$sq%')
         OR LOWER(c.concern_type) LIKE LOWER('%$sqUnderscore%')
         OR LOWER(REPLACE(c.concern_type, '_', ' ')) LIKE LOWER('%$sq%')
-        OR LOWER(s.first_name) LIKE LOWER('%$sq%')
-        OR LOWER(s.last_name) LIKE LOWER('%$sq%')
-        OR LOWER(CONCAT(s.first_name, ' ', s.last_name)) LIKE LOWER('%$sq%')
-        OR LOWER(s.grade_section) LIKE LOWER('%$sq%')
+        OR (COALESCE(c.is_anonymous, 0) = 0 AND (
+            LOWER(c.subject) LIKE LOWER('%$sq%')
+            OR LOWER(c.description) LIKE LOWER('%$sq%')
+            OR LOWER(s.first_name) LIKE LOWER('%$sq%')
+            OR LOWER(s.last_name) LIKE LOWER('%$sq%')
+            OR LOWER(CONCAT(s.first_name, ' ', s.last_name)) LIKE LOWER('%$sq%')
+            OR LOWER(s.grade_section) LIKE LOWER('%$sq%')
+        ))
+        OR (c.is_anonymous = 1 AND (LOWER(c.subject) LIKE LOWER('%$sq%') OR LOWER('anonymous') LIKE LOWER('%$sq%')))
         OR LOWER(COALESCE(c.reported_student_name, '')) LIKE LOWER('%$sq%')
         OR LOWER(COALESCE(c.reported_student_grade, '')) LIKE LOWER('%$sq%')
         OR LOWER(cs.location) LIKE LOWER('%$sq%')
@@ -91,17 +94,17 @@ foreach ($sessions as $s) {
 
     // Process & Resolution preview
     $procBadge = !empty($s['resolution_process'])
-        ? "<span style='display:inline-block;font-size:10.5px;font-weight:700;background:#dcfce7;color:#166534;border:1px solid #86efac;padding:2px 7px;border-radius:10px;margin-bottom:3px'><i class='fas fa-check-circle'></i> " . htmlspecialchars($s['resolution_process']) . "</span>"
-        : "<span style='display:inline-block;font-size:10.5px;font-weight:700;background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;padding:2px 7px;border-radius:10px;margin-bottom:3px'><i class='fas fa-clipboard-check'></i> Resolved</span>";
+        ? "<span style='display:inline-block;font-size:10px;font-weight:700;background:#dcfce7;color:#166534;border:1px solid #86efac;padding:2px 6px;border-radius:10px;margin-bottom:3px;line-height:1.25'><i class='fas fa-check-circle'></i> " . htmlspecialchars($s['resolution_process']) . "</span>"
+        : "<span style='display:inline-block;font-size:10px;font-weight:700;background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;padding:2px 6px;border-radius:10px;margin-bottom:3px'><i class='fas fa-clipboard-check'></i> Resolved</span>";
 
     $resSnippet = !empty($s['resolution'])
-        ? "<div style='font-size:12px;color:var(--text);line-height:1.35;max-width:190px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis' title='" . htmlspecialchars($s['resolution'], ENT_QUOTES) . "'>" . htmlspecialchars($s['resolution']) . "</div>"
-        : "<div style='font-size:12px;color:var(--text-3);font-style:italic'>Session concluded successfully</div>";
+        ? "<div style='font-size:11.5px;color:var(--text);line-height:1.35;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis' title='" . htmlspecialchars($s['resolution'], ENT_QUOTES) . "'>" . htmlspecialchars($s['resolution']) . "</div>"
+        : "<div style='font-size:11.5px;color:var(--text-3);font-style:italic'>Session concluded successfully</div>";
 
     // Sanction preview
     $sanctBadge = '';
     if (!empty($s['sanctions']) && stripos($s['sanctions'], 'No Sanctions') === false) {
-        $sanctBadge = "<span class='rule-chip applied' style='font-size:11px;padding:3px 8px;cursor:default;white-space:nowrap' title='" . htmlspecialchars($s['sanctions'], ENT_QUOTES) . "'><i class='fas fa-gavel'></i> Sanctions</span>";
+        $sanctBadge = "<span class='rule-chip applied' style='font-size:10.5px;padding:3px 7px;cursor:default;white-space:nowrap' title='" . htmlspecialchars($s['sanctions'], ENT_QUOTES) . "'><i class='fas fa-gavel'></i> Sanctions</span>";
     } else {
         $sanctBadge = "<span style='font-size:11px;color:var(--text-3);font-weight:600;white-space:nowrap'><i class='fas fa-check'></i> Counseling Only</span>";
     }
@@ -119,23 +122,28 @@ foreach ($sessions as $s) {
     ];
     $searchData = htmlspecialchars(strtolower(implode(' ', array_filter($searchTokens))), ENT_QUOTES);
 
+    $chatUrl = !empty($s['case_id'])
+        ? "admin-chats.php?case_id=" . (int)$s['case_id']
+        : (!empty($s['referral_id']) ? "admin-referrals-chat.php?referral_id=" . (int)$s['referral_id'] : '');
+    $chatBtnHtml = $chatUrl
+        ? "<button type='button' class='btn-row-action btn-action-chat' onclick=\"event.stopPropagation(); window.location.href='{$chatUrl}'\" title='View conversation (read-only)' style='font-size:11px;padding:5px 8px;white-space:nowrap;flex-shrink:0'><i class='fas fa-comment-dots'></i></button>"
+        : "";
+
     $rows .= "<tr class='session-row' data-search=\"$searchData\" style='cursor:pointer' onclick='if(!event.target.closest(\"button\")) openSessionConsole({$s['id']})'>
-        <td><strong style='color:var(--maroon);font-size:14px'>#{$s['case_number']}</strong></td>
+        <td style='white-space:nowrap'><strong style='color:var(--maroon);font-size:13px'>#{$s['case_number']}</strong></td>
         <td>$studentCol</td>
         <td>" . htmlspecialchars($s['grade_section'] ?? '—') . "</td>
-        <td>" . $dt->format('M d, Y') . "<div style='font-size:11px;color:var(--text-3);font-weight:600'>" . $dt->format('h:i A') . "</div></td>
+        <td style='white-space:nowrap'>" . $dt->format('M d, Y') . "<div style='font-size:11px;color:var(--text-3);font-weight:600'>" . $dt->format('h:i A') . "</div></td>
         <td>" . ucfirst($s['session_type'] ?? 'In-person') . "<div style='font-size:11px;color:var(--text-3)'><i class='fas fa-map-marker-alt'></i> " . htmlspecialchars($s['location'] ?? 'Guidance Office') . "</div></td>
-        <td>$procBadge $resSnippet</td>
+        <td style='max-width:155px'>$procBadge $resSnippet</td>
         <td>$sanctBadge</td>
-        <td><span class='status-badge status-resolved'><i class='fas fa-check-circle'></i> Completed</span></td>
-        <td>
-          <div style='display:inline-flex;gap:6px;align-items:center'>
-            <button type='button' class='btn-sm-primary' onclick='openSessionConsole({$s['id']})' style='display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:6px 11px'>
+        <td style='white-space:nowrap'><span class='status-badge status-resolved' style='font-size:11px;padding:3px 8px'><i class='fas fa-check-circle'></i> Completed</span></td>
+        <td style='white-space:nowrap'>
+          <div style='display:inline-flex;gap:5px;align-items:center;white-space:nowrap'>
+            <button type='button' class='btn-sm-primary' onclick='openSessionConsole({$s['id']})' style='display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:5px 9px;white-space:nowrap'>
               <i class='fas fa-clipboard-list'></i> View Record
             </button>
-            <button type='button' class='btn-row-action btn-action-chat' onclick=\"event.stopPropagation(); window.location.href='admin-chats.php?case_id={$s['case_id']}'\" title='Chat with student' style='font-size:11.5px;padding:6px 9px'>
-              <i class='fas fa-comment-dots'></i>
-            </button>
+            $chatBtnHtml
           </div>
         </td>
     </tr>";
@@ -238,8 +246,30 @@ $content = <<<HTML
     <button class="btn-sm-outline" onclick="window.location='admin-sessions-archive.php'"><i class="fas fa-times"></i> Reset</button>
   </div>
 
+  <style>
+    .sessions-archive-table {
+      width: 100%;
+    }
+    .sessions-archive-table th,
+    .sessions-archive-table td {
+      padding: 9px 6px !important;
+      font-size: 12px;
+      vertical-align: middle;
+    }
+    .sessions-archive-table th {
+      font-size: 10.5px !important;
+      white-space: nowrap;
+    }
+    @media (max-width: 1360px) {
+      .sessions-archive-table th,
+      .sessions-archive-table td {
+        padding: 8px 5px !important;
+        font-size: 11.5px;
+      }
+    }
+  </style>
   <div class="table-wrap">
-    <table class="data-table">
+    <table class="data-table sessions-archive-table">
       <thead>
         <tr>
           <th>Case #</th>

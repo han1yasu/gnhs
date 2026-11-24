@@ -28,6 +28,10 @@ try {
         jsonOut(['success' => false, 'message' => 'Unauthorized'], 403);
     }
 
+    if (in_array(strtolower($referral['status'] ?? ''), ['resolved', 'closed'], true)) {
+        jsonOut(['success' => false, 'message' => 'This referral is resolved and archived. Chat is view-only unless reopened.'], 403);
+    }
+
     // Insert message
     $stmt = $db->prepare("INSERT INTO referral_messages (referral_id, user_id, message) VALUES (?, ?, ?)");
     $stmt->execute([$refId, $user['id'], $message]);

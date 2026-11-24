@@ -674,7 +674,7 @@ $content = <<<'HTML'
     </div>
     <div id="msgReadOnlyBanner" style="display:none;background:var(--bg2);border-top:1px solid var(--border);padding:14px 20px;text-align:center;color:var(--text-3);font-size:13px;font-weight:600;align-items:center;justify-content:center;gap:8px;flex-shrink:0">
       <i class="fas fa-lock" style="color:var(--maroon)"></i>
-      <span>This case is resolved and archived. Chat is in <strong>view-only</strong> mode.</span>
+      <span>This case is resolved and archived. Chat is in <strong>view-only</strong> mode unless reopened.</span>
     </div>
 
     <!-- Concern Details Drawer (Slides in on cellphone or PC) -->
@@ -906,7 +906,9 @@ function renderInboxItems(items) {
 
 function isCaseReadOnly(ci, caseId) {
   const status = (ci && ci.status ? String(ci.status) : '').toLowerCase();
-  if (status === 'resolved' || status === 'closed') return true;
+  if (status) {
+    return (status === 'resolved' || status === 'closed');
+  }
   const archiveId = new URLSearchParams(window.location.search).get('archive_id');
   if (archiveId && String(archiveId) === String(caseId)) return true;
   return false;

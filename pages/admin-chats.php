@@ -665,6 +665,10 @@ $content = <<<'HTML'
         <i class="fas fa-paper-plane"></i>
       </button>
     </div>
+    <div id="msgReadOnlyBanner" style="display:none;background:var(--bg2);border-top:1px solid var(--border);padding:14px 20px;text-align:center;color:var(--text-3);font-size:13px;font-weight:600;align-items:center;justify-content:center;gap:8px;flex-shrink:0">
+      <i class="fas fa-lock" style="color:var(--maroon)"></i>
+      <span>This case is resolved and archived. Chat is in <strong>view-only</strong> mode unless reopened.</span>
+    </div>
 
     <!-- Concern Details Drawer -->
     <aside class="msg-drawer" id="msgDrawer">
@@ -889,6 +893,38 @@ function renderInboxItems(items) {
   }).join('');
 }
 
+function isCaseReadOnly(ci, caseId) {
+  const status = (ci && ci.status ? String(ci.status) : '').toLowerCase();
+  if (status) {
+    return (status === 'resolved' || status === 'closed');
+  }
+  const archiveId = new URLSearchParams(window.location.search).get('archive_id');
+  if (archiveId && String(archiveId) === String(caseId)) return true;
+  return false;
+}
+
+function applyChatReadOnlyState(readOnly) {
+  const bar = document.getElementById('msgInputBar');
+  const banner = document.getElementById('msgReadOnlyBanner');
+  const input = document.getElementById('msgInput');
+  const btn = document.getElementById('msgSendBtn');
+
+  if (readOnly) {
+    if (bar) bar.style.display = 'none';
+    if (banner) banner.style.display = 'flex';
+    if (input) {
+      input.disabled = true;
+      input.value = '';
+    }
+    if (btn) btn.disabled = true;
+  } else {
+    if (bar) bar.style.display = 'flex';
+    if (banner) banner.style.display = 'none';
+    if (input) input.disabled = false;
+    toggleSendBtnState();
+  }
+}
+
 async function openConversation(caseId) {
   pageCurrentCaseId = caseId;
 
@@ -907,14 +943,15 @@ async function openConversation(caseId) {
     renderInboxItems(allInboxData);
   }
 
-  const input = document.getElementById('msgInput');
   const detailsBtn = document.getElementById('msgDetailsBtn');
-  if (input) {
-    input.disabled = false;
-    input.focus();
-  }
   if (detailsBtn) detailsBtn.disabled = false;
-  toggleSendBtnState();
+
+  const readOnly = isCaseReadOnly(currentCaseInfo, caseId);
+  applyChatReadOnlyState(readOnly);
+  if (!readOnly) {
+    const input = document.getElementById('msgInput');
+    if (input) input.focus();
+  }
 
   await pageLoadMessages();
 
@@ -933,6 +970,7 @@ async function pageLoadMessages() {
     renderChatHeader(currentCaseInfo);
     renderDrawerDetails(currentCaseInfo);
     renderMessagesThread(data.messages || [], data.current_user_id);
+    applyChatReadOnlyState(isCaseReadOnly(currentCaseInfo, pageCurrentCaseId));
   } catch(e) {
     console.error(e);
   }
@@ -1131,6 +1169,7 @@ function renderMessagesThread(messages, currentUserId) {
 
 async function pageSendMessage() {
   if (!pageCurrentCaseId) return;
+  if (isCaseReadOnly(currentCaseInfo, pageCurrentCaseId)) return;
   const input = document.getElementById('msgInput');
   const msg = input.value.trim();
   if (!msg) return;

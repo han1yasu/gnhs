@@ -657,6 +657,10 @@ $content = <<<'HTML'
         <i class="fas fa-paper-plane"></i>
       </button>
     </div>
+    <div id="msgReadOnlyBanner" style="display:none;background:var(--bg2);border-top:1px solid var(--border);padding:14px 20px;text-align:center;color:var(--text-3);font-size:13px;font-weight:600;align-items:center;justify-content:center;gap:8px;flex-shrink:0">
+      <i class="fas fa-lock" style="color:var(--maroon)"></i>
+      <span>This referral is resolved and archived. Chat is in <strong>view-only</strong> mode unless reopened.</span>
+    </div>
 
     <!-- Referral Details Drawer -->
     <aside class="msg-drawer" id="msgDrawer">
@@ -880,6 +884,36 @@ function renderInboxItems(items) {
   }).join('');
 }
 
+function isRefReadOnly(ri, refId) {
+  const status = (ri && ri.status ? String(ri.status) : '').toLowerCase();
+  if (status) return (status === 'resolved' || status === 'closed');
+  const archiveId = new URLSearchParams(window.location.search).get('archive_id');
+  if (archiveId && String(archiveId) === String(refId)) return true;
+  return false;
+}
+
+function applyRefReadOnlyState(readOnly) {
+  const bar = document.getElementById('msgInputBar');
+  const banner = document.getElementById('msgReadOnlyBanner');
+  const input = document.getElementById('msgInput');
+  const btn = document.getElementById('msgSendBtn');
+
+  if (readOnly) {
+    if (bar) bar.style.display = 'none';
+    if (banner) banner.style.display = 'flex';
+    if (input) {
+      input.disabled = true;
+      input.value = '';
+    }
+    if (btn) btn.disabled = true;
+  } else {
+    if (bar) bar.style.display = 'flex';
+    if (banner) banner.style.display = 'none';
+    if (input) input.disabled = false;
+    toggleSendBtnState();
+  }
+}
+
 async function openConversation(refId) {
   pageCurrentRefId = refId;
 
@@ -898,14 +932,15 @@ async function openConversation(refId) {
     renderInboxItems(allInboxData);
   }
 
-  const input = document.getElementById('msgInput');
   const detailsBtn = document.getElementById('msgDetailsBtn');
-  if (input) {
-    input.disabled = false;
-    input.focus();
-  }
   if (detailsBtn) detailsBtn.disabled = false;
-  toggleSendBtnState();
+
+  const readOnly = isRefReadOnly(currentRefInfo, refId);
+  applyRefReadOnlyState(readOnly);
+  if (!readOnly) {
+    const input = document.getElementById('msgInput');
+    if (input) input.focus();
+  }
 
   await pageLoadMessages();
 
@@ -924,6 +959,7 @@ async function pageLoadMessages() {
     renderChatHeader(currentRefInfo);
     renderDrawerDetails(currentRefInfo);
     renderMessagesThread(data.messages || [], data.current_user_id);
+    applyRefReadOnlyState(isRefReadOnly(currentRefInfo, pageCurrentRefId));
   } catch(e) {
     console.error(e);
   }
@@ -1093,6 +1129,7 @@ function renderMessagesThread(messages, currentUserId) {
 
 async function pageSendMessage() {
   if (!pageCurrentRefId) return;
+  if (isRefReadOnly(currentRefInfo, pageCurrentRefId)) return;
   const input = document.getElementById('msgInput');
   const msg = input.value.trim();
   if (!msg) return;

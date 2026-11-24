@@ -14,17 +14,24 @@ if (!$caseId || !$message) {
 try {
     $db = getDB();
 
-    // Verify access to the case
+    // Fetch case and verify access & active status
+    $caseStmt = $db->prepare("SELECT id, status, student_id, assigned_to, case_number FROM cases WHERE id=?");
+    $caseStmt->execute([$caseId]);
+    $c = $caseStmt->fetch();
+    if (!$c) {
+        jsonOut(['success'=>false,'message'=>'Case not found.'], 404);
+    }
+
     if ($user['role'] === 'student') {
-        $stmt = $db->prepare("SELECT id, status FROM cases WHERE id=? AND student_id=?");
-        $stmt->execute([$caseId, $user['id']]);
-        $caseAccess = $stmt->fetch();
-        if (!$caseAccess) jsonOut(['success'=>false,'message'=>'Access denied.'], 403);
-        if (in_array(strtolower($caseAccess['status'] ?? ''), ['resolved', 'closed'], true)) {
-            jsonOut(['success'=>false,'message'=>'This case is resolved and archived. Chat is view-only.'], 403);
+        if ((int)$c['student_id'] !== (int)$user['id']) {
+            jsonOut(['success'=>false,'message'=>'Access denied.'], 403);
         }
     } else if ($user['role'] !== 'admin') {
         jsonOut(['success'=>false,'message'=>'Access denied.'], 403);
+    }
+
+    if (in_array(strtolower($c['status'] ?? ''), ['resolved', 'closed'], true)) {
+        jsonOut(['success'=>false,'message'=>'This case is resolved and archived. Chat is view-only unless reopened.'], 403);
     }
 
     // Insert message
@@ -33,10 +40,6 @@ try {
 
     // Add notification to the receiver
     // If sender is admin, notify student. If sender is student, notify admin (assigned_to).
-    $caseRow = $db->prepare("SELECT student_id, assigned_to, case_number FROM cases WHERE id=?");
-    $caseRow->execute([$caseId]);
-    $c = $caseRow->fetch();
-
     if ($c) {
         if ($user['role'] === 'admin' && $c['student_id']) {
             $db->prepare("INSERT INTO notifications (user_id,title,message,type) VALUES (?,'New Message',CONCAT('The guidance counselor sent a message regarding ', ?, '.'),'chat')")

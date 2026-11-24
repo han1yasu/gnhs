@@ -38,7 +38,7 @@ if (empty($notes) || strlen($notes) < 8) {
     ], 400);
 }
 
-// Fetch case details
+// Fetch case or referral details
 $caseData = null;
 if ($caseId > 0) {
     $cStmt = $db->prepare("SELECT c.*, CONCAT(s.first_name, ' ', s.last_name) AS student_name, s.grade_section 
@@ -48,10 +48,15 @@ if ($caseId > 0) {
     $cStmt->execute([$caseId]);
     $caseData = $cStmt->fetch();
 } elseif ($sessionId > 0) {
-    $cStmt = $db->prepare("SELECT c.*, CONCAT(s.first_name, ' ', s.last_name) AS student_name, s.grade_section 
+    $cStmt = $db->prepare("SELECT cs.case_id, cs.referral_id,
+        COALESCE(c.concern_type, r.concern_type, 'general') AS concern_type,
+        COALESCE(c.subject, CONCAT('Teacher Referral: ', REPLACE(r.concern_type, '_', ' ')), 'Counseling Session') AS subject,
+        COALESCE(c.description, r.observations, '') AS description,
+        COALESCE(CONCAT(s.first_name, ' ', s.last_name), r.student_name, 'Student') AS student_name
         FROM counseling_sessions cs 
-        JOIN cases c ON cs.case_id = c.id 
-        LEFT JOIN users s ON c.student_id = s.id 
+        LEFT JOIN cases c ON cs.case_id = c.id 
+        LEFT JOIN referrals r ON cs.referral_id = r.id
+        LEFT JOIN users s ON s.id = COALESCE(cs.student_id, c.student_id, r.student_id)
         WHERE cs.id = ?");
     $cStmt->execute([$sessionId]);
     $caseData = $cStmt->fetch();

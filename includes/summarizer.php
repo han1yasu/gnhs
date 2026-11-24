@@ -421,8 +421,8 @@ function analyzeSessionConclusion(string $concernType, string $subject, string $
         $prompt = "You are a licensed school guidance counselor and clinical supervisor at Guinayang National High School (GNHS) in the Philippines.\n"
                 . "Analyze the following confidential counseling session notes and student behavioral observations to recommend whether this student needs another counseling session or if this case can be officially resolved.\n\n"
                 . "CRITICAL CLINICAL RULES:\n"
-                . "1. If the counselor's notes or observations state that the student is positive, feeling well, 100% ok/fine, not in bad shape, in good condition, emotionally stable, has fully recovered from trauma or distress, or that the dispute has been settled, you MUST recommend 'ready_to_resolve'. DO NOT recommend follow-up when observations indicate recovery, healthy functioning, or positive resolution.\n"
-                . "2. Recommend 'needs_follow_up' ONLY when the student displays active, ongoing emotional distress, severe anxiety, continuing peer/safety threats, or unfulfilled behavioral compliance terms.\n"
+                . "1. Recommend 'ready_to_resolve' ONLY when the counselor's notes clearly indicate the student has FULLY recovered, is emotionally stable, has no lingering trauma/burden/coping difficulties, is attending classes normally, and the issue is settled.\n"
+                . "2. Recommend 'needs_follow_up' whenever the student displays ongoing emotional distress, trauma or feeling traumatized, feeling burdened, difficulty managing problems or coping, missing/avoiding classes, partial recovery ('recovering but still...'), continuing peer/safety threats, or unfulfilled behavioral terms.\n"
                 . "3. Recommend 'parent_conference' ONLY when parent/guardian presence or family intervention is explicitly necessary.\n\n"
                 . "Student Name: {$studentName}\n"
                 . "Concern Type: {$typeLabel}\n"
@@ -488,13 +488,9 @@ function smartAnalyzeSessionConclusion(string $concernType, string $subject, str
     $notesClean = trim($counselorNotes);
     $typeLower  = strtolower($concernType);
 
-    // ── 1. DETECT EXPLICIT RECOVERY & WELLNESS INDICATORS ──
-    $recoveryMatches = [];
-    $isExplicitRecovery = (bool)preg_match('/\b(fully\s+recovered|recovered\s+(from|na)|complete\s+recovery|overcame|healed(\s+from)?|recovering\s+well|100%\s*(ok|okay)?|all\s+good|completely\s+fine|doing\s+great|doing\s+very\s+well|in\s+good\s+shape|not\s+in\s+(a\s+)?bad\s+shape|stable\s+condition|emotionally\s+stable|stable\s+mindset|high\s+spirits|no\s+(longer|more|further)\s+(trauma|distress|anxiety|fear|pain|struggles?|issues?|problems?|concerns?)|no\s+(lingering|present|observed)\s+(trauma|distress|symptoms?|issues?|problems?)|ready\s+to\s+(resolve|conclude|close)|case\s+(can\s+be\s+)?resolved|concern\s+(is\s+)?settled|fully\s+settled|nagkaayos\s+na|nagkasundo\s+na|walang\s+problema|maayos\s+na|ligtas\s+na|nakabawi\s+na)\b/i', $notesClean, $recoveryMatches);
-
-    // Mask out past/negated trauma or distress from triggering false distress alerts
-    // E.g., "recovered from trauma", "not in a bad shape", "no longer anxious"
-    $maskedNotes = preg_replace('/\b(recovered\s+from|healed\s+from|overcame|no\s+longer|no\s+more|not\s+in\s+a?)\s+(trauma|distress|fear|anxiety|bad\s+shape|pain|sadness)\b/i', 'healthy_state', $notesClean);
+    // Mask out past/negated trauma or distress BEFORE evaluating active symptoms or caveats
+    // E.g., "recovered from trauma", "not in a bad shape", "no longer traumatized"
+    $maskedNotes = preg_replace('/\b(fully\s+recovered\s+from|recovered\s+from|healed\s+from|overcame|no\s+longer|no\s+more|not\s+in\s+(?:a\s+)?)\s+(traumatiz\w*|trauma|distress\w*|fear|anxi\w*|bad\s+shape|pain|sad\w*|burden\w*)\b/i', 'healthy_state', $notesClean);
     $maskedNotes = preg_replace('/\b100%\s*(ok|okay)?\b/i', 'healthy_state', $maskedNotes);
 
     $followUpScore = 0;
@@ -511,25 +507,40 @@ function smartAnalyzeSessionConclusion(string $concernType, string $subject, str
         $parentReasons[] = "Observations indicate family factors or a formal need for parent/guardian conference.";
     }
 
-    // Signals of Ongoing Active Distress / Bullying / Conflict (evaluated on masked notes)
-    if (preg_match('/\b(fear|scared|anxious|anxiety|nervous|cry|crying|distress|depress|sad|overwhelm|withdrawn|active\s+trauma|panic)\b/i', $maskedNotes)) {
-        $followUpScore += 3;
-        $followUpReasons[] = "Active emotional distress or anxiety was observed during the counseling session.";
+    // Signals of Ongoing Active Trauma / Distress / Emotional Burden (evaluated on masked notes)
+    if (preg_match('/\b(traumatiz\w*|trauma\w*|burden\w*|fear\w*|scared|anxious|anxiety|nervous|cry|crying|distress\w*|depress\w*|sad\w*|overwhelm\w*|withdrawn|panic\w*|upset|stress\w*|troubl\w*|worry|worried|uncomfortable|unsafe|shak\w*|still\s+affected)\b/i', $maskedNotes)) {
+        $followUpScore += 5;
+        $followUpReasons[] = "Student continues to experience trauma, emotional distress, or lingering psychological burden from the incident.";
     }
-    if (preg_match('/\b(bully|bullied|threat|retaliat|fight|hostil|anger|harass|physical|rumor|tense|tension|revenge|danger)\b/i', $maskedNotes)) {
+
+    // Signals of Coping / Problem-Management Difficulties or Incomplete Recovery
+    if (preg_match('/\b(problem\s+managing|managing\s+(?:his|her|their|own)\s+problems?|struggl\w*|coping\s+difficult\w*|hard\s+time|unable\s+to\s+cope|difficulty\s+(?:managing|coping|adjusting|focusing)|still\s+(?:has|have|is|are|experienc\w*|need\w*|feel\w*)|but\s+still|not\s+(?:yet\s+)?(?:ready|ok|okay|fine|stable|recovered)|unresolved|unfinished)\b/i', $maskedNotes)) {
+        $followUpScore += 4;
+        $followUpReasons[] = "Observations note ongoing difficulty managing problems or incomplete recovery requiring continued counseling support.";
+    }
+
+    // Signals of Class Attendance / School Avoidance
+    if (preg_match('/\b(miss(?:es|ing)?\s+(?:\w+\s+){0,2}class(?:es)?|absent\w*|cutting\s+class\w*|tardy|truan\w*|skipping\s+class\w*|avoid(?:s|ing)?\s+(?:school|class)|fail|failing|grades)\b/i', $maskedNotes)) {
+        $followUpScore += 4;
+        $followUpReasons[] = "Student is missing classes or showing school attendance/academic impact connected to the concern.";
+    }
+
+    // Signals of Interpersonal Conflict / Safety Risk
+    if (preg_match('/\b(bully|bullied|threat|retaliat\w*|fight|hostil\w*|anger|harass\w*|physical|rumor|tense|tension|revenge|danger)\b/i', $maskedNotes)) {
         $followUpScore += 4;
         $followUpReasons[] = "Interpersonal tension, peer conflict, or safety/retaliation risks remain active.";
     }
+
+    // Signals of Behavioral Monitoring / Contract
     if (preg_match('/\b(monitor|monitoring|contract|agreement|follow\s*up|trial|observe|check-in|check\s+in|next\s+time|continue)\b/i', $maskedNotes)) {
-        if (!$isExplicitRecovery) {
-            $followUpScore += 3;
-            $followUpReasons[] = "Student agreed to guidance goals or behavioral terms requiring follow-up check-in.";
-        }
+        $followUpScore += 3;
+        $followUpReasons[] = "Student agreed to guidance goals or behavioral terms requiring a follow-up check-in.";
     }
-    if (preg_match('/\b(fail|failing|grades|absent|absenteeism|cutting|tardy|truan)\b/i', $maskedNotes)) {
-        $followUpScore += 2;
-        $followUpReasons[] = "Academic performance or attendance concerns require verification in coming days.";
-    }
+
+    // ── DETECT EXPLICIT FULL RECOVERY & WELLNESS INDICATORS (only valid if no active distress/caveat) ──
+    $recoveryMatches = [];
+    $hasRecoveryPhrase = (bool)preg_match('/\b(fully\s+recovered|recovered\s+(?:from|na)|complete\s+recovery|overcame|healed(?:\s+from)?|recovering\s+well|100%\s*(?:ok|okay)?|all\s+good|completely\s+fine|doing\s+great|doing\s+very\s+well|in\s+good\s+shape|not\s+in\s+(?:a\s+)?bad\s+shape|stable\s+condition|emotionally\s+stable|stable\s+mindset|high\s+spirits|no\s+(?:longer|more|further)\s+(?:trauma\w*|distress|anxiety|fear|pain|struggles?|issues?|problems?|concerns?)|no\s+(?:lingering|present|observed)\s+(?:trauma\w*|distress|symptoms?|issues?|problems?)|ready\s+to\s+(?:resolve|conclude|close)|case\s+(?:can\s+be\s+)?resolved|concern\s+(?:is\s+)?settled|fully\s+settled|nagkaayos\s+na|nagkasundo\s+na|walang\s+problema|maayos\s+na|ligtas\s+na|nakabawi\s+na)\b/i', $notesClean, $recoveryMatches);
+    $isExplicitRecovery = $hasRecoveryPhrase && ($followUpScore === 0);
 
     // Signals of Resolution & Recovery
     if ($isExplicitRecovery) {
@@ -539,24 +550,19 @@ function smartAnalyzeSessionConclusion(string $concernType, string $subject, str
         $resolveReasons[] = "Counselor observations confirm student has recovered with no lingering trauma or distress.";
     }
 
-    if (preg_match('/\b(resolved|reconciled|settled|peace|forgave|forgiven|mutual\s+agreement|handshake|apologized|sincere\s+apology|admitted\s+fault|remorseful|understood\s+mistake)\b/i', $notesClean)) {
+    if (preg_match('/\b(resolved|reconciled|settled|peace|forgave|forgiven|mutual\s+agreement|handshake|apologized|sincere\s+apology|admitted\s+fault|remorseful|understood\s+mistake)\b/i', $maskedNotes)) {
         $resolveScore += 4;
         $resolveReasons[] = "Student demonstrated reflective accountability, remorse, and reached mutual agreement.";
     }
-    if (preg_match('/\b(good\s+conduct\s+pledge|willing\s+to\s+change|cooperative|satisfaction|calm|relieved|positive\s+outlook|concluded\s+successfully|doing\s+well|feeling\s+better|smiling|stable)\b/i', $notesClean)) {
+    if (preg_match('/\b(good\s+conduct\s+pledge|willing\s+to\s+change|cooperative|satisfaction|calm|relieved|positive\s+outlook|concluded\s+successfully|doing\s+well|feeling\s+better|smiling|stable)\b/i', $maskedNotes)) {
         $resolveScore += 3;
         $resolveReasons[] = "Student exhibited cooperative conduct, emotional stability, and positive responsiveness.";
     }
 
-    // Default weight if notes are neutral
+    // Default weight if notes are neutral (err on clinical caution: recommend follow-up unless resolution is evident)
     if ($followUpScore === 0 && $resolveScore === 0 && $parentScore === 0) {
-        if (in_array($typeLower, ['bullying', 'emotional', 'mental_health', 'behavioral', 'family'])) {
-            $followUpScore += 2;
-            $followUpReasons[] = "Case concern type ({$concernType}) benefits from an active check-in session.";
-        } else {
-            $resolveScore += 2;
-            $resolveReasons[] = "Counseling interview established clear guidance reminders and mutual understanding.";
-        }
+        $followUpScore += 2;
+        $followUpReasons[] = "Session observations do not yet confirm full resolution; a follow-up check-in is advised to verify student progress.";
     }
 
     // Decision Logic

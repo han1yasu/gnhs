@@ -59,9 +59,9 @@ $sessions = $db->query("SELECT cs.*,
     c.is_peer_report, c.reported_student_name, c.reported_student_grade,
     c.resolution, c.sanctions, c.resolution_process, c.resolved_at
     FROM counseling_sessions cs
-    LEFT JOIN users s ON cs.student_id=s.id
     LEFT JOIN cases c ON cs.case_id=c.id
     LEFT JOIN referrals r ON cs.referral_id=r.id
+    LEFT JOIN users s ON s.id = COALESCE(cs.student_id, c.student_id, r.student_id)
     $where
     ORDER BY COALESCE(cs.ended_at, cs.session_date) DESC, cs.session_date DESC")->fetchAll();
 
@@ -95,15 +95,15 @@ foreach ($sessions as $s) {
         : "<span style='display:inline-block;font-size:10.5px;font-weight:700;background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;padding:2px 7px;border-radius:10px;margin-bottom:3px'><i class='fas fa-clipboard-check'></i> Resolved</span>";
 
     $resSnippet = !empty($s['resolution'])
-        ? "<div style='font-size:12px;color:var(--text);line-height:1.35;max-width:280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis' title='" . htmlspecialchars($s['resolution'], ENT_QUOTES) . "'>" . htmlspecialchars($s['resolution']) . "</div>"
+        ? "<div style='font-size:12px;color:var(--text);line-height:1.35;max-width:190px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis' title='" . htmlspecialchars($s['resolution'], ENT_QUOTES) . "'>" . htmlspecialchars($s['resolution']) . "</div>"
         : "<div style='font-size:12px;color:var(--text-3);font-style:italic'>Session concluded successfully</div>";
 
     // Sanction preview
     $sanctBadge = '';
     if (!empty($s['sanctions']) && stripos($s['sanctions'], 'No Sanctions') === false) {
-        $sanctBadge = "<span class='rule-chip applied' style='font-size:11px;padding:3px 8px;cursor:default' title='" . htmlspecialchars($s['sanctions'], ENT_QUOTES) . "'><i class='fas fa-gavel'></i> Sanctions Imposed</span>";
+        $sanctBadge = "<span class='rule-chip applied' style='font-size:11px;padding:3px 8px;cursor:default;white-space:nowrap' title='" . htmlspecialchars($s['sanctions'], ENT_QUOTES) . "'><i class='fas fa-gavel'></i> Sanctions</span>";
     } else {
-        $sanctBadge = "<span style='font-size:11px;color:var(--text-3);font-weight:600'><i class='fas fa-check'></i> Counseling Only</span>";
+        $sanctBadge = "<span style='font-size:11px;color:var(--text-3);font-weight:600;white-space:nowrap'><i class='fas fa-check'></i> Counseling Only</span>";
     }
 
     $searchTokens = [

@@ -117,10 +117,14 @@ try {
             } catch (Exception $nte) {}
         }
 
-        // Save final session notes into case_notes if provided (internal, not visible to student)
+        // Save final session notes into case_notes or referral_notes if provided (internal, not visible to student)
         if ($sessionNotes && $caseId) {
             $db->prepare("INSERT INTO case_notes (case_id, author_id, note_type, content, is_visible_to_student, created_at) VALUES (?, ?, 'session_notes', ?, 0, NOW())")
                ->execute([$caseId, $user['id'], "Session Notes: " . $sessionNotes]);
+        } elseif ($sessionNotes && !empty($session['referral_id'])) {
+            ensureReferralNotesTable($db);
+            $db->prepare("INSERT INTO referral_notes (referral_id, author_id, note_type, content, is_visible_to_student, created_at) VALUES (?, ?, 'session_notes', ?, 0, NOW())")
+               ->execute([$session['referral_id'], $user['id'], "Session Notes: " . $sessionNotes]);
         }
 
         // Update cases table
@@ -146,6 +150,17 @@ try {
             }
             $db->prepare("INSERT INTO case_notes (case_id, author_id, note_type, content, is_visible_to_student, created_at) VALUES (?, ?, 'resolution', ?, 1, NOW())")
                ->execute([$caseId, $user['id'], $noteLog]);
+        } elseif (!empty($session['referral_id'])) {
+            ensureReferralNotesTable($db);
+            $noteLog = "Referral officially RESOLVED by Counselor {$counselorName}.\n\n• Resolution:\n{$resolution}";
+            if ($sanctions) {
+                $noteLog .= "\n\n• School Rule Sanction / Action Imposed:\n{$sanctions}";
+            }
+            if ($guidanceRec) {
+                $noteLog .= "\n\n• Guidance Recommendations:\n{$guidanceRec}";
+            }
+            $db->prepare("INSERT INTO referral_notes (referral_id, author_id, note_type, content, is_visible_to_student, created_at) VALUES (?, ?, 'resolution', ?, 1, NOW())")
+               ->execute([$session['referral_id'], $user['id'], $noteLog]);
         }
 
         // Send student notification
@@ -196,10 +211,14 @@ try {
             $updateSessionStmt->execute([$endNotes, $guidanceRec ?: null, $sessionId]);
         }
 
-        // Save session notes into case_notes if provided (internal, not visible to student)
+        // Save session notes into case_notes or referral_notes if provided (internal, not visible to student)
         if ($sessionNotes && $caseId) {
             $db->prepare("INSERT INTO case_notes (case_id, author_id, note_type, content, is_visible_to_student, created_at) VALUES (?, ?, 'session_notes', ?, 0, NOW())")
                ->execute([$caseId, $user['id'], "Session Notes: " . $sessionNotes]);
+        } elseif ($sessionNotes && !empty($session['referral_id'])) {
+            ensureReferralNotesTable($db);
+            $db->prepare("INSERT INTO referral_notes (referral_id, author_id, note_type, content, is_visible_to_student, created_at) VALUES (?, ?, 'session_notes', ?, 0, NOW())")
+               ->execute([$session['referral_id'], $user['id'], "Session Notes: " . $sessionNotes]);
         }
 
         // Keep case / referral status as ongoing, update recommendations if provided
@@ -216,6 +235,11 @@ try {
         }
         if (!empty($session['referral_id'])) {
             $db->prepare("UPDATE referrals SET status = 'ongoing' WHERE id = ?")->execute([$session['referral_id']]);
+            if (!$caseId && $guidanceRec) {
+                ensureReferralNotesTable($db);
+                $db->prepare("INSERT INTO referral_notes (referral_id, author_id, note_type, content, is_visible_to_student, created_at) VALUES (?, ?, 'guidance_recommendation', ?, 1, NOW())")
+                   ->execute([$session['referral_id'], $user['id'], "Guidance Recommendations: " . $guidanceRec]);
+            }
         }
 
         // Insert new counseling session

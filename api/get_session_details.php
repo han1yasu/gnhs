@@ -64,7 +64,7 @@ try {
     }
     $session['parsed_evidence'] = is_array($evidence) ? $evidence : [];
 
-    // Fetch case notes
+    // Fetch case or referral notes
     $notes = [];
     if (!empty($session['case_id'])) {
         $notesStmt = $db->prepare("SELECT cn.*, CONCAT(u.first_name, ' ', u.last_name) AS author_name, u.role AS author_role
@@ -73,6 +73,15 @@ try {
             WHERE cn.case_id = ?
             ORDER BY cn.created_at ASC");
         $notesStmt->execute([$session['case_id']]);
+        $notes = $notesStmt->fetchAll();
+    } elseif (!empty($session['referral_id'])) {
+        ensureReferralNotesTable($db);
+        $notesStmt = $db->prepare("SELECT rn.*, CONCAT(u.first_name, ' ', u.last_name) AS author_name, u.role AS author_role
+            FROM referral_notes rn
+            LEFT JOIN users u ON rn.author_id = u.id
+            WHERE rn.referral_id = ?
+            ORDER BY rn.created_at ASC");
+        $notesStmt->execute([$session['referral_id']]);
         $notes = $notesStmt->fetchAll();
     }
 

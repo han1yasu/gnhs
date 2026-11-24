@@ -49,11 +49,15 @@ try {
            ->execute([$session['referral_id']]);
     }
 
-    // Add record note in case_notes if case exists
+    // Add record note in case_notes or referral_notes
+    $noteContent = "Counseling session officially started by Counselor {$counselorName} at " . date('M d, Y g:i A') . " (" . ($session['location'] ?: 'Guidance Office') . ").";
     if (!empty($session['case_id'])) {
-        $noteContent = "Counseling session officially started by Counselor {$counselorName} at " . date('M d, Y g:i A') . " (" . ($session['location'] ?: 'Guidance Office') . ").";
         $db->prepare("INSERT INTO case_notes (case_id, author_id, note_type, content, is_visible_to_student, created_at) VALUES (?, ?, 'session_started', ?, 0, NOW())")
            ->execute([$session['case_id'], $user['id'], $noteContent]);
+    } elseif (!empty($session['referral_id'])) {
+        ensureReferralNotesTable($db);
+        $db->prepare("INSERT INTO referral_notes (referral_id, author_id, note_type, content, is_visible_to_student, created_at) VALUES (?, ?, 'session_started', ?, 0, NOW())")
+           ->execute([$session['referral_id'], $user['id'], $noteContent]);
     }
 
     // Send student notification if student_id exists

@@ -16,11 +16,16 @@ if (!$sessionId && !$caseId) {
 try {
     $db = getDB();
 
-    // If case_id was not provided, look it up from counseling_sessions
-    if (!$caseId && $sessionId) {
-        $stmt = $db->prepare("SELECT case_id FROM counseling_sessions WHERE id = ?");
+    // Resolve case_id and referral_id from counseling_sessions
+    $referralId = 0;
+    if ($sessionId) {
+        $stmt = $db->prepare("SELECT case_id, referral_id FROM counseling_sessions WHERE id = ?");
         $stmt->execute([$sessionId]);
-        $caseId = (int)$stmt->fetchColumn();
+        $sessRow = $stmt->fetch();
+        if ($sessRow) {
+            if (!$caseId) $caseId = (int)($sessRow['case_id'] ?? 0);
+            $referralId = (int)($sessRow['referral_id'] ?? 0);
+        }
     }
 
     if ($sessionId) {
@@ -28,20 +33,38 @@ try {
            ->execute([$sessionNotes, $sessionId]);
     }
 
-    // If an individual note entry was typed or if session notes should be archived as a record entry
+    // Save timestamped note entry to case_notes (for cases) or referral_notes (for teacher referrals)
     if ($newNoteEntry) {
-        $db->prepare("INSERT INTO case_notes (case_id, author_id, note_type, content, is_visible_to_student, created_at) VALUES (?, ?, 'session_note', ?, 0, NOW())")
-           ->execute([$caseId, $user['id'], $newNoteEntry]);
+        if ($caseId > 0) {
+            $db->prepare("INSERT INTO case_notes (case_id, author_id, note_type, content, is_visible_to_student, created_at) VALUES (?, ?, 'session_note', ?, 0, NOW())")
+               ->execute([$caseId, $user['id'], $newNoteEntry]);
+        } elseif ($referralId > 0) {
+            ensureReferralNotesTable($db);
+            $db->prepare("INSERT INTO referral_notes (referral_id, author_id, note_type, content, is_visible_to_student, created_at) VALUES (?, ?, 'session_note', ?, 0, NOW())")
+               ->execute([$referralId, $user['id'], $newNoteEntry]);
+        }
     }
 
-    // Retrieve fresh notes list for this case
-    $notesStmt = $db->prepare("SELECT cn.*, CONCAT(u.first_name, ' ', u.last_name) AS author_name, u.role AS author_role
-        FROM case_notes cn
-        LEFT JOIN users u ON cn.author_id = u.id
-        WHERE cn.case_id = ?
-        ORDER BY cn.created_at ASC");
-    $notesStmt->execute([$caseId]);
-    $freshNotes = $notesStmt->fetchAll();
+    // Retrieve fresh notes list for this case or referral
+    $freshNotes = [];
+    if ($caseId > 0) {
+        $notesStmt = $db->prepare("SELECT cn.*, CONCAT(u.first_name, ' ', u.last_name) AS author_name, u.role AS author_role
+            FROM case_notes cn
+            LEFT JOIN users u ON cn.author_id = u.id
+            WHERE cn.case_id = ?
+            ORDER BY cn.created_at ASC");
+        $notesStmt->execute([$caseId]);
+        $freshNotes = $notesStmt->fetchAll();
+    } elseif ($referralId > 0) {
+        ensureReferralNotesTable($db);
+        $notesStmt = $db->prepare("SELECT rn.*, CONCAT(u.first_name, ' ', u.last_name) AS author_name, u.role AS author_role
+            FROM referral_notes rn
+            LEFT JOIN users u ON rn.author_id = u.id
+            WHERE rn.referral_id = ?
+            ORDER BY rn.created_at ASC");
+        $notesStmt->execute([$referralId]);
+        $freshNotes = $notesStmt->fetchAll();
+    }
 
     jsonOut([
         'success'   => true,

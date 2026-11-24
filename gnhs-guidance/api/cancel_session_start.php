@@ -40,10 +40,18 @@ try {
     $updateStmt->execute([$sessionId]);
 
     // 2. Remove the accidental session_started note if one was created recently
-    $db->prepare("DELETE FROM case_notes 
-        WHERE case_id = ? AND note_type = 'session_started' AND author_id = ? 
-        ORDER BY id DESC LIMIT 1")
-       ->execute([$session['case_id'], $user['id']]);
+    if (!empty($session['case_id'])) {
+        $db->prepare("DELETE FROM case_notes 
+            WHERE case_id = ? AND note_type = 'session_started' AND author_id = ? 
+            ORDER BY id DESC LIMIT 1")
+           ->execute([$session['case_id'], $user['id']]);
+    } elseif (!empty($session['referral_id'])) {
+        ensureReferralNotesTable($db);
+        $db->prepare("DELETE FROM referral_notes 
+            WHERE referral_id = ? AND note_type = 'session_started' AND author_id = ? 
+            ORDER BY id DESC LIMIT 1")
+           ->execute([$session['referral_id'], $user['id']]);
+    }
 
     // 3. Optional: Delete or mark read any "session_active" notification sent to student for this case
     if (!empty($session['student_id'])) {
@@ -53,18 +61,23 @@ try {
            ->execute([$session['student_id']]);
     }
 
-    // 4. If case was put into ongoing by mistake and there are no other active/ongoing sessions or notes, revert case to under_review
-    $otherOngoing = (int)$db->prepare("SELECT COUNT(*) FROM counseling_sessions WHERE case_id = ? AND id != ? AND status IN ('in_progress','ongoing','completed')")
-                            ->execute([$session['case_id'], $sessionId]) ? $db->query("SELECT FOUND_ROWS()")->fetchColumn() : 0;
-    
-    // Check other sessions count
-    $checkStmt = $db->prepare("SELECT COUNT(*) FROM counseling_sessions WHERE case_id = ? AND id != ? AND status IN ('in_progress','ongoing','completed')");
-    $checkStmt->execute([$session['case_id'], $sessionId]);
-    $activeOtherCount = (int)$checkStmt->fetchColumn();
-
-    if ($activeOtherCount === 0 && $session['case_status'] === 'ongoing') {
-        $db->prepare("UPDATE cases SET status = 'under_review', updated_at = NOW() WHERE id = ?")
-           ->execute([$session['case_id']]);
+    // 4. If case/referral was put into ongoing by mistake and there are no other active/ongoing sessions, revert status
+    if (!empty($session['case_id'])) {
+        $checkStmt = $db->prepare("SELECT COUNT(*) FROM counseling_sessions WHERE case_id = ? AND id != ? AND status IN ('in_progress','ongoing','completed')");
+        $checkStmt->execute([$session['case_id'], $sessionId]);
+        $activeOtherCount = (int)$checkStmt->fetchColumn();
+        if ($activeOtherCount === 0 && $session['case_status'] === 'ongoing') {
+            $db->prepare("UPDATE cases SET status = 'under_review', updated_at = NOW() WHERE id = ?")
+               ->execute([$session['case_id']]);
+        }
+    } elseif (!empty($session['referral_id'])) {
+        $checkStmt = $db->prepare("SELECT COUNT(*) FROM counseling_sessions WHERE referral_id = ? AND id != ? AND status IN ('in_progress','ongoing','completed')");
+        $checkStmt->execute([$session['referral_id'], $sessionId]);
+        $activeOtherCount = (int)$checkStmt->fetchColumn();
+        if ($activeOtherCount === 0 && $session['case_status'] === 'ongoing') {
+            $db->prepare("UPDATE referrals SET status = 'under_review' WHERE id = ?")
+               ->execute([$session['referral_id']]);
+        }
     }
 
     jsonOut([

@@ -161,6 +161,23 @@ function checkSessionTimeout(): void {
     }
 }
 
+function ensureReferralNotesTable(PDO $db): void {
+    static $done = false;
+    if ($done) return;
+    $db->exec("CREATE TABLE IF NOT EXISTS referral_notes (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        referral_id INT NOT NULL,
+        author_id INT NOT NULL,
+        note_type VARCHAR(50) NOT NULL DEFAULT 'session_note',
+        content TEXT NOT NULL,
+        is_visible_to_student TINYINT(1) DEFAULT 0,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        INDEX(referral_id),
+        INDEX(author_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci");
+    $done = true;
+}
+
 function requireLogin($role = ''): array {
     startSession();
     checkSessionTimeout();

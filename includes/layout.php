@@ -1349,13 +1349,20 @@ async function confirmCrop() {
     const formData = new FormData();
     formData.append('avatar', blob, currentAvatarFile.name);
 
+    const isDoubleNested = window.location.pathname.includes('/gnhs-guidance/gnhs-guidance/');
+    const isSingleNested = !isDoubleNested && window.location.pathname.startsWith('/gnhs-guidance/');
+    const apiBase = isDoubleNested
+      ? '/gnhs-guidance/gnhs-guidance/api/'
+      : (isSingleNested ? '/gnhs-guidance/api/' : '/api/');
+
     try {
-      const res = await fetch('/gnhs-guidance/api/upload_avatar.php', { method:'POST', body:formData });
+      const res = await fetch(apiBase + 'upload_avatar.php', { method:'POST', body:formData });
       const data = await res.json();
       if (data.success) {
-        showToast('Profile picture updated successfully.', 'success');
+        showToast('Profile picture updated! Refreshing…', 'success');
         const removeBtn = document.getElementById('removePhotoBtn');
         if (removeBtn) removeBtn.style.display = 'inline-flex';
+        setTimeout(() => location.reload(), 200);
       } else {
         showToast(data.message || 'Upload failed.', 'error');
       }
@@ -1371,12 +1378,17 @@ async function confirmCrop() {
 
 async function removeAvatar() {
   if (!confirm('Remove your profile picture?')) return;
+  const isDoubleNested = window.location.pathname.includes('/gnhs-guidance/gnhs-guidance/');
+  const isSingleNested = !isDoubleNested && window.location.pathname.startsWith('/gnhs-guidance/');
+  const apiBase = isDoubleNested
+    ? '/gnhs-guidance/gnhs-guidance/api/'
+    : (isSingleNested ? '/gnhs-guidance/api/' : '/api/');
   try {
-    const res  = await fetch('/gnhs-guidance/api/remove_avatar.php');
+    const res  = await fetch(apiBase + 'remove_avatar.php');
     const data = await res.json();
     if (data.success) {
-      showToast('Profile picture removed.', 'info');
-      setTimeout(() => location.reload(), 1000);
+      showToast('Profile picture removed. Refreshing…', 'info');
+      setTimeout(() => location.reload(), 200);
     } else {
       showToast(data.message || 'Failed to remove.', 'error');
     }

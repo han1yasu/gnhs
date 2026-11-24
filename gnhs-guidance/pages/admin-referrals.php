@@ -327,12 +327,19 @@ function openRefModal(btn) {
   document.getElementById("refModal").classList.remove("hidden");
 }
 
+function refApiUrl(endpoint) {
+  const p = window.location.pathname || "";
+  if (p.includes("/gnhs-guidance/gnhs-guidance/")) return "/gnhs-guidance/gnhs-guidance/api/" + endpoint;
+  if (p.startsWith("/gnhs-guidance/")) return "/gnhs-guidance/api/" + endpoint;
+  return "/api/" + endpoint;
+}
+
 async function updateRefStatus(id) {
   const status = document.getElementById("ref-status-sel").value;
   const btn    = document.getElementById("saveRefBtn");
   if (btn) { btn.disabled=true; btn.innerHTML="<span class=\"spinner\"></span> Saving…"; }
   try {
-    const r = await fetch("/gnhs-guidance/api/update_referral.php?id="+id+"&status="+status);
+    const r = await fetch(refApiUrl("update_referral.php?id="+id+"&status="+encodeURIComponent(status)));
     const d = await r.json();
     if (d.success) {
       if (status === "resolved" || status === "closed") {
@@ -341,26 +348,26 @@ async function updateRefStatus(id) {
         showToast("Referral status updated!","success");
       }
       document.getElementById("refModal").classList.add("hidden");
-      setTimeout(()=>location.reload(), 1200);
+      setTimeout(()=>location.reload(), 200);
     } else {
       showToast(d.message||"Update failed.","error");
-      if (btn) { btn.disabled=false; btn.innerHTML="<i class=\"fas fa-save\"></i> Save Status"; }
+      if (btn) { btn.disabled=false; btn.innerHTML="<i class=\"fas fa-save\"></i> Save"; }
     }
   } catch(e) {
     showToast("Error updating referral.","error");
-    if (btn) { btn.disabled=false; btn.innerHTML="<i class=\"fas fa-save\"></i> Save Status"; }
+    if (btn) { btn.disabled=false; btn.innerHTML="<i class=\"fas fa-save\"></i> Save"; }
   }
 }
 
 async function archiveReferralDirect(id) {
   if (!confirm("Are you sure you want to resolve and archive this referral?")) return;
   try {
-    const r = await fetch("/gnhs-guidance/api/update_referral.php?id="+id+"&status=resolved");
+    const r = await fetch(refApiUrl("update_referral.php?id="+id+"&status=resolved"));
     const d = await r.json();
     if (d.success) {
       showToast("Referral marked as resolved and moved to archive!", "success");
       document.getElementById("refModal").classList.add("hidden");
-      setTimeout(() => location.reload(), 1200);
+      setTimeout(() => location.reload(), 200);
     } else {
       showToast(d.message || "Failed to archive referral.", "error");
     }
@@ -434,10 +441,7 @@ async function submitScheduleReferral() {
   btn.innerHTML = "<span class=\"spinner\"></span> Scheduling…";
 
   try {
-    const apiUrl = window.location.pathname.includes("/gnhs-guidance/gnhs-guidance/")
-      ? "/gnhs-guidance/gnhs-guidance/api/schedule_referral_session.php"
-      : "/gnhs-guidance/api/schedule_referral_session.php";
-    const r = await fetch(apiUrl, {
+    const r = await fetch(refApiUrl("schedule_referral_session.php"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -454,7 +458,7 @@ async function submitScheduleReferral() {
       showToast(d.message || "Counseling session scheduled successfully!", "success");
       document.getElementById("scheduleRefModal").classList.add("hidden");
       document.getElementById("refModal").classList.add("hidden");
-      setTimeout(() => window.location.reload(), 1200);
+      setTimeout(() => window.location.reload(), 200);
     } else {
       showToast(d.message || "Failed to schedule session.", "error");
       btn.disabled = false;

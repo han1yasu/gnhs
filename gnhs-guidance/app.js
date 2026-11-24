@@ -12,6 +12,13 @@ let _activeCaseId = null;
 const $  = id  => document.getElementById(id);
 const $$ = sel => document.querySelectorAll(sel);
 
+function gnhsApi(endpoint) {
+  const p = window.location.pathname || '';
+  if (p.includes('/gnhs-guidance/gnhs-guidance/')) return '/gnhs-guidance/gnhs-guidance/api/' + endpoint;
+  if (p.startsWith('/gnhs-guidance/')) return '/gnhs-guidance/api/' + endpoint;
+  return '/api/' + endpoint;
+}
+
 async function apiPost(url, data) {
   const r = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
   return r.json();
@@ -1001,7 +1008,7 @@ async function openCaseReview(caseId, caseNum, status, priority, subject, descri
   if (body) body.innerHTML = spinner;
 
   try {
-    const res = await fetch('/gnhs-guidance/api/get_case.php?id='+caseId);
+    const res = await fetch(gnhsApi('get_case.php?id=' + caseId));
     const d   = await res.json();
     if (d.success) buildReviewModal(d.case, d.notes, d.session);
     else {
@@ -1470,20 +1477,17 @@ async function saveCase() {
   setLoading(btn,true);
 
   try {
-    const apiUrl = window.location.pathname.includes('/gnhs-guidance/gnhs-guidance/')
-      ? '/gnhs-guidance/gnhs-guidance/api/update_case.php'
-      : '/gnhs-guidance/api/update_case.php';
-    const res = await apiPost(apiUrl, {
+    const res = await apiPost(gnhsApi('update_case.php'), {
       case_id:_activeCaseId, priority, status, session_date:session, session_type:sessionType, location:location, meeting_link:meetingLink
     });
     if (res.success) {
       $('caseReviewModal').classList.add('hidden');
       showToast('Case updated successfully!','success');
-      setTimeout(() => location.reload(), 1500);
+      setTimeout(() => location.reload(), 200);
     } else { showToast(res.message||'Update failed.','error'); setLoading(btn,false); }
   } catch {
-    $('caseReviewModal').classList.add('hidden');
-    showToast('Case updated! (demo mode)','success');
+    showToast('Failed to update case. Please try again.','error');
+    setLoading(btn,false);
   }
 }
 
@@ -1806,11 +1810,7 @@ async function submitCaseResolution() {
   }
 
   try {
-    const apiUrl = window.location.pathname.includes('/gnhs-guidance/gnhs-guidance/')
-      ? '/gnhs-guidance/gnhs-guidance/api/update_case.php'
-      : '/gnhs-guidance/api/update_case.php';
-
-    const res = await apiPost(apiUrl, {
+    const res = await apiPost(gnhsApi('update_case.php'), {
       case_id: _activeCaseId,
       status: 'resolved',
       priority: priority,
@@ -1826,7 +1826,7 @@ async function submitCaseResolution() {
       closeCaseResolutionModal();
       $('caseReviewModal')?.classList.add('hidden');
       showToast('Case officially resolved and sessions archived!', 'success');
-      setTimeout(() => location.reload(), 1400);
+      setTimeout(() => location.reload(), 200);
     } else {
       showToast(res.message || 'Failed to resolve case.', 'error');
       if (btn) {
@@ -1835,11 +1835,11 @@ async function submitCaseResolution() {
       }
     }
   } catch (err) {
-    _reviewModalWasOpen = false;
-    showToast('Case resolved and archived.', 'success');
-    closeCaseResolutionModal();
-    $('caseReviewModal')?.classList.add('hidden');
-    setTimeout(() => location.reload(), 1400);
+    showToast('Failed to connect to server while resolving case.', 'error');
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-check-circle"></i> Finalize, Apply Sanction & Resolve Case';
+    }
   }
 }
 
@@ -1907,7 +1907,7 @@ async function openCaseModal(caseId) {
   if (body) body.innerHTML='<div style="text-align:center;padding:40px"><span class="spinner" style="border-color:rgba(85,0,0,.2);border-top-color:var(--maroon);display:inline-block"></span></div>';
 
   try {
-    const res = await fetch('/gnhs-guidance/api/get_case.php?id='+caseId);
+    const res = await fetch(gnhsApi('get_case.php?id=' + caseId));
     const d   = await res.json();
     if (d.success) {
       const c=d.case, notes=d.notes||[], session=d.session;
@@ -2055,8 +2055,8 @@ async function saveNewUser() {
 
   const btn=$('saveUserBtn'); setLoading(btn,true); hideEl('nuMsg');
   try{
-    const res=await apiPost('/gnhs-guidance/api/register.php',{first_name:first,last_name:last,email,password:pass,confirm:pass,role,id_number:idnum,grade_section:grade});
-    if(res.success){showToast('User added!','success');$('addUserModal').classList.add('hidden');setTimeout(()=>location.reload(),1200);}
+    const res=await apiPost(gnhsApi('register.php'),{first_name:first,last_name:last,email,password:pass,confirm:pass,role,id_number:idnum,grade_section:grade});
+    if(res.success){showToast('User added!','success');$('addUserModal').classList.add('hidden');setTimeout(()=>location.reload(),200);}
     else{showMsg('nuMsg',res.message||'Failed.');}
   }catch{showMsg('nuMsg','Network or server error. Please try again.');}
   setLoading(btn,false);
@@ -2083,9 +2083,9 @@ async function deleteUser(userId, name, email) {
     return;
   }
   try{
-    const r=await fetch('/gnhs-guidance/api/update_user.php?action=deactivate&id='+userId);
+    const r=await fetch(gnhsApi('update_user.php?action=deactivate&id='+userId));
     const d=await r.json();
-    if(d.success){showToast('User deactivated.','info');setTimeout(()=>location.reload(),1200);}
+    if(d.success){showToast('User deactivated.','info');setTimeout(()=>location.reload(),200);}
     else showToast(d.message||'Failed.','error');
   }catch{showToast('Network error while deactivating.','error');}
 }

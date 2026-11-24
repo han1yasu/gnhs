@@ -916,7 +916,7 @@ async function saveTeacherNewStudent(e) {
       if (typeof showToast === "function") showToast(ans.message || "Student account created!", "success");
       else alert(ans.message || "Student account created!");
       closeTeacherAddStudentModal();
-      setTimeout(function(){ location.reload(); }, 900);
+      setTimeout(function(){ location.reload(); }, 200);
     } else {
       msg.className = "error-msg";
       msg.style.display = "block";

@@ -520,19 +520,28 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+let _sessionStatusChanged = false;
+
+function sessionApiUrl(endpoint) {
+  const p = window.location.pathname || '';
+  if (p.includes('/gnhs-guidance/gnhs-guidance/')) return '/gnhs-guidance/gnhs-guidance/api/' + endpoint;
+  if (p.startsWith('/gnhs-guidance/')) return '/gnhs-guidance/api/' + endpoint;
+  return '/api/' + endpoint;
+}
+
 async function updateSessionStatus(id, status, ev) {
   if (ev) ev.stopPropagation();
   try {
-    const r = await fetch('/gnhs-guidance/api/update_session.php?id=' + id + '&status=' + status);
+    const r = await fetch(sessionApiUrl('update_session.php?id=' + id + '&status=' + encodeURIComponent(status)));
     const d = await r.json();
     if (d.success) {
       showToast('Session status updated!', 'success');
-      setTimeout(() => window.location.reload(), 1000);
+      setTimeout(() => window.location.reload(), 200);
     } else {
       showToast(d.message || 'Failed to update.', 'error');
     }
   } catch {
-    showToast('Updated.', 'success');
+    showToast('Failed to update session status.', 'error');
   }
 }
 
@@ -545,6 +554,10 @@ function closeSessionConsoleOverlay(e) {
 function closeSessionConsole() {
   if (_sessionTimerInterval) clearInterval(_sessionTimerInterval);
   document.getElementById('sessionConsoleModal').classList.add('hidden');
+  if (_sessionStatusChanged) {
+    _sessionStatusChanged = false;
+    window.location.reload();
+  }
 }
 
 // ── OPEN THE COUNSELING SESSION CONSOLE ─────────────────────────
@@ -556,7 +569,7 @@ async function openSessionConsole(sessionId) {
   container.innerHTML = '<div style="text-align:center;padding:50px"><span class="spinner" style="border-color:rgba(85,0,0,.2);border-top-color:var(--maroon);width:36px;height:36px;border-width:4px;display:inline-block"></span></div>';
 
   try {
-    const res = await fetch('/gnhs-guidance/api/get_session_details.php?id=' + sessionId);
+    const res = await fetch(sessionApiUrl('get_session_details.php?id=' + sessionId));
     const data = await res.json();
     if (!data.success) {
       container.innerHTML = '<div class="error-msg">' + (data.message || 'Could not load session.') + '</div>';
@@ -881,13 +894,14 @@ function startSessionTimer(startDate) {
 // ── TURN SESSION ON (START IN-PERSON SESSION) ────────────────────
 async function startPersonalSession(sessionId) {
   try {
-    const res = await fetch('/gnhs-guidance/api/start_session.php', {
+    const res = await fetch(sessionApiUrl('start_session.php'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ session_id: sessionId })
     });
     const data = await res.json();
     if (data.success) {
+      _sessionStatusChanged = true;
       showToast('Personal counseling session turned ON!', 'success');
       // Refresh session console with live state
       openSessionConsole(sessionId);
@@ -895,7 +909,7 @@ async function startPersonalSession(sessionId) {
       showToast(data.message || 'Could not start session.', 'error');
     }
   } catch (err) {
-    showToast('Session started.', 'success');
+    showToast('Network error starting session.', 'error');
   }
 }
 
@@ -932,10 +946,11 @@ async function executeCancelLiveSession() {
     });
     const data = await res.json();
     if (data.success) {
+      _sessionStatusChanged = true;
       if (_sessionTimerInterval) clearInterval(_sessionTimerInterval);
       closeCancelSessionModal();
       showToast('Live session canceled. Reverted to Scheduled status.', 'success');
-      setTimeout(() => openSessionConsole(_cancelSessionTargetId), 400);
+      setTimeout(() => openSessionConsole(_cancelSessionTargetId), 200);
     } else {
       showToast(data.message || 'Could not cancel session.', 'error');
     }
@@ -1026,7 +1041,7 @@ async function saveLiveSessionNotes() {
   btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
 
   try {
-    const res = await fetch('/gnhs-guidance/api/save_session_notes.php', {
+    const res = await fetch(sessionApiUrl('save_session_notes.php'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1417,26 +1432,25 @@ async function submitEndSessionDecision() {
   }
 
   try {
-    const res = await fetch('/gnhs-guidance/api/end_session.php', {
+    const res = await fetch(sessionApiUrl('end_session.php'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
     const data = await res.json();
     if (data.success) {
+      _sessionStatusChanged = false;
       closeEndSessionModal();
       closeSessionConsole();
       showToast(data.message, 'success');
-      setTimeout(() => window.location.reload(), 1200);
+      setTimeout(() => window.location.reload(), 200);
     } else {
       showToast(data.message || 'Could not conclude session.', 'error');
       confirmBtn.disabled = false;
     }
   } catch (err) {
-    closeEndSessionModal();
-    closeSessionConsole();
-    showToast('Session concluded successfully.', 'success');
-    setTimeout(() => window.location.reload(), 1200);
+    showToast('Failed to conclude session. Please try again.', 'error');
+    confirmBtn.disabled = false;
   }
 }
 </script>

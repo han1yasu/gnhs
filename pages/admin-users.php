@@ -693,7 +693,7 @@ async function submitDeactivateUser() {
     if (d.success) {
       showToast('Account deactivated successfully.', 'info');
       closeDeactivateConfirmModal();
-      setTimeout(() => location.reload(), 1000);
+      setTimeout(() => location.reload(), 200);
     } else {
       showToast(d.message || 'Failed to deactivate account.', 'error');
     }
@@ -750,7 +750,7 @@ async function submitActivateUser() {
     if (d.success) {
       showToast('Account activated successfully.', 'success');
       closeActivateConfirmModal();
-      setTimeout(() => location.reload(), 1000);
+      setTimeout(() => location.reload(), 200);
     } else {
       showToast(d.message || 'Failed to activate account.', 'error');
     }
@@ -875,9 +875,11 @@ async function saveAdvisory() {
   const btn=document.getElementById('saveAdvisoryBtn');
   setLoading(btn,true); hideEl('advisoryMsg');
   try {
-    const r=await fetch('/gnhs-guidance/api/assign_advisory.php?user_id='+_advisoryUserId+'&class='+encodeURIComponent(cls));
+    const isNested = window.location.pathname.includes('/gnhs-guidance/gnhs-guidance/');
+    const advUrl = (isNested ? '/gnhs-guidance/gnhs-guidance' : '/gnhs-guidance') + '/api/assign_advisory.php?user_id='+_advisoryUserId+'&class='+encodeURIComponent(cls);
+    const r=await fetch(advUrl);
     const d=await r.json();
-    if(d.success){showToast('Advisory class assigned!','success');document.getElementById('advisoryModal').classList.add('hidden');setTimeout(()=>location.reload(),1200);}
+    if(d.success){showToast('Advisory class assigned!','success');document.getElementById('advisoryModal').classList.add('hidden');setTimeout(()=>location.reload(),200);}
     else{showMsg('advisoryMsg',d.message||'Failed.');setLoading(btn,false);}
   }catch{showToast('Error. Check server.','error');setLoading(btn,false);}
 }
@@ -1260,14 +1262,16 @@ async function submitResetTotp() {
   hideEl('totpMsg');
 
   try {
-    const res = await apiPost('/gnhs-guidance/api/admin_reset_totp.php', {
+    const isNested = window.location.pathname.includes('/gnhs-guidance/gnhs-guidance/');
+    const totpUrl = isNested ? '/gnhs-guidance/gnhs-guidance/api/admin_reset_totp.php' : '/gnhs-guidance/api/admin_reset_totp.php';
+    const res = await apiPost(totpUrl, {
       user_id: _totpTargetUserId
     });
 
     if (res.success) {
       showToast('2FA has been successfully reset! User can now scan a new QR code.', 'success');
       document.getElementById('resetTotpModal')?.classList.add('hidden');
-      setTimeout(() => location.reload(), 1200);
+      setTimeout(() => location.reload(), 200);
     } else {
       showMsg('totpMsg', res.message || 'Failed to reset 2FA.');
     }

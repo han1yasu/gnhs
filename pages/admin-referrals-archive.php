@@ -292,12 +292,16 @@ function openArchivedRefModal(btn) {
 async function restoreReferral(id, newStatus) {
   if (!confirm("Are you sure you want to restore this referral to active status (" + newStatus.replace(\'_\',\' \') + ")?")) return;
   try {
-    const r = await fetch("/gnhs-guidance/api/update_referral.php?id=" + id + "&status=" + newStatus);
+    const p = window.location.pathname || "";
+    const apiBase = p.includes("/gnhs-guidance/gnhs-guidance/")
+      ? "/gnhs-guidance/gnhs-guidance/api/"
+      : (p.startsWith("/gnhs-guidance/") ? "/gnhs-guidance/api/" : "/api/");
+    const r = await fetch(apiBase + "update_referral.php?id=" + id + "&status=" + encodeURIComponent(newStatus));
     const d = await r.json();
     if (d.success) {
       showToast("Referral restored to Active Referrals!", "success");
       document.getElementById("archivedRefModal").classList.add("hidden");
-      setTimeout(() => location.reload(), 1200);
+      setTimeout(() => location.reload(), 200);
     } else {
       showToast(d.message || "Failed to restore referral.", "error");
     }

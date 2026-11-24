@@ -345,7 +345,7 @@ async function submitAppeal() {
             msgBox.style.color = '#15803d';
             msgBox.style.border = '1px solid #bbf7d0';
             msgBox.style.display = 'block';
-            setTimeout(() => location.reload(), 1500);
+            setTimeout(() => location.reload(), 300);
         } else {
             msgBox.innerHTML = '<i class="fas fa-circle-exclamation"></i> ' + (data.message || 'Error submitting appeal.');
             msgBox.style.background = '#fef2f2';

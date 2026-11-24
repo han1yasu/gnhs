@@ -656,7 +656,7 @@ async function submitApproveReset() {
     if (data.success) {
       closeResetModal();
       showToast(data.message || 'Password successfully reset and issued!', 'success');
-      setTimeout(() => location.reload(), 1400);
+      setTimeout(() => location.reload(), 200);
     } else {
       showToast(data.message || 'Failed to process request.', 'error');
     }
@@ -688,7 +688,7 @@ async function markRequestCompleted(requestId) {
     const data = await res.json();
     if (data.success) {
       showToast('Password reset request marked as completed!', 'success');
-      setTimeout(() => location.reload(), 1000);
+      setTimeout(() => location.reload(), 200);
     } else {
       showToast(data.message || 'Failed to update request.', 'error');
     }
@@ -718,7 +718,7 @@ async function openRejectModal(requestId, studentName) {
     const data = await res.json();
     if (data.success) {
       showToast('Password reset request rejected.', 'success');
-      setTimeout(() => location.reload(), 1200);
+      setTimeout(() => location.reload(), 200);
     } else {
       showToast(data.message || 'Failed to reject request.', 'error');
     }

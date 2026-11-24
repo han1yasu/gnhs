@@ -478,16 +478,18 @@ async function submitTotpAction() {
     const btn = document.getElementById('confirmActionBtn');
     setLoading(btn, true);
 
+    const isNested = window.location.pathname.includes('/gnhs-guidance/gnhs-guidance/');
+    const apiBase = isNested ? '/gnhs-guidance/gnhs-guidance/api/' : '/gnhs-guidance/api/';
     const apiEndpoint = _currentActionMode === 'dismiss'
-        ? '/gnhs-guidance/api/admin_reset_totp.php?action=dismiss'
-        : '/gnhs-guidance/api/admin_reset_totp.php?action=reset';
+        ? apiBase + 'admin_reset_totp.php?action=dismiss'
+        : apiBase + 'admin_reset_totp.php?action=reset';
 
     try {
         const res = await apiPost(apiEndpoint, { user_id: _currentActionUserId });
         if (res.success) {
             showToast(res.message || 'Action completed successfully.', 'success');
             closeTotpActionModal();
-            setTimeout(() => location.reload(), 1000);
+            setTimeout(() => location.reload(), 200);
         } else {
             showEl('actionModalMsg');
             document.getElementById('actionModalMsg').innerHTML = `<div class="error-msg">\${res.message || 'Operation failed.'}</div>`;

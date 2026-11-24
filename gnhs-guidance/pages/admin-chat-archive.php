@@ -12,14 +12,17 @@ if ($filterType) $where .= " AND c.concern_type='".addslashes($filterType)."'";
 if ($search)     $where .= " AND (
     c.case_number LIKE '%".addslashes($search)."%'
     OR c.subject LIKE '%".addslashes($search)."%'
-    OR s.first_name LIKE '%".addslashes($search)."%'
-    OR s.last_name LIKE '%".addslashes($search)."%'
-    OR CONCAT(s.first_name,' ',s.last_name) LIKE '%".addslashes($search)."%'
+    OR (COALESCE(c.is_anonymous, 0) = 0 AND (
+        s.first_name LIKE '%".addslashes($search)."%'
+        OR s.last_name LIKE '%".addslashes($search)."%'
+        OR CONCAT(s.first_name,' ',s.last_name) LIKE '%".addslashes($search)."%'
+    ))
+    OR (c.is_anonymous=1 AND LOWER('anonymous') LIKE LOWER('%".addslashes($search)."%'))
 )";
 
 $cases = $db->query("SELECT c.*,
     CASE WHEN c.is_anonymous=1 THEN 'Anonymous' ELSE CONCAT(s.first_name,' ',s.last_name) END AS student_name,
-    s.grade_section
+    CASE WHEN c.is_anonymous=1 THEN 'Confidential' ELSE s.grade_section END AS grade_section
     FROM cases c LEFT JOIN users s ON c.student_id=s.id
     $where ORDER BY c.updated_at DESC")->fetchAll();
 

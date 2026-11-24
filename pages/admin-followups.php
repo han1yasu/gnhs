@@ -109,8 +109,16 @@ ob_start();
         </thead>
         <tbody>
           <?php foreach ($followups as $f): 
-             $studentName = $f['is_anonymous'] ? 'Anonymous' : htmlspecialchars($f['first_name'].' '.$f['last_name']);
+             $isAnon = !empty($f['is_anonymous']);
+             $studentName = $isAnon ? 'Anonymous' : htmlspecialchars($f['first_name'].' '.$f['last_name']);
              $dateLabel = $f['follow_up_date'] ? date('M j, Y g:i A', strtotime($f['follow_up_date'])) : 'Unknown';
+             $followUpPayload = $f;
+             if ($isAnon) {
+                 $followUpPayload['student_id'] = null;
+                 $followUpPayload['first_name'] = 'Anonymous';
+                 $followUpPayload['last_name'] = '';
+                 $followUpPayload['grade_section'] = 'Confidential';
+             }
           ?>
             <tr>
               <td><strong style="color:var(--maroon)">#<?= htmlspecialchars($f['case_number']) ?></strong></td>
@@ -124,7 +132,7 @@ ob_start();
               <td><span style="font-size:13px;color:var(--text-2)"><?= $dateLabel ?></span></td>
               <td>
                 <div style="display:flex;gap:8px;">
-                  <button type="button" class="btn-row-action" onclick="viewFollowUp(<?= htmlspecialchars(json_encode($f)) ?>)"><i class="fas fa-eye"></i> Review Appeal</button>
+                  <button type="button" class="btn-row-action" onclick="viewFollowUp(<?= htmlspecialchars(json_encode($followUpPayload)) ?>)"><i class="fas fa-eye"></i> Review Appeal</button>
                 </div>
               </td>
             </tr>

@@ -27,10 +27,12 @@ if ($search) {
         OR LOWER(c.concern_type) LIKE LOWER('%$sq%')
         OR LOWER(c.concern_type) LIKE LOWER('%$sqUnderscore%')
         OR LOWER(REPLACE(c.concern_type, '_', ' ')) LIKE LOWER('%$sq%')
-        OR LOWER(s.first_name) LIKE LOWER('%$sq%')
-        OR LOWER(s.last_name) LIKE LOWER('%$sq%')
-        OR LOWER(CONCAT(s.first_name,' ',s.last_name)) LIKE LOWER('%$sq%')
-        OR LOWER(s.grade_section) LIKE LOWER('%$sq%')
+        OR (COALESCE(c.is_anonymous, 0) = 0 AND (
+            LOWER(s.first_name) LIKE LOWER('%$sq%')
+            OR LOWER(s.last_name) LIKE LOWER('%$sq%')
+            OR LOWER(CONCAT(s.first_name,' ',s.last_name)) LIKE LOWER('%$sq%')
+            OR LOWER(s.grade_section) LIKE LOWER('%$sq%')
+        ))
         OR LOWER(COALESCE(c.reported_student_name, '')) LIKE LOWER('%$sq%')
         OR LOWER(c.status) LIKE LOWER('%$sq%')
         OR LOWER(c.priority) LIKE LOWER('%$sq%')
@@ -41,7 +43,7 @@ if ($search) {
 
 $cases = $db->query("SELECT c.*,
     CASE WHEN c.is_anonymous=1 THEN 'Anonymous' ELSE CONCAT(s.first_name,' ',s.last_name) END AS student_name,
-    s.grade_section
+    CASE WHEN c.is_anonymous=1 THEN 'Confidential' ELSE s.grade_section END AS grade_section
     FROM cases c LEFT JOIN users s ON c.student_id=s.id
     $where ORDER BY c.updated_at DESC")->fetchAll();
 

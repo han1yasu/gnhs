@@ -59,7 +59,7 @@ try {
     $sql = "
         SELECT c.*,
             CASE WHEN c.is_anonymous = 1 THEN 'Anonymous' ELSE CONCAT(s.first_name, ' ', s.last_name) END AS student_name,
-            s.grade_section
+            CASE WHEN c.is_anonymous = 1 THEN 'Confidential' ELSE s.grade_section END AS grade_section
         FROM cases c
         LEFT JOIN users s ON c.student_id = s.id
         $whereSql

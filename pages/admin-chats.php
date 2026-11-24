@@ -849,9 +849,10 @@ function renderInboxItems(items) {
     const prioClass = 'msg-pill-prio-' + prio;
     const typeLabel = (c.concern_type || 'General').replace(/_/g, ' ');
     const caseNum = c.case_number ? '#' + c.case_number : '#' + c.id;
-    const studentName = c.student_name || 'Anonymous Student';
-    const studentAvatar = c.student_avatar || '';
-    const initials = studentName.split(' ').map(n=>n[0]).slice(0,2).join('') || 'ST';
+    const isAnon = (c.is_anonymous == 1 || c.is_anonymous === true || c.is_anonymous === '1');
+    const studentName = isAnon ? 'Anonymous Student' : (c.student_name || 'Student');
+    const studentAvatar = isAnon ? '' : (c.student_avatar || '');
+    const initials = isAnon ? 'AS' : (studentName.split(' ').map(n=>n[0]).slice(0,2).join('') || 'ST');
 
     let preview = c.latest_message ? escapeHtml(c.latest_message) : 'No messages yet';
     const hasUnread = parseInt(c.unread_count || 0) > 0;
@@ -942,7 +943,8 @@ function renderChatHeader(ci) {
   const subEl = document.getElementById('msgHeaderSub');
   const avatarEl = document.getElementById('msgHeaderAvatar');
 
-  const titleText = ci.student_name || 'Anonymous Student';
+  const isAnon = (ci.is_anonymous == 1 || ci.is_anonymous === true || ci.is_anonymous === '1');
+  const titleText = isAnon ? 'Anonymous Student' : (ci.student_name || 'Student');
   const subjectText = ci.subject ? ` • ${ci.subject}` : '';
   const caseNum = ci.case_number ? `#${ci.case_number}` : `#${ci.id}`;
 
@@ -952,8 +954,8 @@ function renderChatHeader(ci) {
   }
 
   if (avatarEl) {
-    const avatar = ci.student_avatar;
-    const initials = titleText.split(' ').map(n=>n[0]).slice(0,2).join('') || 'ST';
+    const avatar = isAnon ? '' : ci.student_avatar;
+    const initials = isAnon ? 'AS' : (titleText.split(' ').map(n=>n[0]).slice(0,2).join('') || 'ST');
     if (avatar) {
       avatarEl.innerHTML = `
         <img src="${avatar}" class="msg-avatar-img" alt="${escapeHtml(titleText)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
@@ -971,6 +973,9 @@ function renderDrawerDetails(ci) {
   const body = document.getElementById('msgDrawerBody');
   if (!body) return;
 
+  const isAnon = (ci.is_anonymous == 1 || ci.is_anonymous === true || ci.is_anonymous === '1');
+  const studentDisplayName = isAnon ? 'Anonymous Student' : (ci.student_name || 'Student');
+  const gradeSectionDisplay = isAnon ? 'Confidential' : (ci.grade_section || '');
   const caseNum = ci.case_number ? '#' + ci.case_number : '#' + (ci.id || '');
   const statusLabel = (ci.status || 'Pending').replace(/_/g, ' ').toUpperCase();
   const dateStr = ci.submitted_at ? new Date(ci.submitted_at).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
@@ -984,8 +989,8 @@ function renderDrawerDetails(ci) {
     <div class="msg-detail-card">
       <div class="msg-detail-label">Student Details</div>
       <div class="msg-detail-val">
-        ${escapeHtml(ci.student_name || 'Anonymous Student')}
-        ${ci.grade_section ? `<div style="font-size:12px;color:var(--text-3);margin-top:2px;">${escapeHtml(ci.grade_section)}</div>` : ''}
+        ${escapeHtml(studentDisplayName)}
+        ${gradeSectionDisplay ? `<div style="font-size:12px;color:var(--text-3);margin-top:2px;">${escapeHtml(gradeSectionDisplay)}</div>` : ''}
       </div>
     </div>
 

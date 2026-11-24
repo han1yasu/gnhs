@@ -27,8 +27,8 @@ try {
     // Check case details
     $caseStmt = $db->prepare("SELECT c.*, 
         CASE WHEN c.is_anonymous = 1 THEN 'Anonymous Student' ELSE CONCAT(su.first_name, ' ', su.last_name) END as student_name,
-        su.avatar_photo as student_avatar,
-        su.grade_section,
+        CASE WHEN c.is_anonymous = 1 THEN NULL ELSE su.avatar_photo END as student_avatar,
+        CASE WHEN c.is_anonymous = 1 THEN 'Confidential' ELSE su.grade_section END as grade_section,
         COALESCE(CONCAT(cu.first_name, ' ', cu.last_name), 'Guidance Counselor') as counselor_name,
         cu.avatar_photo as counselor_avatar
         FROM cases c
@@ -38,6 +38,12 @@ try {
     $caseStmt->execute([$caseId]);
     $caseInfo = $caseStmt->fetch(PDO::FETCH_ASSOC);
     $isCaseAnon = !empty($caseInfo['is_anonymous']);
+    if ($isCaseAnon && $user['role'] === 'admin') {
+        $caseInfo['student_id'] = null;
+        $caseInfo['student_name'] = 'Anonymous Student';
+        $caseInfo['student_avatar'] = null;
+        $caseInfo['grade_section'] = 'Confidential';
+    }
 
     // Mark messages from others as read and record seen timestamp
     $db->prepare("UPDATE case_messages SET is_read=1, read_at=COALESCE(read_at, NOW()) WHERE case_id=? AND sender_id != ? AND (is_read=0 OR is_read IS NULL)")

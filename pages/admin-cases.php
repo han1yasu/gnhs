@@ -20,14 +20,14 @@ if ($filterGrade && $filterSection) {
     // Match both "Grade X - Section" and "Grade X – Section" (em dash vs hyphen)
     $g = addslashes($filterGrade);
     $s = addslashes($filterSection);
-    $where .= " AND (s.grade_section='Grade $g - $s' OR s.grade_section='Grade $g – $s' OR s.grade_section LIKE 'Grade $g%$s%')";
+    $where .= " AND COALESCE(c.is_anonymous, 0) = 0 AND (s.grade_section='Grade $g - $s' OR s.grade_section='Grade $g – $s' OR s.grade_section LIKE 'Grade $g%$s%')";
 } elseif ($filterGrade) {
     $g = addslashes($filterGrade);
     // Match "Grade 9 - X", "Grade 9 – X", or just starts with "Grade 9"
-    $where .= " AND (s.grade_section LIKE 'Grade $g -%' OR s.grade_section LIKE 'Grade $g –%' OR s.grade_section LIKE 'Grade $g%')";
+    $where .= " AND COALESCE(c.is_anonymous, 0) = 0 AND (s.grade_section LIKE 'Grade $g -%' OR s.grade_section LIKE 'Grade $g –%' OR s.grade_section LIKE 'Grade $g%')";
 } elseif ($filterSection) {
     $s = addslashes($filterSection);
-    $where .= " AND s.grade_section LIKE '%$s%'";
+    $where .= " AND COALESCE(c.is_anonymous, 0) = 0 AND s.grade_section LIKE '%$s%'";
 }
 if ($search) {
     $sq = addslashes($search);
@@ -48,10 +48,12 @@ if ($search) {
         OR LOWER(c.concern_type) LIKE LOWER('%$sq%')
         OR LOWER(c.concern_type) LIKE LOWER('%$sqUnderscore%')
         OR LOWER(REPLACE(c.concern_type, '_', ' ')) LIKE LOWER('%$sq%')
-        OR LOWER(s.first_name) LIKE LOWER('%$sq%')
-        OR LOWER(s.last_name) LIKE LOWER('%$sq%')
-        OR LOWER(CONCAT(s.first_name,' ',s.last_name)) LIKE LOWER('%$sq%')
-        OR LOWER(s.grade_section) LIKE LOWER('%$sq%')
+        OR (COALESCE(c.is_anonymous, 0) = 0 AND (
+            LOWER(s.first_name) LIKE LOWER('%$sq%')
+            OR LOWER(s.last_name) LIKE LOWER('%$sq%')
+            OR LOWER(CONCAT(s.first_name,' ',s.last_name)) LIKE LOWER('%$sq%')
+            OR LOWER(s.grade_section) LIKE LOWER('%$sq%')
+        ))
         OR LOWER(COALESCE(c.reported_student_name, '')) LIKE LOWER('%$sq%')
         OR LOWER(COALESCE(c.reported_student_grade, '')) LIKE LOWER('%$sq%')
         OR LOWER(c.status) LIKE LOWER('%$sq%')
@@ -66,7 +68,7 @@ if ($search) {
 
 $cases = $db->query("SELECT c.*,
     CASE WHEN c.is_anonymous=1 THEN 'Anonymous' ELSE CONCAT(s.first_name,' ',s.last_name) END AS student_name,
-    s.grade_section
+    CASE WHEN c.is_anonymous=1 THEN 'Confidential' ELSE s.grade_section END AS grade_section
     FROM cases c LEFT JOIN users s ON c.student_id=s.id
     $where ORDER BY
     (c.status = 'pending' AND c.follow_up_msg IS NOT NULL AND c.follow_up_msg != '' AND COALESCE(c.is_follow_up, 0) = 0) DESC,

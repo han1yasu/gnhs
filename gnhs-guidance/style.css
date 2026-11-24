@@ -5529,27 +5529,6 @@ html.theme-transitioning *::after {
   scroll-behavior: auto !important;
 }
 
-.features-marquee-wrapper::before,
-.features-marquee-wrapper::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  width: 80px;
-  height: 100%;
-  z-index: 2;
-  pointer-events: none;
-}
-
-.features-marquee-wrapper::before {
-  left: 0;
-  background: linear-gradient(to right, var(--bg2), transparent);
-}
-
-.features-marquee-wrapper::after {
-  right: 0;
-  background: linear-gradient(to left, var(--bg2), transparent);
-}
-
 .features-marquee-content {
   display: flex;
   gap: 24px;

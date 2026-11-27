@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../includes/config.php';
+startSession();
 header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -18,10 +19,20 @@ $grade      = trim($raw['grade_section'] ?? '');
 $middleName = trim($raw['middle_name']  ?? '');
 $suffix     = trim($raw['suffix']       ?? '');
 $position   = trim($raw['position']     ?? '');
-if ($role === 'admin' && $position === '') {
+if ($role === 'super_admin' && $position === '') {
+    $position = 'Principal';
+} elseif ($role === 'admin' && $position === '') {
     $position = 'Guidance Counselor';
-} elseif ($role !== 'admin') {
+} elseif (!in_array($role, ['admin', 'super_admin'], true)) {
     $position = $position ?: null;
+}
+
+$actorRole = $_SESSION['user']['role'] ?? '';
+if (in_array($role, ['admin', 'super_admin'], true) && $actorRole !== 'super_admin') {
+    jsonOut(['success' => false, 'message' => 'Only Top Administrators (Principal / Developer) can create Guidance or Top Admin accounts.'], 403);
+}
+if ($role === 'teacher' && !isAdminRole($actorRole)) {
+    jsonOut(['success' => false, 'message' => 'Only Administrators or Guidance Staff can create teacher accounts.'], 403);
 }
 
 // Validation
@@ -49,7 +60,7 @@ if (!preg_match('/[^A-Za-z0-9]/', $password)) {
 if ($role === 'student' && !preg_match('/^\d{12}$/', $idNumber)) {
     jsonOut(['success'=>false,'message'=>'Learner Reference Number (LRN) must be strictly 12 numeric digits.']);
 }
-if (!in_array($role, ['student','teacher','admin'])) {
+if (!in_array($role, ['student','teacher','admin','super_admin'])) {
     jsonOut(['success'=>false,'message'=>'Invalid role.']);
 }
 
@@ -84,11 +95,12 @@ try {
     $stmt->execute([$firstName,$lastName,$email,$idNumber,$hash,$role,$position,$grade,$initials,$middleName,$suffix,$totpSecret]);
     $newUserId = (int)$db->lastInsertId();
 
-    // If created by an authenticated Counselor or Teacher, do not alter their active session
-    if (!empty($_SESSION['user']) && in_array($_SESSION['user']['role'], ['admin', 'teacher'])) {
+    // If created by an authenticated Admin, Counselor, or Teacher, do not alter their active session
+    if (!empty($_SESSION['user']) && in_array($_SESSION['user']['role'], ['super_admin', 'admin', 'teacher'])) {
+        $roleDisp = $role === 'super_admin' ? ($position ?: 'System Admin') : ($role === 'admin' ? ($position ?: 'Guidance Counselor') : ucfirst($role));
         jsonOut([
             'success' => true,
-            'message' => ucfirst($role) . ' account created successfully! ID / LRN: ' . $idNumber
+            'message' => $roleDisp . ' account created successfully! ID / LRN: ' . $idNumber
         ]);
     }
 

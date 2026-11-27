@@ -116,7 +116,7 @@
           onclick="document.getElementById('features').scrollIntoView({behavior:'smooth'})">Learn More</button>
       </div>
       <div class="hero-stats">
-        <div class="stat"><span class="stat-num">3</span><span class="stat-label">User Roles</span></div>
+        <div class="stat"><span class="stat-num">4</span><span class="stat-label">User Roles</span></div>
         <div class="stat-divider"></div>
         <div class="stat"><span class="stat-num">AI</span><span class="stat-label">Powered Summary</span></div>
         <div class="stat-divider"></div>
@@ -323,18 +323,22 @@
         <h2 class="modal-title">Select Your Role</h2>
         <p class="modal-sub" id="role-sub-text">Who are you logging in as?</p>
         <div class="role-cards">
-          <div class="role-card" onclick="selectRole('student')">
-            <div class="role-icon" style="background:#fff0f0;color:#550000"><i class="fas fa-user-graduate"></i></div>
-            <div><strong>Student</strong><small>Submit concerns &amp; track status</small></div>
+          <div class="role-card" onclick="selectRole('super_admin')">
+            <div class="role-icon" style="background:linear-gradient(135deg,#fffbeb,#fef3c7);color:#b45309;border:1px solid #fde68a"><i class="fas fa-crown"></i></div>
+            <div><strong>System Admin <span style="font-size:10px;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;padding:1px 7px;border-radius:999px;font-weight:800;vertical-align:middle;margin-left:4px">TOP</span></strong><small>Principal &amp; Developer — top-level oversight</small></div>
+          </div>
+          <div class="role-card" onclick="selectRole('admin')">
+            <div class="role-icon" style="background:#fff0f0;color:#3a0000"><i class="fas fa-user-tie"></i></div>
+            <div><strong>Guidance Admin</strong><small>Counselors — manage cases &amp; counseling</small></div>
           </div>
           <div class="role-card" onclick="selectRole('teacher')">
             <div class="role-icon" style="background:#fff0f0;color:#7a0000"><i class="fas fa-chalkboard-teacher"></i>
             </div>
             <div><strong>Teacher</strong><small>Refer students for guidance</small></div>
           </div>
-          <div class="role-card" onclick="selectRole('admin')">
-            <div class="role-icon" style="background:#fff0f0;color:#3a0000"><i class="fas fa-user-tie"></i></div>
-            <div><strong>Guidance Admin</strong><small>Manage cases &amp; counseling</small></div>
+          <div class="role-card" onclick="selectRole('student')">
+            <div class="role-icon" style="background:#fff0f0;color:#550000"><i class="fas fa-user-graduate"></i></div>
+            <div><strong>Student</strong><small>Submit concerns &amp; track status</small></div>
           </div>
         </div>
       </div>
@@ -740,7 +744,7 @@
   </div>
 
   <script src="theme.js?v=20261115_02"></script>
-  <script src="app.js?v=20261125_01"></script>
+  <script src="app.js?v=20261128_01"></script>
   <script>
     const GNHS_GRADE_SECTIONS = {
       '7':  ['Bonifacio', 'Burgos', 'Del Pilar', 'Diego Silang', 'Luna', 'Mabini', 'Malvar', 'Rizal'],

@@ -86,7 +86,7 @@ try {
 
     // Role check
     if ($role && $user['role'] !== $role) {
-        $labels = ['student'=>'Student','teacher'=>'Teacher','admin'=>'Guidance Counselor'];
+        $labels = ['super_admin'=>'System Admin (Principal / Developer)','admin'=>'Guidance Counselor','teacher'=>'Teacher','student'=>'Student'];
         jsonOut(['success'=>false,'message'=>'This account is registered as a '.($labels[$user['role']]??$user['role']).', not a '.($labels[$role]??$role).'.']);
     }
 
@@ -148,9 +148,10 @@ try {
     ];
 
     $redirectMap = [
-        'student' => '/gnhs-guidance/pages/student-dashboard.php',
-        'teacher' => '/gnhs-guidance/pages/teacher-dashboard.php',
-        'admin'   => '/gnhs-guidance/pages/admin-dashboard.php',
+        'student'     => '/gnhs-guidance/pages/student-dashboard.php',
+        'teacher'     => '/gnhs-guidance/pages/teacher-dashboard.php',
+        'admin'       => '/gnhs-guidance/pages/admin-dashboard.php',
+        'super_admin' => '/gnhs-guidance/pages/admin-dashboard.php',
     ];
 
     $redirectUrl = $redirectMap[$user['role']] ?? '/gnhs-guidance/index.html';

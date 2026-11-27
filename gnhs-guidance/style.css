@@ -3301,6 +3301,12 @@ textarea:focus {
   font-weight: 700
 }
 
+.role-super_admin {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #92400e;
+  border: 1px solid #f59e0b
+}
+
 .role-admin {
   background: var(--maroon-pale);
   color: var(--maroon)
@@ -5067,6 +5073,12 @@ html.theme-transitioning *::after {
 
 [data-theme="dark"] .btn-advisory i {
   color: #c084fc !important;
+}
+
+[data-theme="dark"] .role-super_admin {
+  background: rgba(217, 119, 6, 0.25);
+  color: #fcd34d;
+  border: 1px solid rgba(251, 191, 36, 0.45);
 }
 
 [data-theme="dark"] .role-admin {

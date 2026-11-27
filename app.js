@@ -98,8 +98,8 @@ function switchToLogin() {
 function selectRole(role) {
   _role = role;
   _action = 'login';
-  const icons  = { student:'fa-user-graduate', teacher:'fa-chalkboard-teacher', admin:'fa-user-tie' };
-  const labels = { student:'Student', teacher:'Teacher', admin:'Guidance Counselor' };
+  const icons  = { super_admin:'fa-crown', admin:'fa-user-tie', teacher:'fa-chalkboard-teacher', student:'fa-user-graduate' };
+  const labels = { super_admin:'System Admin (Principal / Developer)', admin:'Guidance Counselor', teacher:'Teacher', student:'Student' };
   const step   = 'step-login';
 
   const badgeId = _action==='login' ? 'login-role-badge' : 'reg-role-badge';
@@ -147,6 +147,9 @@ function selectRole(role) {
     } else if (role === 'teacher') {
       loginLabel.textContent = 'Email Address / Employee Number';
       loginInput.placeholder = 'Enter your email or Employee Number';
+    } else if (role === 'super_admin') {
+      loginLabel.textContent = 'Admin Email / Staff ID';
+      loginInput.placeholder = 'Enter Principal or Developer email';
     } else {
       loginLabel.textContent = 'Email Address';
       loginInput.placeholder = 'Enter Counselor email address';
@@ -965,7 +968,7 @@ function filterCases(status, btn) {
 function goToCaseChat(caseId) {
   if (!caseId) return;
   const isNested = window.location.pathname.startsWith('/gnhs-guidance');
-  const isAdmin = window.location.href.includes('admin') || (window.currentUserRole === 'admin');
+  const isAdmin = window.location.href.includes('admin') || ['admin', 'super_admin'].includes(window.currentUserRole);
   const targetPage = isAdmin ? 'admin-chats.php' : 'student-chats.php';
   if (window.location.pathname.includes('/pages/')) {
     window.location.href = targetPage + '?case_id=' + encodeURIComponent(caseId);
@@ -1001,7 +1004,7 @@ function goToTeacherChatFromCase(caseId, isAnonymous) {
 function goToReferralChat(refId) {
   if (!refId) return;
   const isNested = window.location.pathname.startsWith('/gnhs-guidance');
-  const isAdmin = window.location.href.includes('admin') || (window.currentUserRole === 'admin');
+  const isAdmin = window.location.href.includes('admin') || ['admin', 'super_admin'].includes(window.currentUserRole);
   const targetPage = isAdmin ? 'admin-referrals-chat.php' : 'teacher-referrals-chat.php';
   if (window.location.pathname.includes('/pages/')) {
     window.location.href = targetPage + '?ref_id=' + encodeURIComponent(refId);
@@ -2087,7 +2090,9 @@ async function saveNewUser() {
   const email  = $('nu-email')?.value.trim();
   const pass   = $('nu-pass')?.value.trim();
   const role   = $('nu-role')?.value;
-  const position = role === 'admin' ? ($('nu-position')?.value || 'Guidance Counselor') : '';
+  const position = role === 'super_admin'
+    ? ($('nu-position')?.value || 'Principal')
+    : (role === 'admin' ? 'Guidance Counselor' : '');
   const idnum  = $('nu-idnum')?.value.trim();
   const glevel = $('nu-grade-level')?.value;
   const gsect  = $('nu-section')?.value;
@@ -2366,7 +2371,7 @@ async function loadMessages() {
         const bg = isMe ? 'var(--maroon)' : 'var(--bg)';
         const color = isMe ? '#fff' : 'var(--text)';
         const border = isMe ? 'none' : '1px solid var(--border)';
-        const roleBadge = !isMe ? `<div style="font-size:10px;color:var(--text-3);margin-bottom:2px">${m.sender_role === 'admin' ? 'Counselor' : 'Student'}</div>` : '';
+        const roleBadge = !isMe ? `<div style="font-size:10px;color:var(--text-3);margin-bottom:2px">${['admin', 'super_admin'].includes(m.sender_role) ? 'Counselor' : 'Student'}</div>` : '';
         return `
           <div style="display:flex;flex-direction:column;align-items:${align};width:100%">
             ${roleBadge}

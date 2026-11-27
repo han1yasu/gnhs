@@ -45,7 +45,7 @@ try {
         $refNum = $referral['ref_number'] ?? ('R-' . $refId);
         $stuName = $referral['student_name'] ?? 'Student';
 
-        if ($user['role'] === 'admin' && !empty($referral['teacher_id'])) {
+        if (isAdminRole($user['role'] ?? '') && !empty($referral['teacher_id'])) {
             $cLabel = $senderName ? "Counselor {$senderName}" : 'The guidance counselor';
             $nTitle = "New Referral Message ({$refNum})";
             $nMsg   = "{$cLabel} sent a message regarding Referral #{$refNum} ({$stuName}): \"{$preview}\"";
@@ -55,7 +55,7 @@ try {
             $tLabel = $senderName ? "Teacher {$senderName}" : 'Referring teacher';
             $nTitle = "New Referral Message ({$refNum})";
             $nMsg   = "{$tLabel} sent a message regarding Referral #{$refNum} ({$stuName}): \"{$preview}\"";
-            $admins = $db->query("SELECT id FROM users WHERE role='admin' AND COALESCE(is_active, 1) = 1")->fetchAll(PDO::FETCH_COLUMN);
+            $admins = $db->query("SELECT id FROM users WHERE role IN ('admin','super_admin') AND COALESCE(is_active, 1) = 1")->fetchAll(PDO::FETCH_COLUMN);
             $nStmt = $db->prepare("INSERT INTO notifications (user_id, title, message, type, is_read, created_at) VALUES (?, ?, ?, 'referral_chat', 0, NOW())");
             foreach ($admins as $admId) {
                 $nStmt->execute([(int)$admId, $nTitle, $nMsg]);

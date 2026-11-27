@@ -198,8 +198,8 @@ try {
     // Generate summary via Gemini AI or intelligent guidance extractor
     $aiSummary = generateCaseSummary($concernType, $subject, $description, $priority);
 
-    // Get counselor to assign
-    $counselor  = $db->query("SELECT id FROM users WHERE role='admin' LIMIT 1")->fetch();
+    // Get counselor to assign (prefer Guidance Counselor tier first)
+    $counselor  = $db->query("SELECT id FROM users WHERE role IN ('admin','super_admin') AND COALESCE(is_active,1)=1 ORDER BY FIELD(role, 'admin', 'super_admin') LIMIT 1")->fetch();
     $assignedTo = $counselor ? $counselor['id'] : null;
 
     // Auto-flag is_against_adviser if text references teacher/adviser/instructor

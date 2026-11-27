@@ -7,7 +7,7 @@ $db   = getDB();
 // Fetch summary metrics
 $pendingUsers = $db->query("SELECT * FROM users WHERE totp_reset_requested = 1 ORDER BY first_name ASC")->fetchAll();
 $activeTotpUsers = $db->query("SELECT * FROM users WHERE totp_enabled = 1 ORDER BY first_name ASC")->fetchAll();
-$allUsers = $db->query("SELECT * FROM users ORDER BY role, first_name ASC")->fetchAll();
+$allUsers = $db->query("SELECT * FROM users ORDER BY FIELD(role, 'super_admin', 'admin', 'teacher', 'student'), first_name ASC")->fetchAll();
 
 $pendingCount = count($pendingUsers);
 $activeCount  = count($activeTotpUsers);
@@ -31,7 +31,7 @@ foreach ($pendingUsers as $u) {
     $email = htmlspecialchars($u['email']);
     $idNum = htmlspecialchars($u['id_number']);
     $roleClass = 'role-' . $u['role'];
-    $roleNames = ['student'=>'Student','teacher'=>'Teacher','admin'=>!empty($u['position']) ? $u['position'] : 'Counselor'];
+    $roleNames = ['super_admin'=>!empty($u['position']) ? $u['position'] : 'System Admin','admin'=>!empty($u['position']) ? $u['position'] : 'Counselor','teacher'=>'Teacher','student'=>'Student'];
     $roleLabel = $roleNames[$u['role']] ?? ucfirst($u['role']);
     $avatar = renderUserAvatar($u);
     
@@ -83,7 +83,7 @@ foreach ($activeTotpUsers as $u) {
     $email = htmlspecialchars($u['email']);
     $idNum = htmlspecialchars($u['id_number']);
     $roleClass = 'role-' . $u['role'];
-    $roleNames = ['student'=>'Student','teacher'=>'Teacher','admin'=>!empty($u['position']) ? $u['position'] : 'Counselor'];
+    $roleNames = ['super_admin'=>!empty($u['position']) ? $u['position'] : 'System Admin','admin'=>!empty($u['position']) ? $u['position'] : 'Counselor','teacher'=>'Teacher','student'=>'Student'];
     $roleLabel = $roleNames[$u['role']] ?? ucfirst($u['role']);
     $avatar = renderUserAvatar($u);
 

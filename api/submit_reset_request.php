@@ -107,7 +107,7 @@ try {
     $insert->execute([$userId, $email, $idNum, $fullName, $role, $gradeSec, $hasQuestions ? 1 : 0]);
 
     // Send high-priority notification to Guidance Counselor
-    $adminUser = $db->query("SELECT id FROM users WHERE role = 'admin' LIMIT 1")->fetch();
+    $adminUser = $db->query("SELECT id FROM users WHERE role IN ('admin','super_admin') AND COALESCE(is_active,1)=1 ORDER BY FIELD(role, 'admin', 'super_admin') LIMIT 1")->fetch();
     if ($adminUser) {
         $notifTitle = "Password Reset Request: {$fullName}";
         $notifMsg   = "Student {$fullName} ({$gradeSec}, ID: {$idNum}) has verified their security test questions and requested a password reset. Please review and issue new credentials.";

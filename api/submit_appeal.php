@@ -47,7 +47,7 @@ try {
         $db->prepare("INSERT INTO notifications (user_id, title, message, type) VALUES (?, ?, ?, 'appeal')")
            ->execute([$case['assigned_to'], $notifTitle, $notifBody]);
     } else {
-        $admins = $db->query("SELECT id FROM users WHERE role='admin'")->fetchAll();
+        $admins = $db->query("SELECT id FROM users WHERE role IN ('admin','super_admin')")->fetchAll();
         foreach ($admins as $adm) {
             $db->prepare("INSERT INTO notifications (user_id, title, message, type) VALUES (?, ?, ?, 'appeal')")
                ->execute([$adm['id'], $notifTitle, $notifBody]);

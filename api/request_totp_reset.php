@@ -26,7 +26,7 @@ try {
     try {
         $uName = ($_SESSION['pending_user']['first_name'] ?? '') . ' ' . ($_SESSION['pending_user']['last_name'] ?? '');
         $uRole = ucfirst($_SESSION['pending_user']['role'] ?? 'User');
-        $admins = $db->query("SELECT id FROM users WHERE role = 'admin' AND is_active = 1")->fetchAll();
+        $admins = $db->query("SELECT id FROM users WHERE role IN ('admin','super_admin') AND is_active = 1")->fetchAll();
         
         $notifStmt = $db->prepare("INSERT INTO notifications (user_id, title, message, type, is_read, created_at) VALUES (?, ?, ?, 'system', 0, NOW())");
         foreach ($admins as $adm) {

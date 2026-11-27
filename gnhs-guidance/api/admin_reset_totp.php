@@ -25,6 +25,9 @@ try {
     if (!$targetUser) {
         jsonOut(['success'=>false, 'message'=>'User not found.']);
     }
+    if (in_array($targetUser['role'], ['super_admin', 'admin'], true) && !isTopAdminRole($adminUser['role'] ?? '') && (int)$targetUser['id'] !== (int)$adminUser['id']) {
+        jsonOut(['success'=>false, 'message'=>'Only Top Administrators (Principal / Developer) can reset 2FA for admin or guidance accounts.'], 403);
+    }
     
     $action = trim($raw['action'] ?? 'reset'); // 'reset' or 'dismiss'
     $itAdminName = $adminUser['first_name'] . ' ' . $adminUser['last_name'];

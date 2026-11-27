@@ -26,7 +26,7 @@ try {
         if ((int)$c['student_id'] !== (int)$user['id']) {
             jsonOut(['success'=>false,'message'=>'Access denied.'], 403);
         }
-    } else if ($user['role'] !== 'admin') {
+    } else if (!isAdminRole($user['role'] ?? '')) {
         jsonOut(['success'=>false,'message'=>'Access denied.'], 403);
     }
 
@@ -41,7 +41,7 @@ try {
     // Add notification to the receiver
     // If sender is admin, notify student. If sender is student, notify admin (assigned_to).
     if ($c) {
-        if ($user['role'] === 'admin' && $c['student_id']) {
+        if (isAdminRole($user['role'] ?? '') && $c['student_id']) {
             $db->prepare("INSERT INTO notifications (user_id,title,message,type) VALUES (?,'New Message',CONCAT('The guidance counselor sent a message regarding ', ?, '.'),'chat')")
                ->execute([$c['student_id'], $c['case_number']]);
         } else if ($user['role'] === 'student' && $c['assigned_to']) {

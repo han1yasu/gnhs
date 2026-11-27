@@ -1,9 +1,16 @@
 <?php
 function renderLayout(array $user, string $pageTitle, string $activeNav, string $content): void {
     $role     = $user['role'];
+    $isTopAdmin = isTopAdminRole($role);
+    $isAnyAdmin = isAdminRole($role);
     $initials = htmlspecialchars($user['avatar_initials'] ?? strtoupper($user['first_name'][0]));
     $fullName = htmlspecialchars($user['first_name'].' '.$user['last_name']);
-    $roleLabel = ['student'=>'Student','teacher'=>'Teacher','admin'=>!empty($user['position']) ? $user['position'] : 'Guidance Counselor'][$role] ?? $role;
+    $roleLabel = [
+        'student'     => 'Student',
+        'teacher'     => 'Teacher',
+        'admin'       => !empty($user['position']) ? $user['position'] : 'Guidance Counselor',
+        'super_admin' => !empty($user['position']) ? $user['position'] : 'System Admin',
+    ][$role] ?? $role;
     $email    = htmlspecialchars($user['email'] ?? '');
     $idNumber = htmlspecialchars($user['id_number'] ?? '');
     $grade    = htmlspecialchars($user['grade_section'] ?? '');
@@ -103,17 +110,19 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
             [
                 'section' => 'Administration',
                 'items' => [
-                    ['icon'=>'fa-chart-bar',    'label'=>'Analytics',       'href'=>'admin-analytics.php',       'key'=>'analytics'],
                     ['icon'=>'fa-users-cog',    'label'=>'User Accounts',   'href'=>'admin-users.php',           'key'=>'users'],
+                    ['icon'=>'fa-chart-bar',    'label'=>'Analytics',       'href'=>'admin-analytics.php',       'key'=>'analytics'],
                     ['icon'=>'fa-user-plus',    'label'=>'Add Student',     'href'=>'admin-add-student.php',     'key'=>'add_student'],
                     ['icon'=>'fa-shield-alt',   'label'=>'2FA Requests',    'href'=>'admin-2fa-requests.php',    'key'=>'2fa_requests'],
                 ]
             ],
         ],
     ];
+    $navLinks['super_admin'] = $navLinks['admin'];
+    $navLinks['super_admin'][4]['items'][0]['label'] = 'User Hierarchy';
 
     $pending2faCount = 0;
-    if ($role === 'admin') {
+    if ($isAnyAdmin) {
         try {
             $db = getDB();
             $pending2faCount = (int)$db->query("SELECT COUNT(*) FROM users WHERE totp_reset_requested = 1")->fetchColumn();
@@ -188,7 +197,7 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
 
     $dashboardUrl = ($role === 'teacher') 
         ? 'teacher-dashboard.php' 
-        : (($role === 'admin') ? 'admin-dashboard.php' : 'student-dashboard.php');
+        : ($isAnyAdmin ? 'admin-dashboard.php' : 'student-dashboard.php');
 
 ?>
 <!DOCTYPE html>
@@ -609,9 +618,10 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
     </div>
   </div>
 
-  <!-- Bulk CSV & Excel Import Modal (Available for Admins/Counselors [All Users] & Teachers [Students]) -->
-  <?php if ($role === 'admin' || $role === 'teacher'):
-    $isCsvAdmin = ($role === 'admin');
+  <!-- Bulk CSV & Excel Import Modal (Available for Top Admins [All Users], Guidance Counselors [Students/Teachers] & Teachers [Students]) -->
+  <?php if ($isAnyAdmin || $role === 'teacher'):
+    $isCsvAdmin = $isAnyAdmin;
+    $isTopCsvAdmin = $isTopAdmin;
     $tplBase = (strpos($_SERVER['REQUEST_URI'] ?? '', '/pages/') !== false ? '../api/download_student_template.php' : 'api/download_student_template.php');
   ?>
   <div class="modal-overlay hidden" id="csvImportModal" style="z-index: 2100;" onclick="if(event.target.id==='csvImportModal')closeCsvImportModal()">
@@ -650,7 +660,10 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
           <select id="csvDefaultRoleSel" class="status-select" style="min-width:210px">
             <option value="student">Student</option>
             <option value="teacher">Teacher</option>
-            <option value="admin">Guidance / Admin</option>
+            <?php if ($isTopCsvAdmin): ?>
+            <option value="admin">Guidance Counselor</option>
+            <option value="super_admin">Top Admin (Principal / Developer)</option>
+            <?php endif; ?>
           </select>
         </div>
         <?php endif; ?>
@@ -660,7 +673,7 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
           <div style="font-size:12.5px;color:var(--text-2);line-height:1.5;max-width:480px">
             <strong style="color:var(--maroon);display:block;margin-bottom:2px"><i class="fas fa-info-circle"></i> Spreadsheet Column Headers:</strong>
             <?php if ($isCsvAdmin): ?>
-              <code>first_name</code>, <code>last_name</code>, <code>id_number</code> (or <code>lrn</code>), <code>email</code>, plus optional <code>role</code> (<code>student</code> / <code>teacher</code> / <code>admin</code>), <code>position</code>, <code>grade_level</code>, <code>section</code>
+              <code>first_name</code>, <code>last_name</code>, <code>id_number</code> (or <code>lrn</code>), <code>email</code>, plus optional <code>role</code> (<?= $isTopCsvAdmin ? '<code>super_admin</code> / <code>admin</code> / <code>teacher</code> / <code>student</code>' : '<code>student</code> / <code>teacher</code>' ?>), <code>position</code>, <code>grade_level</code>, <code>section</code>
             <?php else: ?>
               <code>first_name</code>, <code>last_name</code>, <code>lrn</code> (strictly 12 digits), <code>email</code>, <code>grade_level</code>, <code>section</code>
               <?= !empty($user['advisory_class']) ? '<br><span style="font-size:11.5px;color:var(--text-3)">Blank grade/section entries default to your advisory class: <strong>' . htmlspecialchars($user['advisory_class']) . '</strong></span>' : '' ?>
@@ -938,7 +951,8 @@ function openNotifOverview(index) {
     iconHtml = '<i class="fas fa-reply-all"></i>';
     iconBg = '#fae8ff';
     iconColor = '#6b21a8';
-    actionUrl = role === 'admin' ? '/gnhs-guidance/pages/admin-followups.php' : '/gnhs-guidance/pages/student-cases.php';
+    const isAdminSide = ['admin', 'super_admin'].includes(role);
+    actionUrl = isAdminSide ? '/gnhs-guidance/pages/admin-followups.php' : '/gnhs-guidance/pages/student-cases.php';
     actionLabel = 'Go to Follow Ups Tab';
     actionIcon = 'fa-reply-all';
   } else if (type === 'session' || type === 'session_scheduled') {
@@ -948,7 +962,7 @@ function openNotifOverview(index) {
     iconHtml = '<i class="fas fa-calendar-check"></i>';
     iconBg = '#dbeafe';
     iconColor = '#1e40af';
-    actionUrl = role === 'admin' ? '/gnhs-guidance/pages/admin-sessions.php' : '/gnhs-guidance/pages/student-sessions.php';
+    actionUrl = isAdminSide ? '/gnhs-guidance/pages/admin-sessions.php' : '/gnhs-guidance/pages/student-sessions.php';
     actionLabel = 'View Counseling Sessions';
     actionIcon = 'fa-calendar-alt';
   } else if (type === 'case_update') {
@@ -958,7 +972,7 @@ function openNotifOverview(index) {
     iconHtml = '<i class="fas fa-folder-open"></i>';
     iconBg = 'var(--maroon-tint)';
     iconColor = 'var(--maroon)';
-    actionUrl = role === 'admin' ? '/gnhs-guidance/pages/admin-cases.php' : '/gnhs-guidance/pages/student-cases.php';
+    actionUrl = isAdminSide ? '/gnhs-guidance/pages/admin-cases.php' : '/gnhs-guidance/pages/student-cases.php';
     actionLabel = 'View Case Details';
     actionIcon = 'fa-folder-open';
   } else if (type === 'referral_chat' || (type === 'chat' && role === 'teacher')) {
@@ -971,7 +985,7 @@ function openNotifOverview(index) {
     const isDouble = window.location.pathname.includes('/gnhs-guidance/gnhs-guidance/');
     const isSingle = !isDouble && window.location.pathname.startsWith('/gnhs-guidance/');
     const pagePrefix = isDouble ? '/gnhs-guidance/gnhs-guidance/pages/' : (isSingle ? '/gnhs-guidance/pages/' : '/pages/');
-    actionUrl = role === 'admin' ? (pagePrefix + 'admin-referrals-chat.php') : (pagePrefix + 'teacher-referrals-chat.php');
+    actionUrl = isAdminSide ? (pagePrefix + 'admin-referrals-chat.php') : (pagePrefix + 'teacher-referrals-chat.php');
     actionLabel = 'Open Referral Chat';
     actionIcon = 'fa-comments';
   } else if (type === 'chat') {
@@ -981,7 +995,7 @@ function openNotifOverview(index) {
     iconHtml = '<i class="fas fa-comments"></i>';
     iconBg = '#d1fae5';
     iconColor = '#065f46';
-    actionUrl = role === 'admin' ? '/gnhs-guidance/pages/admin-chats.php' : '/gnhs-guidance/pages/student-chats.php';
+    actionUrl = isAdminSide ? '/gnhs-guidance/pages/admin-chats.php' : '/gnhs-guidance/pages/student-chats.php';
     actionLabel = 'Open Chat Conversation';
     actionIcon = 'fa-comments';
   } else if (type === 'referral') {
@@ -991,7 +1005,7 @@ function openNotifOverview(index) {
     iconHtml = '<i class="fas fa-exchange-alt"></i>';
     iconBg = '#fef3c7';
     iconColor = '#92400e';
-    actionUrl = role === 'admin' ? '/gnhs-guidance/pages/admin-referrals.php' : '/gnhs-guidance/pages/teacher-referrals.php';
+    actionUrl = isAdminSide ? '/gnhs-guidance/pages/admin-referrals.php' : '/gnhs-guidance/pages/teacher-referrals.php';
     actionLabel = 'View Referrals';
     actionIcon = 'fa-exchange-alt';
   }
@@ -1652,15 +1666,17 @@ function parseAndPreviewGlobalRows(rawRows, fileName, fileSize) {
 
     let rowRole = 'student';
     if (defaultRoleEl) {
+      const canTopRoles = !!defaultRoleEl.querySelector('option[value="admin"]');
       if (['teacher', 'faculty', 'adviser', 'instructor'].includes(rawRole)) {
         rowRole = 'teacher';
-      } else if (['admin', 'guidance', 'counselor', 'guidance counselor', 'principal', 'developer', 'it', 'staff'].includes(rawRole)) {
-        rowRole = 'admin';
+      } else if (['super_admin', 'super admin', 'system admin', 'principal', 'developer', 'it'].includes(rawRole)) {
+        rowRole = canTopRoles ? 'super_admin' : 'student';
         if (!position) {
-          if (rawRole === 'principal') position = 'Principal';
-          else if (rawRole === 'developer' || rawRole === 'it') position = 'Developer';
-          else position = 'Guidance Counselor';
+          position = (rawRole === 'developer' || rawRole === 'it') ? 'Developer' : 'Principal';
         }
+      } else if (['admin', 'guidance', 'counselor', 'guidance counselor', 'staff'].includes(rawRole)) {
+        rowRole = canTopRoles ? 'admin' : 'student';
+        if (!position) position = 'Guidance Counselor';
       } else {
         rowRole = 'student';
       }
@@ -1749,7 +1765,9 @@ function parseAndPreviewGlobalRows(rawRows, fileName, fileSize) {
       errorCount++;
     }
 
-    const roleDisplay = rowRole === 'admin' ? (position || 'Guidance Counselor') : (rowRole === 'teacher' ? 'Teacher' : 'Student');
+    const roleDisplay = rowRole === 'super_admin'
+      ? (position || 'System Admin')
+      : (rowRole === 'admin' ? (position || 'Guidance Counselor') : (rowRole === 'teacher' ? 'Teacher' : 'Student'));
     const gradeDisplay = rowRole === 'student' ? ('Grade ' + (gradeNum || '—') + (section ? ' - ' + section : '')) : (position || '—');
 
     if (tbody) {

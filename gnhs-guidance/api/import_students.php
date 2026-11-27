@@ -21,8 +21,10 @@ if (count($students) > 300) {
 }
 
 $isTeacher = ($user['role'] === 'teacher');
+$isTopAdmin = isTopAdminRole($user['role'] ?? '');
 $defaultRole = $isTeacher ? 'student' : strtolower(trim($raw['default_role'] ?? 'student'));
-if (!in_array($defaultRole, ['student', 'teacher', 'admin'], true)) {
+$allowedDefaults = $isTopAdmin ? ['student', 'teacher', 'admin', 'super_admin'] : ['student', 'teacher'];
+if (!in_array($defaultRole, $allowedDefaults, true)) {
     $defaultRole = 'student';
 }
 $teacherAdvisory = $user['advisory_class'] ?? '';
@@ -100,13 +102,24 @@ try {
         if (!$isTeacher) {
             if (in_array($rawRole, ['teacher', 'faculty', 'adviser', 'instructor'], true)) {
                 $rowRole = 'teacher';
-            } elseif (in_array($rawRole, ['admin', 'guidance', 'counselor', 'guidance counselor', 'principal', 'developer', 'it', 'staff'], true)) {
-                $rowRole = 'admin';
-                if ($position === '') {
-                    if ($rawRole === 'principal') $position = 'Principal';
-                    elseif ($rawRole === 'developer' || $rawRole === 'it') $position = 'Developer';
-                    else $position = 'Guidance Counselor';
+            } elseif (in_array($rawRole, ['super_admin', 'super admin', 'system admin', 'principal', 'developer', 'it'], true)) {
+                if (!$isTopAdmin) {
+                    $results[] = ['row' => $rowNum, 'lrn' => $lrn, 'name' => "$first $last", 'status' => 'skipped', 'reason' => 'Only Top Administrators can import Principal/Developer accounts.'];
+                    $skippedCount++;
+                    continue;
                 }
+                $rowRole = 'super_admin';
+                if ($position === '') {
+                    $position = ($rawRole === 'developer' || $rawRole === 'it') ? 'Developer' : 'Principal';
+                }
+            } elseif (in_array($rawRole, ['admin', 'guidance', 'counselor', 'guidance counselor', 'staff'], true)) {
+                if (!$isTopAdmin) {
+                    $results[] = ['row' => $rowNum, 'lrn' => $lrn, 'name' => "$first $last", 'status' => 'skipped', 'reason' => 'Only Top Administrators can import Guidance Counselor accounts.'];
+                    $skippedCount++;
+                    continue;
+                }
+                $rowRole = 'admin';
+                if ($position === '') $position = 'Guidance Counselor';
             } elseif ($rawRole === 'student' || $rawRole === '') {
                 $rowRole = 'student';
             }

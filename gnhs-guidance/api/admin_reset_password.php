@@ -37,6 +37,9 @@ try {
     if (!$targetUser) {
         jsonOut(['success' => false, 'message' => 'Target user account not found.']);
     }
+    if (in_array($targetUser['role'], ['super_admin', 'admin'], true) && !isTopAdminRole($adminUser['role'] ?? '') && (int)$targetUser['id'] !== (int)$adminUser['id']) {
+        jsonOut(['success' => false, 'message' => 'Only Top Administrators (Principal / Developer) can reset passwords for admin or guidance accounts.'], 403);
+    }
 
     $itAdminName   = trim(($adminUser['first_name'] ?? '') . ' ' . ($adminUser['last_name'] ?? '')) ?: 'School IT Administrator';
     $targetRole    = $targetUser['role'] ?: 'student';

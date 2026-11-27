@@ -87,9 +87,10 @@ try {
         unset($_SESSION['pending_user']);
 
         $homeMap = [
-            'student' => '/gnhs-guidance/pages/student-dashboard.php',
-            'teacher' => '/gnhs-guidance/pages/teacher-dashboard.php',
-            'admin'   => '/gnhs-guidance/pages/admin-dashboard.php'
+            'student'     => '/gnhs-guidance/pages/student-dashboard.php',
+            'teacher'     => '/gnhs-guidance/pages/teacher-dashboard.php',
+            'admin'       => '/gnhs-guidance/pages/admin-dashboard.php',
+            'super_admin' => '/gnhs-guidance/pages/admin-dashboard.php',
         ];
         $dest = $homeMap[$role] ?? '/gnhs-guidance/index.html';
 

@@ -68,9 +68,10 @@ try {
         unset($_SESSION['verified_email_signup']);
 
         $map = [
-            'student' => 'pages/student-dashboard.php',
-            'teacher' => 'pages/teacher-dashboard.php',
-            'admin'   => 'pages/admin-dashboard.php'
+            'student'     => 'pages/student-dashboard.php',
+            'teacher'     => 'pages/teacher-dashboard.php',
+            'admin'       => 'pages/admin-dashboard.php',
+            'super_admin' => 'pages/admin-dashboard.php'
         ];
         jsonOut(['success'=>true, 'redirect'=>($map[$existing['role']] ?? 'pages/student-dashboard.php')]);
     }

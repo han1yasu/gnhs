@@ -81,7 +81,7 @@ try {
     }
 
     // Notify admins
-    $admins = $db->query("SELECT id FROM users WHERE role='admin'")->fetchAll();
+    $admins = $db->query("SELECT id FROM users WHERE role IN ('admin','super_admin')")->fetchAll();
     $ns = $db->prepare("INSERT INTO notifications (user_id,title,message,type) VALUES (?,?,?,'referral')");
     foreach ($admins as $a) {
         $ns->execute([$a['id'],"New Referral: $refNum","Teacher {$user['first_name']} {$user['last_name']} submitted a ".strtoupper($urgency)." urgency referral."]);

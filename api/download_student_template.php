@@ -2,7 +2,7 @@
 require_once __DIR__ . '/../includes/config.php';
 $user = requireLogin('admin,teacher');
 
-$scope = ($user['role'] === 'admin' && ($_GET['scope'] ?? '') === 'all') ? 'all' : 'students';
+$scope = (isAdminRole($user['role'] ?? '') && ($_GET['scope'] ?? '') === 'all') ? 'all' : 'students';
 $filename = $scope === 'all' ? 'gnhs_all_users_import_template.csv' : 'gnhs_students_import_template.csv';
 header('Content-Type: text/csv; charset=UTF-8');
 header('Content-Disposition: attachment; filename="' . $filename . '"');
@@ -30,7 +30,9 @@ if ($scope === 'all') {
     fputcsv($out, ['student', '', 'Juan', 'Dela Cruz', 'Santos', '', '109283746501', 'juan.delacruz@deped.gov.ph', '9', 'Dalton', 'Student@2026']);
     fputcsv($out, ['teacher', '', 'Elena', 'Villanueva', '', '', 'EMP-2026-01', 'elena.villanueva@deped.gov.ph', '', '', 'Staff@2026']);
     fputcsv($out, ['admin', 'Guidance Counselor', 'Maria', 'Santos', '', '', 'GUID-2026-01', 'counselor2@gnhsguidance.com', '', '', 'Staff@2026']);
-    fputcsv($out, ['admin', 'Principal', 'School', 'Principal', '', '', 'ADMIN-PRIN-02', 'principal2@gnhsguidance.com', '', '', 'Staff@2026']);
+    if (isTopAdminRole($user['role'] ?? '')) {
+        fputcsv($out, ['super_admin', 'Principal', 'School', 'Principal', '', '', 'ADMIN-PRIN-02', 'principal2@gnhsguidance.com', '', '', 'Staff@2026']);
+    }
     fclose($out);
     exit;
 }

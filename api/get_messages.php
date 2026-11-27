@@ -20,7 +20,7 @@ try {
         $stmt = $db->prepare("SELECT id FROM cases WHERE id=? AND student_id=?");
         $stmt->execute([$caseId, $user['id']]);
         if (!$stmt->fetch()) jsonOut(['success'=>false,'message'=>'Access denied.'], 403);
-    } else if ($user['role'] !== 'admin') {
+    } else if (!isAdminRole($user['role'] ?? '')) {
         jsonOut(['success'=>false,'message'=>'Access denied.'], 403);
     }
 
@@ -38,7 +38,7 @@ try {
     $caseStmt->execute([$caseId]);
     $caseInfo = $caseStmt->fetch(PDO::FETCH_ASSOC);
     $isCaseAnon = !empty($caseInfo['is_anonymous']);
-    if ($isCaseAnon && $user['role'] === 'admin') {
+    if ($isCaseAnon && isAdminRole($user['role'] ?? '')) {
         $caseInfo['student_id'] = null;
         $caseInfo['student_name'] = 'Anonymous Student';
         $caseInfo['student_avatar'] = null;
@@ -64,7 +64,7 @@ try {
     $messages = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // If viewer is counselor and case is anonymous, mask student sender name and avatar
-    if ($isCaseAnon && $user['role'] === 'admin') {
+    if ($isCaseAnon && isAdminRole($user['role'] ?? '')) {
         foreach ($messages as &$m) {
             if ($m['sender_role'] === 'student') {
                 $m['sender_name'] = 'Anonymous Student';

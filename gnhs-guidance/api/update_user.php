@@ -11,7 +11,22 @@ if (!$id) jsonOut(['success'=>false, 'message'=>'User ID required.']);
 
 try {
     $db = getDB();
+    $chkTarget = $db->prepare("SELECT id, email, first_name, last_name, role FROM users WHERE id=? LIMIT 1");
+    $chkTarget->execute([$id]);
+    $targetUser = $chkTarget->fetch();
+    if (!$targetUser) {
+        jsonOut(['success'=>false, 'message'=>'User account not found.'], 404);
+    }
+
+    $isActorTop = isTopAdminRole($adminUser['role'] ?? '');
+    if (in_array($targetUser['role'], ['super_admin', 'admin'], true) && !$isActorTop) {
+        jsonOut(['success'=>false, 'message'=>'Only Top Administrators (Principal / Developer) can modify or delete admin/guidance accounts.'], 403);
+    }
+
     if ($action === 'deactivate') {
+        if ($id === (int)$adminUser['id']) {
+            jsonOut(['success'=>false, 'message'=>'You cannot deactivate your own active account while signed in.'], 400);
+        }
         $db->prepare("UPDATE users SET is_active=0 WHERE id=?")->execute([$id]);
         jsonOut(['success'=>true, 'message'=>'User deactivated.']);
     } elseif ($action === 'activate') {
@@ -20,12 +35,6 @@ try {
     } elseif ($action === 'delete') {
         if ($id === (int)$adminUser['id']) {
             jsonOut(['success'=>false, 'message'=>'You cannot delete your own active administrator account while signed in.'], 400);
-        }
-        $chk = $db->prepare("SELECT id, email, first_name, last_name, role FROM users WHERE id=? LIMIT 1");
-        $chk->execute([$id]);
-        $targetUser = $stmt = $chk->fetch();
-        if (!$targetUser) {
-            jsonOut(['success'=>false, 'message'=>'User account not found.'], 404);
         }
 
         $db->beginTransaction();

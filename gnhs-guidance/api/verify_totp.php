@@ -55,9 +55,10 @@ try {
         
         $role = $_SESSION['user']['role'];
         $redirectMap = [
-            'student'  => '/gnhs-guidance/pages/student-dashboard.php',
-            'teacher'  => '/gnhs-guidance/pages/teacher-dashboard.php',
-            'admin'    => '/gnhs-guidance/pages/admin-dashboard.php',
+            'student'     => '/gnhs-guidance/pages/student-dashboard.php',
+            'teacher'     => '/gnhs-guidance/pages/teacher-dashboard.php',
+            'admin'       => '/gnhs-guidance/pages/admin-dashboard.php',
+            'super_admin' => '/gnhs-guidance/pages/admin-dashboard.php',
         ];
         
         $redirectUrl = $redirectMap[$role] ?? '/gnhs-guidance/index.html';

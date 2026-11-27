@@ -4,7 +4,7 @@ require_once __DIR__ . '/../includes/config.php';
 $user = requireLogin();
 $db = getDB();
 
-$isCounselor = ($user['role'] === 'admin');
+$isCounselor = isAdminRole($user['role'] ?? '');
 $isTeacher = ($user['role'] === 'teacher');
 $archiveId = (int)($_GET['archive_id'] ?? 0);
 $refId = (int)($_GET['ref_id'] ?? 0);

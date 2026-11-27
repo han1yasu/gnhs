@@ -31,7 +31,7 @@ try {
             $case['is_own_anonymous'] = !empty($case['is_anonymous']);
         } else if ($u['role']==='teacher') {
             jsonOut(['success'=>false,'message'=>'Access denied. Detailed case records are confidential between the student and guidance staff.'], 403);
-        } else if ($u['role']==='admin') {
+        } else if (isAdminRole($u['role'] ?? '')) {
             if (!empty($case['is_anonymous'])) {
                 $case['student_name'] = 'Anonymous Student';
                 $case['grade_section'] = 'Confidential';

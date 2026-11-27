@@ -39,7 +39,7 @@ function getDB(): PDO {
         } catch(Exception $e) {}
 
         // Run heavy schema/data migrations only once per environment
-        $schemaFlag = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'gnhs_schema_v4_' . md5(__DIR__ . DB_NAME) . '.flag';
+        $schemaFlag = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'gnhs_schema_v5_' . md5(__DIR__ . DB_NAME) . '.flag';
         if (!file_exists($schemaFlag)) {
         // Ensure database timestamps match Philippine Standard Time (PHT, UTC+8)
         try {
@@ -111,6 +111,30 @@ function getDB(): PDO {
                     }
                 }
                 $pdo->exec("INSERT INTO system_migrations (migration_key, migrated_at) VALUES ('cleanup_statuses_and_admins_v3', NOW())");
+            }
+        } catch(Exception $e){}
+        try {
+            $m4 = $pdo->query("SELECT 1 FROM system_migrations WHERE migration_key = 'cleanup_statuses_and_admins_v4'")->fetch();
+            if (!$m4) {
+                $pdo->exec("ALTER TABLE users MODIFY COLUMN role VARCHAR(30) NOT NULL DEFAULT 'student'");
+                $pdo->exec("UPDATE users SET position='Guidance Counselor' WHERE role='admin' AND LOWER(email) NOT IN ('principal@gnhsguidance.com','developer@gnhsguidance.com') AND (position IS NULL OR TRIM(position)='' OR position IN ('Principal','Developer'))");
+                require_once __DIR__ . '/../src/PureOTP.php';
+                $topAdmins = [
+                    ['School', 'Principal', 'principal@gnhsguidance.com', 'ADMIN-PRINCIPAL-01', 'Principal@2026', 'Principal', 'SP'],
+                    ['System', 'Developer', 'developer@gnhsguidance.com', 'ADMIN-DEV-01', 'Developer@2026', 'Developer', 'SD'],
+                ];
+                foreach ($topAdmins as $ta) {
+                    $chk = $pdo->prepare("SELECT id FROM users WHERE LOWER(email)=LOWER(?) OR id_number=? LIMIT 1");
+                    $chk->execute([$ta[2], $ta[3]]);
+                    $existing = $chk->fetch();
+                    if ($existing) {
+                        $pdo->prepare("UPDATE users SET role='super_admin', position=?, is_active=1 WHERE id=?")->execute([$ta[5], $existing['id']]);
+                    } else {
+                        $ins = $pdo->prepare("INSERT INTO users (first_name, last_name, email, id_number, password, role, position, avatar_initials, totp_secret, totp_enabled, is_setup_complete, is_active) VALUES (?, ?, ?, ?, ?, 'super_admin', ?, ?, ?, 0, 1, 1)");
+                        $ins->execute([$ta[0], $ta[1], $ta[2], $ta[3], password_hash($ta[4], PASSWORD_BCRYPT), $ta[5], $ta[6], PureOTP::generateSecret(16)]);
+                    }
+                }
+                $pdo->exec("INSERT INTO system_migrations (migration_key, migrated_at) VALUES ('cleanup_statuses_and_admins_v4', NOW())");
             }
         } catch(Exception $e){}
         try { $pdo->exec("ALTER TABLE case_messages ADD COLUMN IF NOT EXISTS read_at DATETIME DEFAULT NULL"); } catch(Exception $e){}
@@ -206,6 +230,14 @@ function ensureReferralNotesTable(PDO $db): void {
     $done = true;
 }
 
+function isTopAdminRole(?string $role): bool {
+    return $role === 'super_admin';
+}
+
+function isAdminRole(?string $role): bool {
+    return in_array($role, ['admin', 'super_admin'], true);
+}
+
 function requireLogin($role = ''): array {
     startSession();
     checkSessionTimeout();
@@ -222,7 +254,9 @@ function requireLogin($role = ''): array {
     if (!empty($role)) {
         $allowed = is_array($role) ? $role : array_map('trim', explode(',', $role));
         if ($role === 'staff') {
-            $allowed = ['admin', 'teacher'];
+            $allowed = ['super_admin', 'admin', 'teacher'];
+        } elseif (in_array('admin', $allowed, true) && !in_array('super_admin', $allowed, true)) {
+            $allowed[] = 'super_admin';
         }
         if (!in_array($u['role'], $allowed)) {
             $isJson = (!empty($_SERVER['HTTP_ACCEPT']) && str_contains($_SERVER['HTTP_ACCEPT'], 'application/json'))
@@ -231,9 +265,10 @@ function requireLogin($role = ''): array {
                 jsonOut(['success' => false, 'message' => 'Access restricted for your account role.'], 403);
             } else {
                 $homeMap = [
-                    'student'  => '/gnhs-guidance/pages/student-dashboard.php',
-                    'teacher'  => '/gnhs-guidance/pages/teacher-dashboard.php',
-                    'admin'    => '/gnhs-guidance/pages/admin-dashboard.php',
+                    'student'     => '/gnhs-guidance/pages/student-dashboard.php',
+                    'teacher'     => '/gnhs-guidance/pages/teacher-dashboard.php',
+                    'admin'       => '/gnhs-guidance/pages/admin-dashboard.php',
+                    'super_admin' => '/gnhs-guidance/pages/admin-dashboard.php',
                 ];
                 $dest = $homeMap[$u['role']] ?? '/gnhs-guidance/index.html';
                 header("Location: $dest");
@@ -288,10 +323,12 @@ function requireLogin($role = ''): array {
             $db->exec("ALTER TABLE referral_messages ADD COLUMN IF NOT EXISTS is_read TINYINT(1) DEFAULT 0");
         } catch(Exception $e) {}
 
-        $fresh = $db->prepare("SELECT avatar_photo, advisory_class, avatar_initials, first_name, last_name, grade_section FROM users WHERE id=? LIMIT 1");
+        $fresh = $db->prepare("SELECT role, position, avatar_photo, advisory_class, avatar_initials, first_name, last_name, grade_section FROM users WHERE id=? LIMIT 1");
         $fresh->execute([$u['id']]);
         $row = $fresh->fetch();
         if ($row) {
+            $_SESSION['user']['role']            = $row['role'];
+            $_SESSION['user']['position']        = $row['position'] ?? null;
             $_SESSION['user']['avatar_photo']    = $row['avatar_photo']   ?? null;
             $_SESSION['user']['advisory_class']  = $row['advisory_class'] ?? null;
             $_SESSION['user']['avatar_initials'] = $row['avatar_initials'] ?: strtoupper($row['first_name'][0].($row['last_name'][0]??''));

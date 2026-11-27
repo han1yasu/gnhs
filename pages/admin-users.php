@@ -3,12 +3,21 @@ require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/layout.php';
 $user = requireLogin('admin');
 $db   = getDB();
+$isTopAdmin = isTopAdminRole($user['role'] ?? '');
 
 $filterRole = $_GET['role'] ?? '';
+$allowedFilterRoles = ['super_admin', 'admin', 'teacher', 'student'];
 $where = "WHERE 1=1";
-if ($filterRole) $where .= " AND role='".addslashes($filterRole)."'";
+if ($filterRole && in_array($filterRole, $allowedFilterRoles, true)) {
+    $where .= " AND role='" . addslashes($filterRole) . "'";
+}
 
-$users = $db->query("SELECT * FROM users $where ORDER BY totp_reset_requested DESC, role, first_name ASC")->fetchAll();
+$users = $db->query("SELECT * FROM users $where ORDER BY FIELD(role, 'super_admin', 'admin', 'teacher', 'student'), totp_reset_requested DESC, first_name ASC")->fetchAll();
+$roleCountsRaw = $db->query("SELECT role, COUNT(*) as cnt FROM users GROUP BY role")->fetchAll(PDO::FETCH_KEY_PAIR);
+$topAdminCount = (int)($roleCountsRaw['super_admin'] ?? 0);
+$guidanceCount = (int)($roleCountsRaw['admin'] ?? 0);
+$teacherCount  = (int)($roleCountsRaw['teacher'] ?? 0);
+$studentCount  = (int)($roleCountsRaw['student'] ?? 0);
 
 $pendingTotpCount = 0;
 foreach ($users as $u) {
@@ -22,14 +31,23 @@ foreach ($users as $u) {
     $email     = htmlspecialchars($u['email']);
     $idNum     = htmlspecialchars($u['id_number']);
     $roleClass = 'role-'.$u['role'];
-    $roleNames = ['student'=>'Student','teacher'=>'Teacher','admin'=>!empty($u['position']) ? $u['position'] : 'Guidance Counselor'];
+    $roleNames = [
+        'super_admin' => !empty($u['position']) ? $u['position'] : 'System Admin',
+        'admin'       => !empty($u['position']) ? $u['position'] : 'Guidance Counselor',
+        'teacher'     => 'Teacher',
+        'student'     => 'Student',
+    ];
     $roleLabel = $roleNames[$u['role']] ?? ucfirst($u['role']);
+    $roleIconPrefix = $u['role'] === 'super_admin' ? "<i class='fas fa-crown' style='margin-right:4px;font-size:10px'></i>" : '';
     $gradeInfo    = $u['grade_section'] ? "<div style='font-size:12px;color:var(--text-3);margin-top:2px'><i class='fas fa-school' style='color:var(--maroon);width:12px'></i> ".htmlspecialchars($u['grade_section'])."</div>" : '';
     $advisoryInfo = (!empty($u['advisory_class']) && $u['role']==='teacher') ? "<div style='font-size:12px;color:var(--maroon);margin-top:2px;font-weight:700'><i class='fas fa-chalkboard-teacher' style='width:12px'></i> ".htmlspecialchars($u['advisory_class'])."</div>" : '';
     $activeLabel  = $u['is_active'] ? '' : "<span style='font-size:11px;color:#dc2626;font-weight:700'>[Inactive]</span>";
     $advisoryJson = json_encode($u['advisory_class'] ?? '', JSON_HEX_QUOT|JSON_HEX_APOS);
     
-    $assignBtn = $u['role']==='teacher'
+    $isSelf = ((int)$u['id'] === (int)$user['id']);
+    $canManageTarget = $isTopAdmin || !in_array($u['role'], ['super_admin', 'admin'], true);
+
+    $assignBtn = ($u['role']==='teacher' && $canManageTarget)
         ? "<button class='btn-icon btn-advisory' onclick='openAssignAdvisory({$u['id']},\"$name\",$advisoryJson)' title='Assign Advisory Class'><i class='fas fa-chalkboard-teacher'></i></button>"
         : '';
         
@@ -37,7 +55,9 @@ foreach ($users as $u) {
     $rawEmailAttr = htmlspecialchars($u['email'], ENT_QUOTES);
     $rawRoleAttr  = htmlspecialchars($roleLabel, ENT_QUOTES);
     
-    $resetBtn = "<button type='button' class='btn-icon btn-action-reset' id='btn-reset-pw-{$u['id']}' onclick='openAdminResetPasswordModal({$u['id']})' data-name=\"$rawNameAttr\" data-email=\"$rawEmailAttr\" data-role=\"$rawRoleAttr\" title='Reset Password'><i class='fas fa-key'></i></button>";
+    $resetBtn = $canManageTarget
+        ? "<button type='button' class='btn-icon btn-action-reset' id='btn-reset-pw-{$u['id']}' onclick='openAdminResetPasswordModal({$u['id']})' data-name=\"$rawNameAttr\" data-email=\"$rawEmailAttr\" data-role=\"$rawRoleAttr\" title='Reset Password'><i class='fas fa-key'></i></button>"
+        : '';
     
     $totpRequested = !empty($u['totp_reset_requested']);
     $totpEnabled   = !empty($u['totp_enabled']);
@@ -49,16 +69,23 @@ foreach ($users as $u) {
     $totpClass = $totpRequested ? 'btn-action-totp totp-pending' : 'btn-action-totp';
     $totpTitle = $totpRequested ? '2FA Reset Requested by User - Click to Reset Authenticator' : 'Reset Two-Factor Authentication (2FA)';
 
-    $totpBtn = "<button class='btn-icon $totpClass' id='btn-reset-totp-{$u['id']}' onclick='openResetTotpModal({$u['id']}, this.dataset.name, this.dataset.email, this.dataset.role, ".($totpEnabled?1:0).", ".($totpRequested?1:0).")' data-name=\"$rawNameAttr\" data-email=\"$rawEmailAttr\" data-role=\"$rawRoleAttr\" title='$totpTitle'><i class='fas $totpIcon'></i></button>";
+    $totpBtn = $canManageTarget
+        ? "<button class='btn-icon $totpClass' id='btn-reset-totp-{$u['id']}' onclick='openResetTotpModal({$u['id']}, this.dataset.name, this.dataset.email, this.dataset.role, ".($totpEnabled?1:0).", ".($totpRequested?1:0).")' data-name=\"$rawNameAttr\" data-email=\"$rawEmailAttr\" data-role=\"$rawRoleAttr\" title='$totpTitle'><i class='fas $totpIcon'></i></button>"
+        : '';
     
-    $statusBtn = $u['is_active']
-        ? "<button class='btn-icon btn-action-deactivate danger' id='btn-status-{$u['id']}' onclick='openDeactivateConfirmModal({$u['id']},\"$name\",\"$email\")' title='Deactivate Account'><i class='fas fa-user-slash'></i></button>"
-        : "<button class='btn-icon btn-action-activate' id='btn-status-{$u['id']}' onclick='openActivateConfirmModal({$u['id']},\"$name\",\"$email\")' title='Activate Account'><i class='fas fa-user-check'></i></button>";
+    $statusBtn = ($canManageTarget && !$isSelf)
+        ? ($u['is_active']
+            ? "<button class='btn-icon btn-action-deactivate danger' id='btn-status-{$u['id']}' onclick='openDeactivateConfirmModal({$u['id']},\"$name\",\"$email\")' title='Deactivate Account'><i class='fas fa-user-slash'></i></button>"
+            : "<button class='btn-icon btn-action-activate' id='btn-status-{$u['id']}' onclick='openActivateConfirmModal({$u['id']},\"$name\",\"$email\")' title='Activate Account'><i class='fas fa-user-check'></i></button>")
+        : '';
 
-    $isSelf = ((int)$u['id'] === (int)$user['id']);
-    $deleteBtn = !$isSelf
+    $deleteBtn = ($canManageTarget && !$isSelf)
         ? "<button type='button' class='btn-icon btn-action-delete' id='btn-delete-{$u['id']}' onclick='openDeleteConfirmModal({$u['id']}, this.dataset.name, this.dataset.email, this.dataset.role)' data-name=\"$rawNameAttr\" data-email=\"$rawEmailAttr\" data-role=\"$rawRoleAttr\" title='Delete Account Permanently'><i class='fas fa-trash-alt'></i></button>"
         : '';
+
+    $actionsInner = ($assignBtn || $totpBtn || $resetBtn || $statusBtn || $deleteBtn)
+        ? "$assignBtn $totpBtn $resetBtn $statusBtn $deleteBtn"
+        : "<span style='font-size:11px;color:var(--text-3);font-weight:700;padding:4px 10px;border-radius:8px;border:1px dashed var(--border)'><i class='fas fa-lock'></i> Top-Level Protected</span>";
 
     $avatarEl = !empty($u['avatar_photo'])
         ? "<div class='user-card-avatar' style='padding:0;overflow:hidden;position:relative'><span class='avatar-fallback' style='display:none;width:100%;height:100%;align-items:center;justify-content:center'>$initials</span><img src='".htmlspecialchars($u['avatar_photo'])."' onerror='handleAvatarError(this)' style='width:60px;height:60px;object-fit:cover;object-position:center top;border-radius:16px;display:block;'/></div>"
@@ -67,27 +94,27 @@ foreach ($users as $u) {
     $cards .= "<div class='user-card' data-user-id='{$u['id']}'>
         $avatarEl
         <div class='user-card-name'>$name $activeLabel</div>
-        <span class='user-card-role $roleClass'>$roleLabel</span>
+        <span class='user-card-role $roleClass'>{$roleIconPrefix}$roleLabel</span>
         $totpBadge
         $gradeInfo
         $advisoryInfo
         <div style='font-size:12px;color:var(--text-3)'>$email</div>
         <div style='font-size:12px;color:var(--text-3)'>ID: $idNum</div>
         <div class='user-card-actions'>
-          $assignBtn
-          $totpBtn
-          $resetBtn
-          $statusBtn
-          $deleteBtn
+          $actionsInner
         </div>
     </div>";
 }
 if (!$cards) $cards = "<div style='grid-column:1/-1;text-align:center;color:var(--text-3);padding:40px'>No users found.</div>";
 
-$rAll  = $filterRole===''        ? 'selected' : '';
-$rStu  = $filterRole==='student' ? 'selected' : '';
-$rTea  = $filterRole==='teacher' ? 'selected' : '';
-$rAdm  = $filterRole==='admin'   ? 'selected' : '';
+$rAll  = $filterRole===''            ? 'selected' : '';
+$rSup  = $filterRole==='super_admin' ? 'selected' : '';
+$rAdm  = $filterRole==='admin'       ? 'selected' : '';
+$rTea  = $filterRole==='teacher'     ? 'selected' : '';
+$rStu  = $filterRole==='student'     ? 'selected' : '';
+$adminRoleOptions = $isTopAdmin
+    ? "<option value=\"admin\">Guidance Counselor</option>\n            <option value=\"super_admin\">Top Admin (Principal / Developer)</option>"
+    : '';
 
 $bannerHtml = '';
 if ($pendingTotpCount > 0) {
@@ -292,6 +319,26 @@ $content = <<<HTML
 }
 </style>
 $bannerHtml
+<div class="content-card" style="margin-bottom:18px;padding:14px 18px">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#fef3c7,#fde68a);color:#92400e;display:flex;align-items:center;justify-content:center;font-size:16px;border:1px solid #f59e0b"><i class="fas fa-sitemap"></i></div>
+      <div>
+        <div style="font-size:13.5px;font-weight:800;color:var(--text)">Account Authority Hierarchy (Top to Bottom)</div>
+        <div style="font-size:11.5px;color:var(--text-3)">Top Admins (Principal &amp; Developer) hold full user creation, CSV import &amp; deletion authority over all lower tiers.</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;font-weight:700">
+      <a href="admin-users.php?role=super_admin" class="user-card-role role-super_admin" style="text-decoration:none"><i class="fas fa-crown" style="margin-right:4px"></i>1. Top Admin ($topAdminCount)</a>
+      <i class="fas fa-chevron-right" style="font-size:10px;color:var(--text-3)"></i>
+      <a href="admin-users.php?role=admin" class="user-card-role role-admin" style="text-decoration:none">2. Guidance ($guidanceCount)</a>
+      <i class="fas fa-chevron-right" style="font-size:10px;color:var(--text-3)"></i>
+      <a href="admin-users.php?role=teacher" class="user-card-role role-teacher" style="text-decoration:none">3. Teacher ($teacherCount)</a>
+      <i class="fas fa-chevron-right" style="font-size:10px;color:var(--text-3)"></i>
+      <a href="admin-users.php?role=student" class="user-card-role role-student" style="text-decoration:none">4. Student ($studentCount)</a>
+    </div>
+  </div>
+</div>
 <div class="content-card" style="margin-bottom:22px">
   <div class="card-header" style="flex-wrap:wrap;gap:12px">
     <h3><i class="fas fa-users"></i> User Management</h3>
@@ -301,10 +348,11 @@ $bannerHtml
         <input type="text" id="userSearchInput" placeholder="Search user..." oninput="filterUsersClient(this.value)" style="padding:8px 12px 8px 34px;border:1px solid var(--border);border-radius:8px;font-size:13px;outline:none;background:var(--bg2);color:var(--text);width:190px;transition:.2s" />
       </div>
       <select class="status-select" onchange="window.location='admin-users.php?role='+this.value">
-        <option value=""        $rAll>All Roles</option>
-        <option value="student" $rStu>Students</option>
-        <option value="teacher" $rTea>Teachers</option>
-        <option value="admin"   $rAdm>Guidance &amp; Admins</option>
+        <option value=""            $rAll>All Roles (Hierarchy Order)</option>
+        <option value="super_admin" $rSup>1. Top Admins (Principal / Developer)</option>
+        <option value="admin"       $rAdm>2. Guidance Counselors</option>
+        <option value="teacher"     $rTea>3. Teachers</option>
+        <option value="student"     $rStu>4. Students</option>
       </select>
       <button class="btn-sm-primary" style="background:linear-gradient(135deg, #1e40af, #2563eb);border-color:#1e40af;font-weight:700" onclick="openAddStudentModal()"><i class="fas fa-user-graduate"></i> Register Walk-in Student</button>
       <button class="btn-sm-outline" onclick="openCsvImportModal()" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer"><i class="fas fa-file-csv"></i> Bulk CSV Import</button>
@@ -339,17 +387,17 @@ $bannerHtml
           <select id="nu-role" onchange="toggleGrade(this.value)">
             <option value="student">Student</option>
             <option value="teacher">Teacher</option>
-            <option value="admin">Guidance / Admin</option>
+            $adminRoleOptions
           </select>
         </div>
       </div>
       <div class="form-group" id="nu-position-group" style="display:none">
-        <label>Admin Position / Title <span class="req">*</span></label>
-        <div class="select-wrap"><i class="fas fa-user-shield"></i>
+        <label>Top Admin Position / Title <span class="req">*</span></label>
+        <div class="select-wrap"><i class="fas fa-crown"></i>
           <select id="nu-position">
-            <option value="Guidance Counselor">Guidance Counselor</option>
             <option value="Principal">Principal</option>
-            <option value="Developer">Developer / IT Admin</option>
+            <option value="Developer">Developer</option>
+            <option value="IT Administrator">IT Administrator</option>
           </select>
         </div>
       </div>
@@ -1003,7 +1051,7 @@ const NU_GRADE_SECTIONS = {
 function toggleGrade(role) {
   document.getElementById('nu-grade-group').style.display = role==='student' ? 'block' : 'none';
   const posGroup = document.getElementById('nu-position-group');
-  if (posGroup) posGroup.style.display = role==='admin' ? 'block' : 'none';
+  if (posGroup) posGroup.style.display = role==='super_admin' ? 'block' : 'none';
   const idLabel = document.getElementById('nu-idnum-label');
   const idInput = document.getElementById('nu-idnum');
   const idHelp  = document.getElementById('nu-idnum-help');
@@ -1016,8 +1064,9 @@ function toggleGrade(role) {
       idInput.setAttribute('pattern', '[0-9]{12}');
       if (idHelp) { idHelp.style.display = 'block'; }
     } else {
-      if (idLabel) idLabel.innerHTML = (role === 'teacher' ? 'Employee Number' : 'Admin / Staff ID') + ' <span class="req">*</span>';
-      idInput.placeholder = role === 'admin' ? 'e.g. ADMIN-02 or GUID-01' : 'e.g. EMP-001 or IT-001';
+      const labelText = role === 'super_admin' ? 'Top Admin ID' : (role === 'admin' ? 'Counselor / Staff ID' : 'Employee Number');
+      if (idLabel) idLabel.innerHTML = labelText + ' <span class="req">*</span>';
+      idInput.placeholder = role === 'super_admin' ? 'e.g. ADMIN-PRINCIPAL-02 or ADMIN-DEV-02' : (role === 'admin' ? 'e.g. GUID-2026-01' : 'e.g. EMP-001');
       idInput.removeAttribute('maxlength');
       idInput.removeAttribute('inputmode');
       idInput.removeAttribute('pattern');

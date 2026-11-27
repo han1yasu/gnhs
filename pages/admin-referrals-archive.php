@@ -333,6 +333,8 @@ function openReopenRefFromBtn(btn) {
   if (!btn) return;
   openReopenRefModal(btn.dataset.refId, btn.dataset.refNum, btn.dataset.studentName);
 }
+
+function doSearch() {
   const input = document.getElementById("searchQ");
   const val = input ? input.value.trim() : "";
   filterArchiveRefsLive(val);

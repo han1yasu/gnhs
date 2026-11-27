@@ -17,6 +17,12 @@ $idNumber   = trim($raw['id_number']    ?? '');
 $grade      = trim($raw['grade_section'] ?? '');
 $middleName = trim($raw['middle_name']  ?? '');
 $suffix     = trim($raw['suffix']       ?? '');
+$position   = trim($raw['position']     ?? '');
+if ($role === 'admin' && $position === '') {
+    $position = 'Guidance Counselor';
+} elseif ($role !== 'admin') {
+    $position = $position ?: null;
+}
 
 // Validation
 if (!$firstName || !$lastName || !$email || !$password || !$confirm || !$idNumber) {
@@ -74,8 +80,8 @@ try {
     require_once __DIR__ . '/../src/PureOTP.php';
     $totpSecret = PureOTP::generateSecret(16);
 
-    $stmt = $db->prepare("INSERT INTO users (first_name,last_name,email,id_number,password,role,grade_section,avatar_initials,middle_name,suffix,totp_secret,totp_enabled,is_setup_complete) VALUES (?,?,?,?,?,?,?,?,?,?,?,0,0)");
-    $stmt->execute([$firstName,$lastName,$email,$idNumber,$hash,$role,$grade,$initials,$middleName,$suffix,$totpSecret]);
+    $stmt = $db->prepare("INSERT INTO users (first_name,last_name,email,id_number,password,role,position,grade_section,avatar_initials,middle_name,suffix,totp_secret,totp_enabled,is_setup_complete) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,0,0)");
+    $stmt->execute([$firstName,$lastName,$email,$idNumber,$hash,$role,$position,$grade,$initials,$middleName,$suffix,$totpSecret]);
     $newUserId = (int)$db->lastInsertId();
 
     // If created by an authenticated Counselor or Teacher, do not alter their active session

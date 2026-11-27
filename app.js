@@ -1240,10 +1240,10 @@ function triggerCaseEvidenceUpload(caseId, caseNum) {
           openCaseModal(caseId);
         }
       } else {
-        alert(data.message || 'Upload failed');
+        showToast(data.message || 'Upload failed', 'error');
       }
     } catch(err) {
-      alert('Upload failed. Please check server connection.');
+      showToast('Upload failed. Please check server connection.', 'error');
     }
     this.value = '';
   };
@@ -1309,6 +1309,20 @@ function buildReviewModal(c, notes, session) {
       </div>
     </div>` : '';
 
+  const reopenBannerCard = (c.reopen_reason) ? `
+    <div style="background:#fdf4ff;border:1.5px solid #d8b4fe;border-radius:8px;padding:12px 16px;margin-bottom:18px;display:flex;align-items:flex-start;gap:12px">
+      <div style="width:36px;height:36px;border-radius:50%;background:#7e22ce;color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0"><i class="fas fa-undo"></i></div>
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span style="font-size:11px;font-weight:700;background:#7e22ce;color:#fff;padding:2px 8px;border-radius:12px;text-transform:uppercase;letter-spacing:0.5px">Reopened Case</span>
+          ${c.reopened_at ? `<span style="font-size:12px;color:#7e22ce;font-weight:600">${escapeHtml(c.reopened_at)}</span>` : ''}
+        </div>
+        <div style="margin-top:6px;font-size:13.5px;color:#581c87;background:rgba(255,255,255,0.75);padding:10px 12px;border-radius:6px;border:1px solid #f3e8ff;line-height:1.5">
+          <strong>Counselor Reopening Reason:</strong> "${escapeHtml(c.reopen_reason)}"
+        </div>
+      </div>
+    </div>` : '';
+
   body.innerHTML = `
   <div class="review-header-strip" style="display:flex;flex-wrap:wrap;gap:15px;background:var(--bg2);padding:15px;border-radius:8px;margin-bottom:20px;border:1px solid var(--border)">
       <div style="flex:1;min-width:120px"><label style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Case ID</label><strong style="color:var(--maroon);font-size:16px">#${escapeHtml(c.case_number)}</strong></div>
@@ -1319,6 +1333,7 @@ function buildReviewModal(c, notes, session) {
     </div>
     ${peerReportCard}
     ${followUpCard}
+    ${reopenBannerCard}
     <div class="review-grid" style="grid-template-columns: 1.2fr 1fr; gap:25px; align-items:start">
     <div>
       ${c.ai_summary ? `<div class="ai-box" style="margin-bottom:20px;border-left:4px solid var(--blue);background:rgba(37,99,235,0.05)"><div class="ai-box-label" style="color:var(--blue);font-size:14px;margin-bottom:8px"><i class="fas fa-magic"></i> AI Summary</div><div class="ai-box-text" style="font-size:15px;line-height:1.6">${c.ai_summary}</div></div>` : ''}
@@ -1364,7 +1379,6 @@ function buildReviewModal(c, notes, session) {
         <div class="select-wrap"><i class="fas fa-tag"></i>
           <select id="case-status-sel" onchange="onCaseStatusSelectChange(this)">
             <option value="pending"${sel('pending')}>Pending</option>
-            <option value="under_review"${sel('under_review')}>Under Review</option>
             <option value="ongoing"${sel('ongoing')}>Ongoing</option>
             <option value="resolved"${sel('resolved')}>Resolved</option>
           </select>
@@ -1801,7 +1815,7 @@ function closeCaseResolutionModal() {
 
   const sel = $('case-status-sel');
   if (sel && _currentReviewCase && _currentReviewCase.status !== 'resolved') {
-    sel.value = _originalCaseStatus || 'under_review';
+    sel.value = (_originalCaseStatus && _originalCaseStatus !== 'under_review') ? _originalCaseStatus : 'pending';
   }
 }
 
@@ -1958,6 +1972,15 @@ async function openCaseModal(caseId) {
               </div>
             </div>` : ''}
 
+          ${(c.reopen_reason) ? `
+            <div style="background:#fdf4ff;border:1.5px solid #d8b4fe;border-radius:8px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:flex-start;gap:10px">
+              <div style="width:32px;height:32px;border-radius:50%;background:#7e22ce;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0"><i class="fas fa-undo"></i></div>
+              <div style="font-size:13px;color:#581c87;flex:1">
+                <strong style="display:block;color:#7e22ce">Case Reopened by Guidance Counselor ${c.reopened_at ? '(' + escapeHtml(c.reopened_at) + ')' : ''}</strong>
+                <div style="margin-top:4px;line-height:1.45"><strong>Reason:</strong> ${escapeHtml(c.reopen_reason)}</div>
+              </div>
+            </div>` : ''}
+
           <div style="margin-bottom:14px"><label style="font-size:13px;font-weight:800;color:var(--text-2);display:block;margin-bottom:8px">Your Description</label><div class="concern-text">${c.description}</div></div>
 
           ${c.witnesses ? `
@@ -2023,8 +2046,8 @@ async function openCaseModal(caseId) {
 }
 
 function buildBadge(s) {
-  const m={pending:['Pending','status-pending'],under_review:['Under Review','status-under_review'],ongoing:['Ongoing','status-ongoing'],resolved:['Resolved','status-resolved']};
-  const [l,c]=m[s]||[s,'status-pending'];
+  const m={pending:['Pending','status-pending'],ongoing:['Ongoing','status-ongoing'],resolved:['Resolved','status-resolved']};
+  const [l,c]=m[s]||[s.replace('_',' '),'status-pending'];
   return `<span class="status-badge ${c}">${l}</span>`;
 }
 function buildPrioBadge(p) {
@@ -2064,6 +2087,7 @@ async function saveNewUser() {
   const email  = $('nu-email')?.value.trim();
   const pass   = $('nu-pass')?.value.trim();
   const role   = $('nu-role')?.value;
+  const position = role === 'admin' ? ($('nu-position')?.value || 'Guidance Counselor') : '';
   const idnum  = $('nu-idnum')?.value.trim();
   const glevel = $('nu-grade-level')?.value;
   const gsect  = $('nu-section')?.value;
@@ -2084,7 +2108,7 @@ async function saveNewUser() {
 
   const btn=$('saveUserBtn'); setLoading(btn,true); hideEl('nuMsg');
   try{
-    const res=await apiPost(gnhsApi('register.php'),{first_name:first,last_name:last,email,password:pass,confirm:pass,role,id_number:idnum,grade_section:grade});
+    const res=await apiPost(gnhsApi('register.php'),{first_name:first,last_name:last,email,password:pass,confirm:pass,role,position,id_number:idnum,grade_section:grade});
     if(res.success){showToast('User added!','success');$('addUserModal').classList.add('hidden');setTimeout(()=>location.reload(),200);}
     else{showMsg('nuMsg',res.message||'Failed.');}
   }catch{showMsg('nuMsg','Network or server error. Please try again.');}

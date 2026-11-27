@@ -10,16 +10,21 @@ $user = requireLogin('admin,teacher');
 $db   = getDB();
 
 $raw = json_decode(file_get_contents('php://input'), true);
-if (!$raw || empty($raw['students']) || !is_array($raw['students'])) {
-    jsonOut(['success' => false, 'message' => 'No student data received.']);
+$rowsList = $raw['users'] ?? ($raw['students'] ?? []);
+if (!$raw || empty($rowsList) || !is_array($rowsList)) {
+    jsonOut(['success' => false, 'message' => 'No user data received.']);
 }
 
-$students = $raw['students'];
+$students = $rowsList;
 if (count($students) > 300) {
-    jsonOut(['success' => false, 'message' => 'Maximum of 300 students can be imported in a single batch.']);
+    jsonOut(['success' => false, 'message' => 'Maximum of 300 user records can be imported in a single batch.']);
 }
 
 $isTeacher = ($user['role'] === 'teacher');
+$defaultRole = $isTeacher ? 'student' : strtolower(trim($raw['default_role'] ?? 'student'));
+if (!in_array($defaultRole, ['student', 'teacher', 'admin'], true)) {
+    $defaultRole = 'student';
+}
 $teacherAdvisory = $user['advisory_class'] ?? '';
 $advisoryGradeNum = '';
 $advisorySection = '';
@@ -32,11 +37,11 @@ if ($isTeacher) {
     $advisorySection  = trim($parts[1] ?? '');
 }
 
-// 1. Collect all LRNs and Emails to do a single fast batch check against the database
+// 1. Collect all ID Numbers / LRNs and Emails to do a single fast batch check against the database
 $inputLrns = [];
 $inputEmails = [];
 foreach ($students as $s) {
-    $lrn = trim($s['lrn'] ?? '');
+    $lrn = trim($s['id_number'] ?? ($s['lrn'] ?? ''));
     $em  = strtolower(trim($s['email'] ?? ''));
     if ($lrn) $inputLrns[] = $lrn;
     if ($em)  $inputEmails[] = $em;
@@ -59,7 +64,7 @@ if (!empty($inputEmails)) {
     $existingEmails = $stmt->fetchAll(PDO::FETCH_COLUMN);
 }
 
-// 2. Validate and Process each student
+// 2. Validate and Process each user
 $results = [];
 $importedCount = 0;
 $skippedCount  = 0;
@@ -69,25 +74,43 @@ $seenBatchEmails = [];
 $insertStmt = $db->prepare("
     INSERT INTO users (
         first_name, last_name, middle_name, suffix,
-        id_number, email, password, role,
+        id_number, email, password, role, position,
         grade_section, avatar_initials
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, 'student', ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ");
 
 try {
     $db->beginTransaction();
 
     foreach ($students as $idx => $s) {
-        $rowNum = $idx + 1;
-        $first  = trim($s['first_name'] ?? '');
-        $last   = trim($s['last_name'] ?? '');
-        $middle = trim($s['middle_name'] ?? '');
-        $suffix = trim($s['suffix'] ?? '');
-        $lrn    = trim($s['lrn'] ?? '');
-        $email  = trim($s['email'] ?? '');
-        $grade  = trim($s['grade_level'] ?? '');
-        $sec    = trim($s['section'] ?? '');
-        $pass   = trim($s['temporary_password'] ?? '');
+        $rowNum   = $idx + 1;
+        $first    = trim($s['first_name'] ?? '');
+        $last     = trim($s['last_name'] ?? '');
+        $middle   = trim($s['middle_name'] ?? '');
+        $suffix   = trim($s['suffix'] ?? '');
+        $lrn      = trim($s['id_number'] ?? ($s['lrn'] ?? ''));
+        $email    = trim($s['email'] ?? '');
+        $grade    = trim($s['grade_level'] ?? '');
+        $sec      = trim($s['section'] ?? '');
+        $pass     = trim($s['temporary_password'] ?? '');
+        $position = trim($s['position'] ?? '');
+
+        $rawRole = $isTeacher ? 'student' : strtolower(trim($s['role'] ?? $defaultRole));
+        $rowRole = 'student';
+        if (!$isTeacher) {
+            if (in_array($rawRole, ['teacher', 'faculty', 'adviser', 'instructor'], true)) {
+                $rowRole = 'teacher';
+            } elseif (in_array($rawRole, ['admin', 'guidance', 'counselor', 'guidance counselor', 'principal', 'developer', 'it', 'staff'], true)) {
+                $rowRole = 'admin';
+                if ($position === '') {
+                    if ($rawRole === 'principal') $position = 'Principal';
+                    elseif ($rawRole === 'developer' || $rawRole === 'it') $position = 'Developer';
+                    else $position = 'Guidance Counselor';
+                }
+            } elseif ($rawRole === 'student' || $rawRole === '') {
+                $rowRole = 'student';
+            }
+        }
 
         // Fallback for advisory teachers
         if ($isTeacher) {
@@ -105,8 +128,13 @@ try {
             continue;
         }
 
-        if (!preg_match('/^\d{12}$/', $lrn)) {
-            $results[] = ['row' => $rowNum, 'lrn' => $lrn, 'name' => "$first $last", 'status' => 'skipped', 'reason' => 'LRN must be strictly 12 numeric digits.'];
+        if ($rowRole === 'student' && !preg_match('/^\d{12}$/', $lrn)) {
+            $results[] = ['row' => $rowNum, 'lrn' => $lrn, 'name' => "$first $last", 'status' => 'skipped', 'reason' => 'Student LRN must be strictly 12 numeric digits.'];
+            $skippedCount++;
+            continue;
+        }
+        if ($rowRole !== 'student' && $lrn === '') {
+            $results[] = ['row' => $rowNum, 'lrn' => $lrn, 'name' => "$first $last", 'status' => 'skipped', 'reason' => 'Employee / Staff ID Number is required.'];
             $skippedCount++;
             continue;
         }
@@ -117,13 +145,15 @@ try {
             continue;
         }
 
-        if (!$gradeNum || !in_array($gradeNum, ['7','8','9','10']) || !$sec) {
-            $results[] = ['row' => $rowNum, 'lrn' => $lrn, 'name' => "$first $last", 'status' => 'skipped', 'reason' => 'Valid Grade Level (7-10) and Section are required.'];
-            $skippedCount++;
-            continue;
+        $fullGradeSec = '';
+        if ($rowRole === 'student') {
+            if (!$gradeNum || !in_array($gradeNum, ['7','8','9','10']) || !$sec) {
+                $results[] = ['row' => $rowNum, 'lrn' => $lrn, 'name' => "$first $last", 'status' => 'skipped', 'reason' => 'Valid Grade Level (7-10) and Section are required for students.'];
+                $skippedCount++;
+                continue;
+            }
+            $fullGradeSec = 'Grade ' . $gradeNum . ' - ' . $sec;
         }
-
-        $fullGradeSec = 'Grade ' . $gradeNum . ' - ' . $sec;
 
         // If teacher, verify that student matches teacher's advisory section
         if ($isTeacher && $fullGradeSec !== $teacherAdvisory) {
@@ -134,7 +164,7 @@ try {
 
         // Check for duplicates in current database
         if (in_array((string)$lrn, $existingLrns, true)) {
-            $results[] = ['row' => $rowNum, 'lrn' => $lrn, 'name' => "$first $last", 'status' => 'skipped', 'reason' => 'LRN already registered in database.'];
+            $results[] = ['row' => $rowNum, 'lrn' => $lrn, 'name' => "$first $last", 'status' => 'skipped', 'reason' => 'ID / LRN already registered in database.'];
             $skippedCount++;
             continue;
         }
@@ -147,7 +177,7 @@ try {
 
         // Check for duplicates within this same batch
         if (isset($seenBatchLrns[$lrn])) {
-            $results[] = ['row' => $rowNum, 'lrn' => $lrn, 'name' => "$first $last", 'status' => 'skipped', 'reason' => 'Duplicate LRN in this import file.'];
+            $results[] = ['row' => $rowNum, 'lrn' => $lrn, 'name' => "$first $last", 'status' => 'skipped', 'reason' => 'Duplicate ID / LRN in this import file.'];
             $skippedCount++;
             continue;
         }
@@ -161,12 +191,13 @@ try {
         $seenBatchEmails[strtolower($email)] = true;
 
         // Default password if none provided
+        $fallbackPwd = $rowRole === 'student' ? 'Student@2026' : 'Staff@2026';
         if (!$pass) {
-            $pass = 'Student@2026';
+            $pass = $fallbackPwd;
         } else {
             // Validate custom password standards
             if (strlen($pass) < 8 || !preg_match('/[A-Z]/', $pass) || !preg_match('/[0-9]/', $pass) || !preg_match('/[^A-Za-z0-9]/', $pass)) {
-                $pass = 'Student@2026'; // fallback to compliant preset
+                $pass = $fallbackPwd; // fallback to compliant preset
             }
         }
 
@@ -181,13 +212,17 @@ try {
             $lrn,
             $email,
             $hashedPassword,
-            $fullGradeSec,
+            $rowRole,
+            $position ?: null,
+            $fullGradeSec ?: null,
             $initials
         ]);
 
         $results[] = [
             'row' => $rowNum,
             'lrn' => $lrn,
+            'role' => $rowRole,
+            'position' => $position,
             'name' => "$first $last",
             'email' => $email,
             'grade_section' => $fullGradeSec,
@@ -201,7 +236,7 @@ try {
 
     jsonOut([
         'success'  => true,
-        'message'  => "Import completed: {$importedCount} student accounts created successfully.",
+        'message'  => "Import completed: {$importedCount} user account(s) created successfully.",
         'total'    => count($students),
         'imported' => $importedCount,
         'skipped'  => $skippedCount,

@@ -3,7 +3,7 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
     $role     = $user['role'];
     $initials = htmlspecialchars($user['avatar_initials'] ?? strtoupper($user['first_name'][0]));
     $fullName = htmlspecialchars($user['first_name'].' '.$user['last_name']);
-    $roleLabel = ['student'=>'Student','teacher'=>'Teacher','admin'=>'Guidance Counselor'][$role] ?? $role;
+    $roleLabel = ['student'=>'Student','teacher'=>'Teacher','admin'=>!empty($user['position']) ? $user['position'] : 'Guidance Counselor'][$role] ?? $role;
     $email    = htmlspecialchars($user['email'] ?? '');
     $idNumber = htmlspecialchars($user['id_number'] ?? '');
     $grade    = htmlspecialchars($user['grade_section'] ?? '');
@@ -609,10 +609,13 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
     </div>
   </div>
 
-  <!-- Bulk CSV & Excel Import Modal (Available for Counselors & Teachers) -->
-  <?php if ($role === 'admin' || $role === 'teacher'): ?>
+  <!-- Bulk CSV & Excel Import Modal (Available for Admins/Counselors [All Users] & Teachers [Students]) -->
+  <?php if ($role === 'admin' || $role === 'teacher'):
+    $isCsvAdmin = ($role === 'admin');
+    $tplBase = (strpos($_SERVER['REQUEST_URI'] ?? '', '/pages/') !== false ? '../api/download_student_template.php' : 'api/download_student_template.php');
+  ?>
   <div class="modal-overlay hidden" id="csvImportModal" style="z-index: 2100;" onclick="if(event.target.id==='csvImportModal')closeCsvImportModal()">
-    <div class="modal-box" style="max-width:780px;width:95vw;max-height:90vh;display:flex;flex-direction:column;padding:24px 26px;text-align:left;overflow-y:auto">
+    <div class="modal-box" style="max-width:820px;width:95vw;max-height:90vh;display:flex;flex-direction:column;padding:24px 26px;text-align:left;overflow-y:auto">
       
       <!-- Modal Header -->
       <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:14px;margin-bottom:18px">
@@ -622,31 +625,57 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
           </div>
           <div>
             <h2 class="modal-title" style="margin:0;font-size:18px;text-align:left;display:flex;align-items:center;gap:8px">
-              Import Students via CSV / Excel
+              <?= $isCsvAdmin ? 'Import Users via CSV / Excel' : 'Import Students via CSV / Excel' ?>
             </h2>
             <div style="font-size:12px;color:var(--text-3);margin-top:2px">
-              Select an Excel (<code>.xlsx</code>/<code>.xls</code>) or <code>.csv</code> spreadsheet to enroll multiple student accounts
+              <?= $isCsvAdmin ? 'Select an Excel (<code>.xlsx</code>/<code>.xls</code>) or <code>.csv</code> file to bulk-create Student, Teacher, or Guidance/Admin accounts' : 'Select an Excel (<code>.xlsx</code>/<code>.xls</code>) or <code>.csv</code> spreadsheet to enroll multiple student accounts' ?>
             </div>
           </div>
         </div>
         <button type="button" class="modal-close" onclick="closeCsvImportModal()" style="position:static"><i class="fas fa-times"></i></button>
       </div>
 
+      <div id="csvModalInlineErr" class="error-msg" style="display:none;margin-bottom:14px"></div>
+
       <!-- Native OS File Manager Input (Filtered strictly to Excel & CSV) -->
       <input type="file" id="globalCsvFileInput" accept=".csv, .xlsx, .xls, text/csv, application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;opacity:0" onchange="handleGlobalCsvSelect(this)" />
 
       <!-- Step 1: Upload / Dropzone Screen -->
       <div id="csvModalUploadStep">
+        <?php if ($isCsvAdmin): ?>
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+          <div style="font-size:12.5px;font-weight:700;color:var(--text)">
+            <i class="fas fa-users-cog" style="color:var(--maroon);margin-right:6px"></i> Default User Role (used when CSV has no <code>role</code> column):
+          </div>
+          <select id="csvDefaultRoleSel" class="status-select" style="min-width:210px">
+            <option value="student">Student</option>
+            <option value="teacher">Teacher</option>
+            <option value="admin">Guidance / Admin</option>
+          </select>
+        </div>
+        <?php endif; ?>
+
         <!-- Guidelines banner -->
         <div style="background:var(--maroon-pale, #fff0f0);border:1px solid rgba(85,0,0,0.12);border-radius:12px;padding:14px 16px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
-          <div style="font-size:12.5px;color:var(--text-2);line-height:1.5;max-width:520px">
+          <div style="font-size:12.5px;color:var(--text-2);line-height:1.5;max-width:480px">
             <strong style="color:var(--maroon);display:block;margin-bottom:2px"><i class="fas fa-info-circle"></i> Spreadsheet Column Headers:</strong>
-            <code>first_name</code>, <code>last_name</code>, <code>lrn</code> (strictly 12 digits), <code>email</code>, <code>grade_level</code>, <code>section</code>
-            <?= ($role === 'teacher' && !empty($user['advisory_class'])) ? '<br><span style="font-size:11.5px;color:var(--text-3)">Blank grade/section entries default to your advisory class: <strong>' . htmlspecialchars($user['advisory_class']) . '</strong></span>' : '' ?>
+            <?php if ($isCsvAdmin): ?>
+              <code>first_name</code>, <code>last_name</code>, <code>id_number</code> (or <code>lrn</code>), <code>email</code>, plus optional <code>role</code> (<code>student</code> / <code>teacher</code> / <code>admin</code>), <code>position</code>, <code>grade_level</code>, <code>section</code>
+            <?php else: ?>
+              <code>first_name</code>, <code>last_name</code>, <code>lrn</code> (strictly 12 digits), <code>email</code>, <code>grade_level</code>, <code>section</code>
+              <?= !empty($user['advisory_class']) ? '<br><span style="font-size:11.5px;color:var(--text-3)">Blank grade/section entries default to your advisory class: <strong>' . htmlspecialchars($user['advisory_class']) . '</strong></span>' : '' ?>
+            <?php endif; ?>
           </div>
-          <a href="<?= (strpos($_SERVER['REQUEST_URI'] ?? '', '/pages/') !== false ? '../api/download_student_template.php' : 'api/download_student_template.php') ?>" class="btn-sm-primary" style="background:#2563eb;text-decoration:none;display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:8px 14px;white-space:nowrap">
-            <i class="fas fa-file-download"></i> Download Template
-          </a>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <?php if ($isCsvAdmin): ?>
+            <a href="<?= $tplBase ?>?scope=all" class="btn-sm-primary" style="background:var(--maroon);text-decoration:none;display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:8px 12px;white-space:nowrap">
+              <i class="fas fa-file-download"></i> All-Users Template
+            </a>
+            <?php endif; ?>
+            <a href="<?= $tplBase ?>" class="btn-sm-primary" style="background:#2563eb;text-decoration:none;display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:8px 12px;white-space:nowrap">
+              <i class="fas fa-file-download"></i> Student Template
+            </a>
+          </div>
         </div>
 
         <!-- File Manager Dropzone / Click Box -->
@@ -685,11 +714,11 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
             <thead>
               <tr style="background:var(--bg2, #f8fafc);border-bottom:1px solid var(--border);color:var(--text-2);text-align:left">
                 <th style="padding:10px 12px;width:35px;text-align:center">#</th>
-                <th style="padding:10px 12px">Student Name</th>
-                <th style="padding:10px 12px;width:120px">12-Digit LRN</th>
+                <th style="padding:10px 12px">Name</th>
+                <th style="padding:10px 12px">Role / Position</th>
+                <th style="padding:10px 12px;width:120px">ID / LRN</th>
                 <th style="padding:10px 12px">Email Address</th>
-                <th style="padding:10px 12px;width:80px">Grade</th>
-                <th style="padding:10px 12px;width:100px">Section</th>
+                <th style="padding:10px 12px">Grade / Class</th>
                 <th style="padding:10px 12px;width:105px">Status</th>
               </tr>
             </thead>
@@ -702,7 +731,7 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
             <i class="fas fa-redo"></i> Choose Different File
           </button>
           <button type="button" class="btn-primary" id="btnConfirmGlobalImport" onclick="executeGlobalCsvModalImport()" style="background:linear-gradient(135deg,var(--maroon) 0%,#7a0c0c 100%);display:inline-flex;align-items:center;gap:8px;padding:10px 22px;font-size:13.5px">
-            <i class="fas fa-user-check"></i> Import Valid Students (<span id="csvModalImportCountText">0</span>)
+            <i class="fas fa-user-check"></i> Import Valid Users (<span id="csvModalImportCountText">0</span>)
           </button>
         </div>
       </div>
@@ -1431,6 +1460,8 @@ function resetGlobalCsvModal() {
   _globalCsvValidStudents = [];
   const inp = document.getElementById('globalCsvFileInput');
   if (inp) inp.value = '';
+  const errBox = document.getElementById('csvModalInlineErr');
+  if (errBox) { errBox.style.display = 'none'; errBox.textContent = ''; }
   const upStep = document.getElementById('csvModalUploadStep');
   const prevStep = document.getElementById('csvModalPreviewStep');
   const succStep = document.getElementById('csvModalSuccessStep');
@@ -1439,6 +1470,14 @@ function resetGlobalCsvModal() {
   if (succStep) succStep.style.display = 'none';
   const tbody = document.getElementById('csvModalPreviewTbody');
   if (tbody) tbody.innerHTML = '';
+}
+
+function showCsvInlineError(msg) {
+  const errBox = document.getElementById('csvModalInlineErr');
+  if (errBox) {
+    errBox.textContent = msg;
+    errBox.style.display = 'block';
+  }
 }
 
 function handleGlobalCsvDragOver(e) {
@@ -1469,7 +1508,7 @@ function processGlobalSpreadsheetFile(file) {
   const fName = file.name || '';
   const lower = fName.toLowerCase();
   if (!lower.endsWith('.csv') && !lower.endsWith('.xlsx') && !lower.endsWith('.xls') && file.type !== 'text/csv') {
-    alert('Please select a valid Excel (.xlsx, .xls) or CSV spreadsheet file.');
+    showCsvInlineError('Please select a valid Excel (.xlsx, .xls) or CSV spreadsheet file.');
     return;
   }
 
@@ -1535,8 +1574,11 @@ function parseGlobalCsvLines(text) {
 }
 
 function parseAndPreviewGlobalRows(rawRows, fileName, fileSize) {
+  const errBox = document.getElementById('csvModalInlineErr');
+  if (errBox) { errBox.style.display = 'none'; errBox.textContent = ''; }
+
   if (!rawRows || rawRows.length < 2) {
-    alert('The selected spreadsheet is empty or has no data rows.');
+    showCsvInlineError('The selected spreadsheet is empty or has no data rows.');
     return;
   }
 
@@ -1550,26 +1592,31 @@ function parseAndPreviewGlobalRows(rawRows, fileName, fileSize) {
     return -1;
   };
 
-  const idxFirst   = findIdx(['firstname', 'first_name', 'first', 'givenname', 'pangalan']);
-  const idxLast    = findIdx(['lastname', 'last_name', 'last', 'surname', 'familyname', 'apelyido']);
-  const idxMiddle  = findIdx(['middlename', 'middle_name', 'middle', 'mid']);
-  const idxSuffix  = findIdx(['suffix', 'ext']);
-  const idxLrn     = findIdx(['lrn', 'idnumber', 'id_number', 'student_lrn', 'studentlrn', 'learnerreferencenumber']);
-  const idxEmail   = findIdx(['email', 'emailaddress', 'email_address', 'student_email', 'studentemail']);
-  const idxGrade   = findIdx(['gradelevel', 'grade_level', 'grade', 'level', 'baitang']);
-  const idxSection = findIdx(['section', 'pangkat', 'sec']);
-  const idxPass    = findIdx(['temporarypassword', 'temporary_password', 'password', 'pass']);
+  const idxRole     = findIdx(['role', 'userrole', 'user_role', 'accounttype', 'account_type', 'type']);
+  const idxPosition = findIdx(['position', 'title', 'designation']);
+  const idxFirst    = findIdx(['firstname', 'first_name', 'first', 'givenname', 'pangalan']);
+  const idxLast     = findIdx(['lastname', 'last_name', 'last', 'surname', 'familyname', 'apelyido']);
+  const idxMiddle   = findIdx(['middlename', 'middle_name', 'middle', 'mid']);
+  const idxSuffix   = findIdx(['suffix', 'ext']);
+  const idxLrn      = findIdx(['lrn', 'idnumber', 'id_number', 'employeeid', 'employee_id', 'staffid', 'staff_id', 'student_lrn', 'studentlrn', 'learnerreferencenumber']);
+  const idxEmail    = findIdx(['email', 'emailaddress', 'email_address', 'student_email', 'studentemail']);
+  const idxGrade    = findIdx(['gradelevel', 'grade_level', 'grade', 'level', 'baitang']);
+  const idxSection  = findIdx(['section', 'pangkat', 'sec']);
+  const idxPass     = findIdx(['temporarypassword', 'temporary_password', 'password', 'pass']);
   const idxFullName = findIdx(['name', 'fullname', 'studentname', 'student_name']);
   const idxGradeSec = findIdx(['gradesection', 'grade_section', 'class', 'gradeandsection']);
 
   if (idxFirst === -1 && idxFullName === -1) {
-    alert('Spreadsheet is missing student name! Make sure your file contains first_name, last_name, lrn, and email.');
+    showCsvInlineError('Spreadsheet is missing user name! Make sure your file contains first_name, last_name, id_number/lrn, and email.');
     return;
   }
   if (idxLrn === -1 || idxEmail === -1) {
-    alert('Spreadsheet is missing required column headers! Make sure your file contains lrn and email.');
+    showCsvInlineError('Spreadsheet is missing required column headers! Make sure your file contains id_number (or lrn) and email.');
     return;
   }
+
+  const defaultRoleEl = document.getElementById('csvDefaultRoleSel');
+  const defaultRole = defaultRoleEl ? defaultRoleEl.value : 'student';
 
   // Teacher advisory defaults if present
   let defGrade = '';
@@ -1595,16 +1642,38 @@ function parseAndPreviewGlobalRows(rawRows, fileName, fileSize) {
     const r = rawRows[i];
     if (!r || (r.length === 1 && !r[0])) continue;
 
-    let first  = idxFirst !== -1 ? String(r[idxFirst] || '').trim() : '';
-    let last   = idxLast !== -1 ? String(r[idxLast] || '').trim() : '';
-    let middle = idxMiddle !== -1 ? String(r[idxMiddle] || '').trim() : '';
-    let suffix = idxSuffix !== -1 ? String(r[idxSuffix] || '').trim() : '';
-    const lrn    = String(r[idxLrn] || '').trim().replace(/[^0-9]/g, '');
-    const email  = String(r[idxEmail] || '').trim();
-    let grade    = idxGrade !== -1 ? String(r[idxGrade] || '').trim() : '';
-    let section  = idxSection !== -1 ? String(r[idxSection] || '').trim() : '';
-    let pass     = idxPass !== -1 ? String(r[idxPass] || '').trim() : 'Student@2026';
-    if (!pass) pass = 'Student@2026';
+    let first    = idxFirst !== -1 ? String(r[idxFirst] || '').trim() : '';
+    let last     = idxLast !== -1 ? String(r[idxLast] || '').trim() : '';
+    let middle   = idxMiddle !== -1 ? String(r[idxMiddle] || '').trim() : '';
+    let suffix   = idxSuffix !== -1 ? String(r[idxSuffix] || '').trim() : '';
+    let position = idxPosition !== -1 ? String(r[idxPosition] || '').trim() : '';
+    let rawRole  = (defaultRoleEl && idxRole !== -1) ? String(r[idxRole] || '').trim().toLowerCase() : defaultRole;
+    if (!rawRole) rawRole = defaultRole;
+
+    let rowRole = 'student';
+    if (defaultRoleEl) {
+      if (['teacher', 'faculty', 'adviser', 'instructor'].includes(rawRole)) {
+        rowRole = 'teacher';
+      } else if (['admin', 'guidance', 'counselor', 'guidance counselor', 'principal', 'developer', 'it', 'staff'].includes(rawRole)) {
+        rowRole = 'admin';
+        if (!position) {
+          if (rawRole === 'principal') position = 'Principal';
+          else if (rawRole === 'developer' || rawRole === 'it') position = 'Developer';
+          else position = 'Guidance Counselor';
+        }
+      } else {
+        rowRole = 'student';
+      }
+    }
+
+    const rawIdVal = String(r[idxLrn] || '').trim();
+    const idVal    = rowRole === 'student' ? rawIdVal.replace(/[^0-9]/g, '') : rawIdVal;
+    const email    = String(r[idxEmail] || '').trim();
+    let grade      = idxGrade !== -1 ? String(r[idxGrade] || '').trim() : '';
+    let section    = idxSection !== -1 ? String(r[idxSection] || '').trim() : '';
+    const defPwd   = rowRole === 'student' ? 'Student@2026' : 'Staff@2026';
+    let pass       = idxPass !== -1 ? String(r[idxPass] || '').trim() : defPwd;
+    if (!pass) pass = defPwd;
 
     // Full name fallback
     if ((!first || !last) && idxFullName !== -1) {
@@ -1618,7 +1687,7 @@ function parseAndPreviewGlobalRows(rawRows, fileName, fileSize) {
       } else {
         const parts = full.split(' ').filter(Boolean);
         first = parts[0] || '';
-        last = parts.length > 1 ? parts.slice(1).join(' ') : 'Student';
+        last = parts.length > 1 ? parts.slice(1).join(' ') : 'User';
       }
     }
 
@@ -1632,34 +1701,45 @@ function parseAndPreviewGlobalRows(rawRows, fileName, fileSize) {
       }
     }
 
-    if (!grade && defGrade) grade = defGrade;
-    if (!section && defSec) section = defSec;
+    if (rowRole === 'student') {
+      if (!grade && defGrade) grade = defGrade;
+      if (!section && defSec) section = defSec;
+    }
     const gradeNum = grade.replace(/[^0-9]/g, '');
 
     // Validation
     const errors = [];
     if (!first) errors.push('Missing First Name');
     if (!last)  errors.push('Missing Last Name');
-    if (!lrn || lrn.length !== 12) errors.push('LRN must be strictly 12 digits');
-    else if (seenLrns.has(lrn)) errors.push('Duplicate LRN in file');
+    if (rowRole === 'student') {
+      if (!idVal || idVal.length !== 12) errors.push('LRN must be strictly 12 digits');
+    } else {
+      if (!idVal) errors.push('Missing ID Number');
+    }
+    if (idVal && seenLrns.has(idVal.toLowerCase())) errors.push('Duplicate ID / LRN in file');
 
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push('Invalid Email');
     else if (seenEmails.has(email.toLowerCase())) errors.push('Duplicate Email in file');
 
-    if (!gradeNum || !['7','8','9','10'].includes(gradeNum)) errors.push('Grade must be 7-10');
-    if (!section) errors.push('Missing Section');
+    if (rowRole === 'student') {
+      if (!gradeNum || !['7','8','9','10'].includes(gradeNum)) errors.push('Grade must be 7-10');
+      if (!section) errors.push('Missing Section');
+    }
 
     const isValid = errors.length === 0;
     if (isValid) {
       validCount++;
-      seenLrns.add(lrn);
+      seenLrns.add(idVal.toLowerCase());
       seenEmails.add(email.toLowerCase());
       _globalCsvValidStudents.push({
+        role: rowRole,
+        position: position,
         first_name: first,
         last_name: last,
         middle_name: middle,
         suffix: suffix,
-        lrn: lrn,
+        lrn: idVal,
+        id_number: idVal,
         email: email,
         grade_level: gradeNum,
         section: section,
@@ -1669,6 +1749,9 @@ function parseAndPreviewGlobalRows(rawRows, fileName, fileSize) {
       errorCount++;
     }
 
+    const roleDisplay = rowRole === 'admin' ? (position || 'Guidance Counselor') : (rowRole === 'teacher' ? 'Teacher' : 'Student');
+    const gradeDisplay = rowRole === 'student' ? ('Grade ' + (gradeNum || '—') + (section ? ' - ' + section : '')) : (position || '—');
+
     if (tbody) {
       const tr = document.createElement('tr');
       tr.style.borderBottom = '1px solid var(--border)';
@@ -1676,10 +1759,10 @@ function parseAndPreviewGlobalRows(rawRows, fileName, fileSize) {
 
       tr.innerHTML = '<td style="padding:8px 12px;text-align:center;font-weight:700;color:var(--text-3)">' + i + '</td>'
         + '<td style="padding:8px 12px"><strong>' + escapeHtml(first) + ' ' + escapeHtml(last) + '</strong> ' + (suffix ? escapeHtml(suffix) : '') + '</td>'
-        + '<td style="padding:8px 12px"><code style="font-size:11.5px">' + escapeHtml(lrn || '—') + '</code></td>'
+        + '<td style="padding:8px 12px"><span class="user-card-role role-' + rowRole + '" style="font-size:10.5px;padding:2px 8px">' + escapeHtml(roleDisplay) + '</span></td>'
+        + '<td style="padding:8px 12px"><code style="font-size:11.5px">' + escapeHtml(idVal || '—') + '</code></td>'
         + '<td style="padding:8px 12px;font-size:11.5px">' + escapeHtml(email || '—') + '</td>'
-        + '<td style="padding:8px 12px">Grade ' + escapeHtml(gradeNum || '—') + '</td>'
-        + '<td style="padding:8px 12px">' + escapeHtml(section || '—') + '</td>'
+        + '<td style="padding:8px 12px;font-size:11.5px">' + escapeHtml(gradeDisplay) + '</td>'
         + '<td style="padding:8px 12px">'
         + (isValid 
             ? '<span style="background:#dcfce7;color:#166534;padding:3px 8px;border-radius:50px;font-size:11px;font-weight:700"><i class="fas fa-check"></i> Ready</span>' 
@@ -1692,7 +1775,7 @@ function parseAndPreviewGlobalRows(rawRows, fileName, fileSize) {
   // Update Preview UI
   document.getElementById('csvModalFileName').textContent = fileName;
   const kb = Math.round(fileSize / 1024) || 1;
-  document.getElementById('csvModalMetaText').textContent = (rawRows.length - 1) + ' student rows parsed • ' + kb + ' KB';
+  document.getElementById('csvModalMetaText').textContent = (rawRows.length - 1) + ' user rows parsed • ' + kb + ' KB';
   document.getElementById('csvModalValidBadge').innerHTML = '<i class="fas fa-check-circle"></i> ' + validCount + ' Ready';
   document.getElementById('csvModalErrorBadge').innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + errorCount + ' Errors';
   document.getElementById('csvModalImportCountText').textContent = validCount;
@@ -1707,17 +1790,14 @@ function parseAndPreviewGlobalRows(rawRows, fileName, fileSize) {
 
 async function executeGlobalCsvModalImport() {
   if (!_globalCsvValidStudents || _globalCsvValidStudents.length === 0) {
-    alert('There are no valid student records to import.');
+    showCsvInlineError('There are no valid user records to import.');
     return;
   }
 
   const btn = document.getElementById('btnConfirmGlobalImport');
-  if (!confirm('Are you sure you want to enroll and create accounts for ' + _globalCsvValidStudents.length + ' valid students?')) {
-    return;
-  }
-
+  const defaultRoleEl = document.getElementById('csvDefaultRoleSel');
   btn.disabled = true;
-  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enrolling Accounts...';
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Importing Accounts...';
 
   try {
     const p = window.location.pathname;
@@ -1728,28 +1808,31 @@ async function executeGlobalCsvModalImport() {
     const resp = await fetch(apiPath, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ students: _globalCsvValidStudents })
+      body: JSON.stringify({
+        users: _globalCsvValidStudents,
+        default_role: defaultRoleEl ? defaultRoleEl.value : 'student'
+      })
     });
 
     const res = await resp.json();
     if (res.success) {
       document.getElementById('csvModalPreviewStep').style.display = 'none';
       document.getElementById('csvModalSuccessStep').style.display = 'block';
-      document.getElementById('csvModalSuccessTitle').textContent = 'Success! ' + res.imported + ' Students Enrolled.';
-      let desc = 'Successfully created ' + res.imported + ' student portal accounts into the database.';
+      document.getElementById('csvModalSuccessTitle').textContent = 'Success! ' + res.imported + ' User(s) Imported.';
+      let desc = 'Successfully created ' + res.imported + ' portal account(s) in the database.';
       if (res.skipped > 0) {
-        desc += ' (' + res.skipped + ' records were skipped as duplicates).';
+        desc += ' (' + res.skipped + ' record(s) skipped as duplicates or invalid).';
       }
       document.getElementById('csvModalSuccessDesc').textContent = desc;
     } else {
-      alert('Import failed: ' + (res.message || 'Unknown server error.'));
+      showCsvInlineError('Import failed: ' + (res.message || 'Unknown server error.'));
       btn.disabled = false;
-      btn.innerHTML = '<i class="fas fa-user-check"></i> Import Valid Students (' + _globalCsvValidStudents.length + ')';
+      btn.innerHTML = '<i class="fas fa-user-check"></i> Import Valid Users (' + _globalCsvValidStudents.length + ')';
     }
   } catch(err) {
-    alert('Network error while executing import: ' + err.message);
+    showCsvInlineError('Network error while executing import: ' + err.message);
     btn.disabled = false;
-    btn.innerHTML = '<i class="fas fa-user-check"></i> Import Valid Students (' + _globalCsvValidStudents.length + ')';
+    btn.innerHTML = '<i class="fas fa-user-check"></i> Import Valid Users (' + _globalCsvValidStudents.length + ')';
   }
 }
 

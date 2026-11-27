@@ -37,7 +37,7 @@ $refs = $db->query("SELECT r.*,
         ORDER BY session_date DESC LIMIT 1
     )
     LEFT JOIN users u ON cs.counselor_id = u.id
-    $where ORDER BY r.submitted_at DESC")->fetchAll();
+    $where ORDER BY r.submitted_at DESC, r.id DESC")->fetchAll();
 
 $archivedCount = (int)$db->query("SELECT COUNT(*) FROM referrals WHERE teacher_id=$uid AND status IN ('resolved','closed')")->fetchColumn();
 $activeCount   = (int)$db->query("SELECT COUNT(*) FROM referrals WHERE teacher_id=$uid AND status NOT IN ('resolved','closed')")->fetchColumn();
@@ -47,12 +47,13 @@ function urgencyBadge(string $u): string {
     return "<span class='priority-badge ".($map[$u]??'priority-low')."'><i class='fas fa-circle'></i>".ucfirst($u)."</span>";
 }
 function statusBadge(string $s): string {
-    $map=['pending'=>'status-pending','under_review'=>'status-under_review','ongoing'=>'status-ongoing','resolved'=>'status-resolved','closed'=>'status-resolved'];
-    return "<span class='status-badge ".($map[$s]??'status-pending')."'>".str_replace('_',' ',ucfirst($s))."</span>";
+    $map=['pending'=>'status-pending','resolved'=>'status-resolved'];
+    return "<span class='status-badge ".($map[$s]??'status-pending')."'>".($s==='resolved'?'Resolved':'Pending')."</span>";
 }
 
 $rows = '';
 foreach ($refs as $r) {
+    $rawType = strtolower($r['concern_type']);
     $type = ucfirst(str_replace('_',' ',$r['concern_type']));
     $date = date('M d, Y', strtotime($r['submitted_at']));
 
@@ -74,6 +75,7 @@ foreach ($refs as $r) {
         'status'         => $r['status'],
         'observations'   => $r['observations'],
         'ai_summary'     => $r['ai_summary'] ?? null,
+        'reopen_reason'  => $r['reopen_reason'] ?? null,
         'submitted_at'   => date('M d, Y g:i A', strtotime($r['submitted_at'])),
         'session_id'     => !empty($r['session_id']) ? (int)$r['session_id'] : null,
         'session_date'   => !empty($r['session_date']) ? date('M d, Y \a\t h:i A', strtotime($r['session_date'])) : null,
@@ -85,7 +87,23 @@ foreach ($refs as $r) {
         'counselor_name' => trim(($r['counselor_first'] ?? '') . ' ' . ($r['counselor_last'] ?? '')) ?: 'Guidance Staff'
     ]), ENT_QUOTES, 'UTF-8');
 
-    $rows .= "<tr>
+    $searchTokens = [
+        $r['ref_number'],
+        preg_replace('/[^0-9]/', '', $r['ref_number']),
+        $r['student_name'],
+        $r['grade_section'],
+        $rawType,
+        str_replace('_', ' ', $rawType),
+        $type,
+        $r['urgency'],
+        $r['status'],
+        str_replace('_', ' ', $r['status']),
+        $date,
+        substr((string)$r['observations'], 0, 200),
+    ];
+    $searchData = htmlspecialchars(strtolower(implode(' ', array_filter($searchTokens))), ENT_QUOTES);
+
+    $rows .= "<tr class='ref-row' data-search=\"$searchData\">
         <td><strong style='color:var(--maroon)'>{$r['ref_number']}</strong></td>
         <td>".htmlspecialchars($r['student_name'])."</td>
         <td>".htmlspecialchars($r['grade_section'])."</td>
@@ -101,10 +119,7 @@ if (!$rows) $rows = "<tr><td colspan='9' style='text-align:center;color:var(--te
 
 $sqVal = htmlspecialchars($search);
 $sSel1 = $filterStatus==='pending'      ? 'selected' : '';
-$sSel2 = $filterStatus==='under_review' ? 'selected' : '';
-$sSel3 = $filterStatus==='ongoing'      ? 'selected' : '';
 $sSel4 = $filterStatus==='resolved'     ? 'selected' : '';
-$sSel5 = $filterStatus==='closed'       ? 'selected' : '';
 $uSel1 = $filterUrgency==='urgent'      ? 'selected' : '';
 $uSel2 = $filterUrgency==='moderate'    ? 'selected' : '';
 $uSel3 = $filterUrgency==='low'         ? 'selected' : '';
@@ -115,7 +130,7 @@ $content = <<<HTML
     <div>
       <h3 style="margin:0;display:flex;align-items:center;gap:10px;">
         <i class="fas fa-list-alt" style="color:var(--maroon)"></i> My Active Referrals
-        <span style="font-size:13px;font-weight:600;color:var(--text-3);">($activeCount active)</span>
+        <span id="teacherRefsCount" style="font-size:13px;font-weight:600;color:var(--text-3);">($activeCount active)</span>
       </h3>
     </div>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
@@ -132,19 +147,17 @@ $content = <<<HTML
     <div style="display:flex;gap:8px;flex:1;min-width:240px">
       <div class="input-wrap" style="flex:1">
         <i class="fas fa-search"></i>
-        <input type="text" id="searchQ" value="$sqVal" placeholder="Search by student, ref #, or notes…"
-          onkeydown="if(event.key==='Enter')doSearch()"/>
+        <input type="text" id="searchQ" value="$sqVal" placeholder="Search by student, ref #, or notes…" autocomplete="off"
+          oninput="filterReferralsLive(this.value)"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();doSearch();}"/>
       </div>
       <button class="btn-sm-primary" onclick="doSearch()"><i class="fas fa-search"></i> Search</button>
     </div>
 
     <select class="status-select" onchange="applyFilter('status',this.value)">
-      <option value="">Active Only (Pending, Review, Ongoing)</option>
-      <option value="pending"      $sSel1>Pending</option>
-      <option value="under_review" $sSel2>Under Review</option>
-      <option value="ongoing"      $sSel3>Ongoing</option>
-      <option value="resolved"     $sSel4>Resolved</option>
-      <option value="closed"       $sSel5>Closed</option>
+      <option value="">All Status (Active)</option>
+      <option value="pending"  $sSel1>Pending</option>
+      <option value="resolved" $sSel4>Resolved</option>
     </select>
 
     <select class="status-select" onchange="applyFilter('urgency',this.value)">
@@ -177,21 +190,92 @@ HTML;
 
 $content .= '
 <script>
+let refSearchTimer = null;
+
+function syncRefSearchUrl(q) {
+  try {
+    const url = new URL(window.location);
+    if (q) url.searchParams.set("q", q);
+    else url.searchParams.delete("q");
+    window.history.replaceState({}, "", url);
+  } catch (e) {}
+}
+
+function filterReferralsLive(query) {
+  const q = (query || "").trim().toLowerCase();
+  const rows = document.querySelectorAll(".data-table tbody tr.ref-row");
+  const countBadge = document.getElementById("teacherRefsCount");
+  const tbody = document.querySelector(".data-table tbody");
+  if (!tbody) return;
+
+  const existingNoMatch = tbody.querySelector(".live-no-match-row");
+  if (existingNoMatch) existingNoMatch.remove();
+  if (!rows || rows.length === 0) return;
+
+  if (!q) {
+    rows.forEach(r => r.style.display = "");
+    if (countBadge) countBadge.textContent = "(" + rows.length + " active)";
+    clearTimeout(refSearchTimer);
+    refSearchTimer = setTimeout(() => syncRefSearchUrl(""), 300);
+    return;
+  }
+
+  const tokens = q.split(/\s+/).filter(Boolean);
+  let visibleCount = 0;
+  rows.forEach(r => {
+    const hay = r.getAttribute("data-search") || "";
+    const matched = tokens.every(tok => hay.includes(tok));
+    r.style.display = matched ? "" : "none";
+    if (matched) visibleCount++;
+  });
+
+  if (visibleCount === 0) {
+    const tr = document.createElement("tr");
+    tr.className = "live-no-match-row";
+    tr.innerHTML = "<td colspan=\"9\" style=\"text-align:center;color:var(--text-3);padding:40px\">No matching referrals found.</td>";
+    tbody.appendChild(tr);
+  }
+
+  if (countBadge) {
+    countBadge.textContent = "(" + visibleCount + (visibleCount !== rows.length ? " of " + rows.length : "") + " active)";
+  }
+
+  clearTimeout(refSearchTimer);
+  refSearchTimer = setTimeout(() => syncRefSearchUrl(q), 350);
+}
+
 function doSearch() {
-  applyFilter("q", document.getElementById("searchQ").value.trim());
+  const input = document.getElementById("searchQ");
+  const val = input ? input.value.trim() : "";
+  filterReferralsLive(val);
+  syncRefSearchUrl(val);
 }
 
 function applyFilter(key, val) {
   const url = new URL(window.location);
   if (val) url.searchParams.set(key, val); else url.searchParams.delete(key);
+  const q = document.getElementById("searchQ")?.value.trim();
+  if (q) url.searchParams.set("q", q);
   window.location = url;
 }
+
+document.addEventListener("DOMContentLoaded", function() {
+  const input = document.getElementById("searchQ");
+  if (input) {
+    input.addEventListener("input", function() {
+      filterReferralsLive(this.value);
+    });
+    if (input.value.trim()) {
+      filterReferralsLive(input.value.trim());
+    }
+  }
+});
 
 function openRefModal(btn) {
   const ref = JSON.parse(btn.getAttribute("data-ref"));
   const urgMap   = {urgent:"priority-high", moderate:"priority-medium", low:"priority-low"};
-  const statMap  = {pending:"status-pending", under_review:"status-under_review", ongoing:"status-ongoing", resolved:"status-resolved", closed:"status-resolved"};
-  const statLabel = {pending:"Pending", under_review:"Under Review", ongoing:"Ongoing", resolved:"Resolved", closed:"Closed"};
+  const statMap  = {pending:"status-pending", resolved:"status-resolved"};
+  const statLabel = {pending:"Pending", resolved:"Resolved"};
   const typeLabel = ref.concern_type.replace(/_/g," ").replace(/\b\w/g, l=>l.toUpperCase());
 
   document.getElementById("refModalBody").innerHTML = `

@@ -3,25 +3,57 @@ require_once __DIR__ . '/../includes/config.php';
 $user = requireLogin('admin');
 header('Content-Type: application/json');
 
-$id     = (int)($_REQUEST['id']     ?? 0);
-$status = trim($_REQUEST['status']  ?? '');
+$raw = json_decode(file_get_contents('php://input'), true) ?: [];
+$id           = (int)($raw['id'] ?? $_REQUEST['id'] ?? 0);
+$status       = trim($raw['status'] ?? $_REQUEST['status'] ?? '');
+$reopenReason = trim($raw['reopen_reason'] ?? $_REQUEST['reopen_reason'] ?? '');
 if (!$id || !$status) jsonOut(['success'=>false,'message'=>'Missing params.']);
+
+$allowedStatuses = ['pending', 'resolved'];
+if (!in_array($status, $allowedStatuses, true)) {
+    jsonOut(['success'=>false,'message'=>'Invalid referral status selected.']);
+}
 
 try {
     $db = getDB();
-    $ref = $db->query("SELECT * FROM referrals WHERE id=$id")->fetch();
+    ensureReferralNotesTable($db);
+    $refStmt = $db->prepare("SELECT * FROM referrals WHERE id=?");
+    $refStmt->execute([$id]);
+    $ref = $refStmt->fetch();
     if (!$ref) {
         jsonOut(['success'=>false,'message'=>'Referral not found.']);
     }
 
-    $db->prepare("UPDATE referrals SET status=? WHERE id=?")->execute([$status,$id]);
+    $wasArchived = in_array($ref['status'], ['resolved', 'closed'], true);
+    $isReopening = ($wasArchived && $status === 'pending');
+
+    if ($isReopening && mb_strlen($reopenReason) < 5) {
+        jsonOut(['success'=>false,'message'=>'Please provide a reason for reopening this referral (at least 5 characters).'], 400);
+    }
+
+    if ($isReopening) {
+        $db->prepare("UPDATE referrals SET status=?, reopen_reason=?, reopened_at=NOW() WHERE id=?")
+           ->execute([$status, $reopenReason, $id]);
+        try {
+            $db->prepare("INSERT INTO referral_notes (referral_id, author_id, note_type, content, is_visible_to_student, created_at) VALUES (?, ?, 'referral_reopened', ?, 1, NOW())")
+               ->execute([$id, $user['id'], "Referral Reopened by Guidance: " . $reopenReason]);
+        } catch (Exception $ne) {}
+    } else {
+        $db->prepare("UPDATE referrals SET status=? WHERE id=?")->execute([$status, $id]);
+    }
 
     // Send notification to referring teacher
     try {
         $formattedStatus = ucwords(str_replace('_', ' ', $status));
+        $counselorName = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')) ?: 'Guidance Counselor';
         if (!empty($ref['teacher_id'])) {
-            $notifTitle = ($status === 'resolved' || $status === 'closed') ? 'Referral Archived / Resolved' : 'Referral Status Updated';
-            $notifMsg = "Referral #{$ref['ref_number']} for {$ref['student_name']} has been updated to {$formattedStatus} by Guidance.";
+            if ($isReopening) {
+                $notifTitle = "Referral #{$ref['ref_number']} Reopened";
+                $notifMsg = "Referral #{$ref['ref_number']} for {$ref['student_name']} has been reopened to {$formattedStatus} by {$counselorName}.\n\nReason: {$reopenReason}";
+            } else {
+                $notifTitle = ($status === 'resolved') ? 'Referral Archived / Resolved' : 'Referral Status Updated';
+                $notifMsg = "Referral #{$ref['ref_number']} for {$ref['student_name']} has been updated to {$formattedStatus} by Guidance.";
+            }
             $db->prepare("INSERT INTO notifications (user_id, title, message, type) VALUES (?, ?, ?, 'referral')")
                ->execute([$ref['teacher_id'], $notifTitle, $notifMsg]);
         }
@@ -37,14 +69,19 @@ try {
             }
         }
         if ($studentId) {
-            $sTitle = ($status === 'resolved' || $status === 'closed') ? "Teacher Referral #{$ref['ref_number']} Resolved" : "Teacher Referral Status: {$formattedStatus}";
-            $sMsg   = "The guidance referral submitted by your teacher regarding \"{$ref['concern_type']}\" has been marked as {$formattedStatus} by the Guidance Office.";
+            if ($isReopening) {
+                $sTitle = "Teacher Referral #{$ref['ref_number']} Reopened";
+                $sMsg   = "Your teacher referral regarding \"{$ref['concern_type']}\" has been reopened to {$formattedStatus} by {$counselorName}.\n\nReason: {$reopenReason}";
+            } else {
+                $sTitle = ($status === 'resolved') ? "Teacher Referral #{$ref['ref_number']} Resolved" : "Teacher Referral Status: {$formattedStatus}";
+                $sMsg   = "The guidance referral submitted by your teacher regarding \"{$ref['concern_type']}\" has been marked as {$formattedStatus} by the Guidance Office.";
+            }
             $db->prepare("INSERT INTO notifications (user_id, title, message, type) VALUES (?, ?, ?, 'referral')")
                ->execute([$studentId, $sTitle, $sMsg]);
         }
     } catch (Exception $ne) {}
 
-    jsonOut(['success'=>true, 'status'=>$status]);
+    jsonOut(['success'=>true, 'status'=>$status, 'reopened'=>$isReopening]);
 } catch (Exception $e) {
     jsonOut(['success'=>false,'message'=>$e->getMessage()],500);
 }

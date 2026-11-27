@@ -39,13 +39,13 @@ try {
         WHERE id = ?");
     $updateStmt->execute([$now, $user['id'], $sessionId]);
 
-    // Update case / referral status to ongoing if pending or under_review
+    // Update case status to ongoing if pending, and keep referral as pending
     if (!empty($session['case_id']) && in_array($session['case_status'], ['pending', 'under_review'])) {
         $db->prepare("UPDATE cases SET status = 'ongoing', updated_at = NOW() WHERE id = ?")
            ->execute([$session['case_id']]);
     }
     if (!empty($session['referral_id'])) {
-        $db->prepare("UPDATE referrals SET status = 'ongoing' WHERE id = ?")
+        $db->prepare("UPDATE referrals SET status = 'pending' WHERE id = ?")
            ->execute([$session['referral_id']]);
     }
 

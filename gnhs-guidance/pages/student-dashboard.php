@@ -31,7 +31,7 @@ if (!empty($studentFullName)) {
 
 // Stats
 $totalCases  = (int)$db->query("SELECT COUNT(*) FROM cases WHERE student_id=$uid")->fetchColumn();
-$pending     = (int)$db->query("SELECT COUNT(*) FROM cases WHERE student_id=$uid AND status IN ('pending','under_review')")->fetchColumn();
+$pending     = (int)$db->query("SELECT COUNT(*) FROM cases WHERE student_id=$uid AND status IN ('pending','ongoing')")->fetchColumn();
 $resolved    = (int)$db->query("SELECT COUNT(*) FROM cases WHERE student_id=$uid AND status='resolved'")->fetchColumn();
 $unread      = (int)$db->query("SELECT COUNT(*) FROM notifications WHERE user_id=$uid AND is_read=0")->fetchColumn();
 
@@ -74,8 +74,8 @@ $sessStmt->execute([':uid' => $uid, ':fullName' => $studentFullName, ':revFullNa
 $session = $sessStmt->fetch();
 
 function badge(string $status): string {
-    $map = ['pending'=>'status-pending','under_review'=>'status-under_review','ongoing'=>'status-ongoing','resolved'=>'status-resolved','closed'=>'status-resolved'];
-    $label = str_replace('_',' ', ucfirst($status));
+    $map = ['pending'=>'status-pending','ongoing'=>'status-ongoing','resolved'=>'status-resolved'];
+    $label = ucwords(str_replace('_',' ', $status));
     return "<span class='status-badge ".($map[$status]??'status-pending')."'>$label</span>";
 }
 function prioBadge(string $p): string {

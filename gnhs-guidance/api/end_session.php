@@ -237,7 +237,7 @@ try {
             }
         }
         if (!empty($session['referral_id'])) {
-            $db->prepare("UPDATE referrals SET status = 'ongoing' WHERE id = ?")->execute([$session['referral_id']]);
+            $db->prepare("UPDATE referrals SET status = 'pending' WHERE id = ?")->execute([$session['referral_id']]);
             if (!$caseId && $guidanceRec) {
                 ensureReferralNotesTable($db);
                 $db->prepare("INSERT INTO referral_notes (referral_id, author_id, note_type, content, is_visible_to_student, created_at) VALUES (?, ?, 'guidance_recommendation', ?, 1, NOW())")

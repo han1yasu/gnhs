@@ -6,7 +6,7 @@ $db   = getDB();
 
 // Summary stats
 $totalCases   = (int)$db->query("SELECT COUNT(*) FROM cases")->fetchColumn();
-$pendingCases = (int)$db->query("SELECT COUNT(*) FROM cases WHERE status IN ('pending','under_review')")->fetchColumn();
+$pendingCases = (int)$db->query("SELECT COUNT(*) FROM cases WHERE status='pending'")->fetchColumn();
 $resolved     = (int)$db->query("SELECT COUNT(*) FROM cases WHERE status='resolved'")->fetchColumn();
 $highPrio     = (int)$db->query("SELECT COUNT(*) FROM cases WHERE priority='high' AND status NOT IN ('resolved','closed')")->fetchColumn();
 $totalRefs    = (int)$db->query("SELECT COUNT(*) FROM referrals WHERE status='pending'")->fetchColumn();
@@ -17,16 +17,16 @@ $recentCases = $db->query("SELECT c.*,
     CASE WHEN c.is_anonymous=1 THEN 'Anonymous' ELSE CONCAT(s.first_name,' ',s.last_name) END AS student_name,
     CASE WHEN c.is_anonymous=1 THEN 'Confidential' ELSE s.grade_section END AS grade_section
     FROM cases c LEFT JOIN users s ON c.student_id=s.id
-    ORDER BY c.submitted_at DESC LIMIT 8")->fetchAll();
+    ORDER BY c.submitted_at DESC, c.id DESC LIMIT 8")->fetchAll();
 
 // Recent referrals
 $recentRefs = $db->query("SELECT r.*,CONCAT(t.first_name,' ',t.last_name) AS teacher_name
     FROM referrals r JOIN users t ON r.teacher_id=t.id
-    ORDER BY r.submitted_at DESC LIMIT 5")->fetchAll();
+    ORDER BY r.submitted_at DESC, r.id DESC LIMIT 5")->fetchAll();
 
 function badge(string $s): string {
-    $map=['pending'=>'status-pending','under_review'=>'status-under_review','ongoing'=>'status-ongoing','resolved'=>'status-resolved','closed'=>'status-resolved'];
-    return "<span class='status-badge ".($map[$s]??'status-pending')."'>".str_replace('_',' ',ucfirst($s))."</span>";
+    $map=['pending'=>'status-pending','ongoing'=>'status-ongoing','resolved'=>'status-resolved'];
+    return "<span class='status-badge ".($map[$s]??'status-pending')."'>".ucwords(str_replace('_',' ',$s))."</span>";
 }
 function prioBadge(string $p): string {
     $map=['high'=>'priority-high','medium'=>'priority-medium','low'=>'priority-low'];

@@ -2,7 +2,8 @@
 require_once __DIR__ . '/../includes/config.php';
 $user = requireLogin('admin,teacher');
 
-$filename = 'gnhs_students_import_template.csv';
+$scope = ($user['role'] === 'admin' && ($_GET['scope'] ?? '') === 'all') ? 'all' : 'students';
+$filename = $scope === 'all' ? 'gnhs_all_users_import_template.csv' : 'gnhs_students_import_template.csv';
 header('Content-Type: text/csv; charset=UTF-8');
 header('Content-Disposition: attachment; filename="' . $filename . '"');
 header('Pragma: no-cache');
@@ -11,6 +12,28 @@ header('Expires: 0');
 $out = fopen('php://output', 'w');
 // UTF-8 BOM for Microsoft Excel compatibility
 fprintf($out, chr(0xEF).chr(0xBB).chr(0xBF));
+
+if ($scope === 'all') {
+    fputcsv($out, [
+        'role',
+        'position',
+        'first_name',
+        'last_name',
+        'middle_name',
+        'suffix',
+        'id_number',
+        'email',
+        'grade_level',
+        'section',
+        'temporary_password'
+    ]);
+    fputcsv($out, ['student', '', 'Juan', 'Dela Cruz', 'Santos', '', '109283746501', 'juan.delacruz@deped.gov.ph', '9', 'Dalton', 'Student@2026']);
+    fputcsv($out, ['teacher', '', 'Elena', 'Villanueva', '', '', 'EMP-2026-01', 'elena.villanueva@deped.gov.ph', '', '', 'Staff@2026']);
+    fputcsv($out, ['admin', 'Guidance Counselor', 'Maria', 'Santos', '', '', 'GUID-2026-01', 'counselor2@gnhsguidance.com', '', '', 'Staff@2026']);
+    fputcsv($out, ['admin', 'Principal', 'School', 'Principal', '', '', 'ADMIN-PRIN-02', 'principal2@gnhsguidance.com', '', '', 'Staff@2026']);
+    fclose($out);
+    exit;
+}
 
 // Header row - grade_level and section are explicitly separated
 fputcsv($out, [

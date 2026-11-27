@@ -133,15 +133,15 @@ if ($advisoryClass) {
 }
 
 // Recent referrals by this teacher
-$recentRefs = $db->query("SELECT * FROM referrals WHERE teacher_id=$uid ORDER BY submitted_at DESC LIMIT 5")->fetchAll();
+$recentRefs = $db->query("SELECT * FROM referrals WHERE teacher_id=$uid ORDER BY submitted_at DESC, id DESC LIMIT 5")->fetchAll();
 
 function urgencyBadge(string $u): string {
     $map = ['urgent'=>'priority-high','moderate'=>'priority-medium','low'=>'priority-low'];
     return "<span class='priority-badge ".($map[$u]??'priority-low')."'><i class='fas fa-circle'></i> ".ucfirst($u)."</span>";
 }
 function statusBadge(string $s): string {
-    $map = ['pending'=>'status-pending','under_review'=>'status-under_review','ongoing'=>'status-ongoing','resolved'=>'status-resolved'];
-    return "<span class='status-badge ".($map[$s]??'status-pending')."'>".str_replace('_',' ',ucfirst($s))."</span>";
+    $map = ['pending'=>'status-pending','resolved'=>'status-resolved'];
+    return "<span class='status-badge ".($map[$s]??'status-pending')."'>".($s==='resolved'?'Resolved':'Pending')."</span>";
 }
 function prioBadge(string $p): string {
     $map = ['high'=>'priority-high','medium'=>'priority-medium','low'=>'priority-low'];
@@ -358,8 +358,8 @@ $content .= '
 function openRefModal(btn) {
   const ref = JSON.parse(btn.getAttribute("data-ref"));
   const urgMap   = {urgent:"priority-high", moderate:"priority-medium", low:"priority-low"};
-  const statMap  = {pending:"status-pending", under_review:"status-under_review", ongoing:"status-ongoing", resolved:"status-resolved"};
-  const statLabel = {pending:"Pending", under_review:"Under Review", ongoing:"Ongoing", resolved:"Resolved"};
+  const statMap  = {pending:"status-pending", resolved:"status-resolved"};
+  const statLabel = {pending:"Pending", resolved:"Resolved"};
   const typeLabel = ref.concern_type.replace(/_/g," ").replace(/\b\w/g, l=>l.toUpperCase());
 
   document.getElementById("refModalBody").innerHTML =

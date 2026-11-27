@@ -11,7 +11,7 @@ $search        = trim($_GET['q']  ?? '');
 if ($filterStatus) {
     $where = "WHERE r.status='".addslashes($filterStatus)."'";
 } else {
-    // Default to active referrals (not resolved or closed)
+    // Default to active referrals (Pending and Under Review)
     $where = "WHERE r.status NOT IN ('resolved','closed')";
 }
 
@@ -39,9 +39,7 @@ $refs = $db->query("SELECT r.*, CONCAT(t.first_name,' ',t.last_name) AS teacher_
         WHERE referral_id = r.id AND status IN ('scheduled', 'in_progress', 'ongoing') 
         ORDER BY session_date DESC LIMIT 1
     )
-    $where ORDER BY
-    FIELD(r.urgency,'urgent','moderate','low'),
-    r.submitted_at DESC")->fetchAll();
+    $where ORDER BY r.submitted_at DESC, r.id DESC")->fetchAll();
 
 $archivedCount = (int)$db->query("SELECT COUNT(*) FROM referrals WHERE status IN ('resolved','closed')")->fetchColumn();
 $activeCount   = (int)$db->query("SELECT COUNT(*) FROM referrals WHERE status NOT IN ('resolved','closed')")->fetchColumn();
@@ -54,16 +52,20 @@ if (!function_exists('urgencyBadge')) {
 }
 if (!function_exists('statusBadge')) {
     function statusBadge(string $s): string {
-        $map=['pending'=>'status-pending','under_review'=>'status-under_review','ongoing'=>'status-ongoing','resolved'=>'status-resolved','closed'=>'status-resolved'];
-        return "<span class='status-badge ".($map[$s]??'status-pending')."'>".str_replace('_',' ',ucfirst($s))."</span>";
+        $map=['pending'=>'status-pending','resolved'=>'status-resolved'];
+        return "<span class='status-badge ".($map[$s]??'status-pending')."'>".($s==='resolved'?'Resolved':'Pending')."</span>";
     }
 }
 
 // Build rows — pass full data as JSON to onclick
 $rows = '';
 foreach ($refs as $r) {
+    $rawType  = strtolower($r['concern_type']);
     $type     = ucfirst(str_replace('_',' ',$r['concern_type']));
     $date     = date('M d, Y', strtotime($r['submitted_at']));
+    $reopenBadge = !empty($r['reopen_reason'])
+        ? " <span class='badge-witness' style='background:#fdf4ff;color:#7e22ce;border-color:#e9d5ff;margin-left:6px' title='".htmlspecialchars($r['reopen_reason'], ENT_QUOTES)."'><i class='fas fa-undo'></i> Reopened</span>"
+        : '';
     $refData  = json_encode([
         'id'           => (int)$r['id'],
         'ref_number'   => $r['ref_number'],
@@ -74,6 +76,8 @@ foreach ($refs as $r) {
         'status'       => $r['status'],
         'observations' => $r['observations'],
         'ai_summary'   => $r['ai_summary'] ?? null,
+        'reopen_reason'=> $r['reopen_reason'] ?? null,
+        'reopened_at'  => !empty($r['reopened_at']) ? date('M d, Y g:i A', strtotime($r['reopened_at'])) : null,
         'teacher_name' => $r['teacher_name'],
         'teacher_email'=> $r['teacher_email'] ?? '',
         'submitted_at' => date('M d, Y g:i A', strtotime($r['submitted_at'])),
@@ -85,8 +89,26 @@ foreach ($refs as $r) {
         'session_status' => $r['session_status'] ?? null,
     ], JSON_HEX_QUOT | JSON_HEX_APOS);
 
-    $rows .= "<tr>
-        <td><strong style='color:var(--maroon)'>{$r['ref_number']}</strong></td>
+    $searchTokens = [
+        $r['ref_number'],
+        preg_replace('/[^0-9]/', '', $r['ref_number']),
+        $r['student_name'],
+        $r['grade_section'],
+        $rawType,
+        str_replace('_', ' ', $rawType),
+        $type,
+        $r['urgency'],
+        $r['teacher_name'],
+        $r['status'],
+        str_replace('_', ' ', $r['status']),
+        $date,
+        !empty($r['reopen_reason']) ? 'reopened' : '',
+        substr((string)$r['observations'], 0, 200),
+    ];
+    $searchData = htmlspecialchars(strtolower(implode(' ', array_filter($searchTokens))), ENT_QUOTES);
+
+    $rows .= "<tr class='ref-row' data-search=\"$searchData\">
+        <td><strong style='color:var(--maroon)'>{$r['ref_number']}</strong>$reopenBadge</td>
         <td>".htmlspecialchars($r['student_name'])."</td>
         <td>".htmlspecialchars($r['grade_section'])."</td>
         <td>$type</td>
@@ -98,14 +120,11 @@ foreach ($refs as $r) {
           <i class='fas fa-eye'></i> View</button></td>
     </tr>";
 }
-if (!$rows) $rows = "<tr><td colspan='9' style='text-align:center;color:var(--text-3);padding:40px'>".($search ? "No referrals matching \"".htmlspecialchars($search)."\"." : "No referrals found.")."</td></tr>";
+if (!$rows) $rows = "<tr class='no-referrals-row'><td colspan='9' style='text-align:center;color:var(--text-3);padding:40px'>".($search ? "No referrals matching \"".htmlspecialchars($search)."\"." : "No referrals found.")."</td></tr>";
 
 $sqVal = htmlspecialchars($search);
 $ss1 = $filterStatus==='pending'      ? 'selected' : '';
-$ss2 = $filterStatus==='under_review' ? 'selected' : '';
-$ss3 = $filterStatus==='ongoing'      ? 'selected' : '';
 $ss4 = $filterStatus==='resolved'     ? 'selected' : '';
-$ss5 = $filterStatus==='closed'       ? 'selected' : '';
 $su1 = $filterUrgency==='urgent'      ? 'selected' : '';
 $su2 = $filterUrgency==='moderate'    ? 'selected' : '';
 $su3 = $filterUrgency==='low'         ? 'selected' : '';
@@ -116,7 +135,7 @@ $content = <<<HTML
     <div>
       <h3 style="margin:0;display:flex;align-items:center;gap:10px;">
         <i class="fas fa-exchange-alt" style="color:var(--maroon)"></i> Active Referrals
-        <span style="font-size:13px;font-weight:600;color:var(--text-3);">($activeCount active)</span>
+        <span id="activeReferralsCount" style="font-size:13px;font-weight:600;color:var(--text-3);">($activeCount active)</span>
       </h3>
     </div>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
@@ -130,19 +149,17 @@ $content = <<<HTML
     <div style="display:flex;gap:8px;flex:1;min-width:240px">
       <div class="input-wrap" style="flex:1">
         <i class="fas fa-search"></i>
-        <input type="text" id="searchQ" value="$sqVal" placeholder="Search referrals by student, teacher, ref #…"
-          onkeydown="if(event.key==='Enter')doSearch()"/>
+        <input type="text" id="searchQ" value="$sqVal" placeholder="Search referrals by student, teacher, ref #…" autocomplete="off"
+          oninput="filterReferralsLive(this.value)"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();doSearch();}"/>
       </div>
       <button class="btn-sm-primary" onclick="doSearch()"><i class="fas fa-search"></i> Search</button>
     </div>
 
     <select class="status-select" onchange="applyFilter('status',this.value)">
-      <option value="">Active Only (Pending, Review, Ongoing)</option>
-      <option value="pending"      $ss1>Pending</option>
-      <option value="under_review" $ss2>Under Review</option>
-      <option value="ongoing"      $ss3>Ongoing</option>
-      <option value="resolved"     $ss4>Resolved</option>
-      <option value="closed"       $ss5>Closed</option>
+      <option value="">All Status (Active)</option>
+      <option value="pending"  $ss1>Pending</option>
+      <option value="resolved" $ss4>Resolved</option>
     </select>
 
     <select class="status-select" onchange="applyFilter('urgency',this.value)">
@@ -232,26 +249,131 @@ HTML;
 
 // JS is outside heredoc to prevent PHP variable interpolation issues
 $content .= '
+<div class="modal-overlay hidden" id="archiveRefConfirmModal" style="z-index:100020" onclick="if(event.target.id===\'archiveRefConfirmModal\')this.classList.add(\'hidden\')">
+  <div class="modal-box" style="max-width:440px;text-align:center;padding:28px 24px">
+    <button class="modal-close" onclick="document.getElementById(\'archiveRefConfirmModal\').classList.add(\'hidden\')"><i class="fas fa-times"></i></button>
+    <div style="width:56px;height:56px;border-radius:16px;background:#dcfce7;color:#16a34a;display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 14px">
+      <i class="fas fa-check-circle"></i>
+    </div>
+    <h3 style="margin:0 0 8px;font-size:18px;font-weight:800;color:var(--text)">Resolve &amp; Archive Referral</h3>
+    <p style="font-size:13.5px;color:var(--text-2);line-height:1.5;margin-bottom:20px">Are you sure you want to mark this referral as <strong>Resolved</strong> and move it to the Referrals Archive?</p>
+    <input type="hidden" id="archiveConfirmRefId" value="">
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button type="button" class="btn-secondary" style="flex:1" onclick="document.getElementById(\'archiveRefConfirmModal\').classList.add(\'hidden\')">Cancel</button>
+      <button type="button" class="btn-primary" id="btnConfirmArchiveRef" style="flex:1;background:#16a34a;border-color:#15803d" onclick="confirmArchiveReferralDirect()"><i class="fas fa-check"></i> Resolve &amp; Archive</button>
+    </div>
+  </div>
+</div>
+
 <script>
+let refSearchTimer = null;
+
+function escapeRefHtml(str) {
+  if (!str) return "";
+  return String(str).replace(/[&<>"\x27]/g, function(m) {
+    return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","\x27":"&#39;"}[m];
+  });
+}
+
+function syncRefSearchUrl(q) {
+  try {
+    const url = new URL(window.location);
+    if (q) url.searchParams.set("q", q);
+    else url.searchParams.delete("q");
+    window.history.replaceState({}, "", url);
+  } catch (e) {}
+}
+
+function filterReferralsLive(query) {
+  const q = (query || "").trim().toLowerCase();
+  const rows = document.querySelectorAll(".data-table tbody tr.ref-row");
+  const countBadge = document.getElementById("activeReferralsCount");
+  const tbody = document.querySelector(".data-table tbody");
+  if (!tbody) return;
+
+  const existingNoMatch = tbody.querySelector(".live-no-match-row");
+  if (existingNoMatch) existingNoMatch.remove();
+  if (!rows || rows.length === 0) return;
+
+  if (!q) {
+    rows.forEach(r => r.style.display = "");
+    if (countBadge) countBadge.textContent = "(" + rows.length + " active)";
+    clearTimeout(refSearchTimer);
+    refSearchTimer = setTimeout(() => syncRefSearchUrl(""), 300);
+    return;
+  }
+
+  const tokens = q.split(/\s+/).filter(Boolean);
+  let visibleCount = 0;
+  rows.forEach(r => {
+    const hay = r.getAttribute("data-search") || "";
+    const matched = tokens.every(tok => hay.includes(tok));
+    r.style.display = matched ? "" : "none";
+    if (matched) visibleCount++;
+  });
+
+  if (visibleCount === 0) {
+    const tr = document.createElement("tr");
+    tr.className = "live-no-match-row";
+    tr.innerHTML = "<td colspan=\"9\" style=\"text-align:center;color:var(--text-3);padding:40px\">" +
+      "<i class=\"fas fa-search\" style=\"margin-right:8px;opacity:0.5\"></i>No referrals matching \"<strong>" + escapeRefHtml(query) + "</strong>\".</td>";
+    tbody.appendChild(tr);
+  }
+
+  if (countBadge) {
+    countBadge.textContent = "(" + visibleCount + (visibleCount !== rows.length ? " of " + rows.length : "") + " active)";
+  }
+
+  clearTimeout(refSearchTimer);
+  refSearchTimer = setTimeout(() => syncRefSearchUrl(q), 350);
+}
+
 function doSearch() {
-  applyFilter("q", document.getElementById("searchQ").value.trim());
+  const input = document.getElementById("searchQ");
+  const val = input ? input.value.trim() : "";
+  filterReferralsLive(val);
+  syncRefSearchUrl(val);
 }
 
 function applyFilter(key, val) {
   const url = new URL(window.location);
   if (val) url.searchParams.set(key, val); else url.searchParams.delete(key);
+  const q = document.getElementById("searchQ")?.value.trim();
+  if (q) url.searchParams.set("q", q);
   window.location = url;
 }
+
+document.addEventListener("DOMContentLoaded", function() {
+  const input = document.getElementById("searchQ");
+  if (input) {
+    input.addEventListener("input", function() {
+      filterReferralsLive(this.value);
+    });
+    if (input.value.trim()) {
+      filterReferralsLive(input.value.trim());
+    }
+  }
+});
 
 function openRefModal(btn) {
   const ref = JSON.parse(btn.getAttribute("data-ref"));
   const urgMap   = {urgent:"priority-high", moderate:"priority-medium", low:"priority-low"};
-  const statLabel = {pending:"Pending", under_review:"Under Review", ongoing:"Ongoing", resolved:"Resolved", closed:"Closed"};
+  const statLabel = {pending:"Pending", resolved:"Resolved"};
   const typeLabel = ref.concern_type.replace(/_/g," ").replace(/\b\w/g, l=>l.toUpperCase());
 
-  const selOpts = ["pending","under_review","ongoing","resolved","closed"].map(s =>
-    "<option value=\""+s+"\""+(s===ref.status?" selected":"")+">"+statLabel[s]+"</option>"
+  const currentSt = ["pending","resolved"].includes(ref.status) ? ref.status : "pending";
+  const selOpts = ["pending","resolved"].map(s =>
+    "<option value=\""+s+"\""+(s===currentSt?" selected":"")+">"+statLabel[s]+"</option>"
   ).join("");
+
+  const reopenBanner = ref.reopen_reason ? `
+    <div style="background:#fdf4ff;border:1.5px solid #d8b4fe;border-radius:8px;padding:12px 16px;margin-bottom:18px;display:flex;align-items:flex-start;gap:12px">
+      <div style="width:34px;height:34px;border-radius:50%;background:#a855f7;color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0"><i class="fas fa-undo"></i></div>
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:800;color:#7e22ce;text-transform:uppercase;letter-spacing:0.5px">Reopened by Guidance Counselor ${ref.reopened_at ? `(${escapeRefHtml(ref.reopened_at)})` : ""}</div>
+        <div style="font-size:13.5px;color:#581c87;margin-top:4px;line-height:1.5"><strong>Reason:</strong> ${escapeRefHtml(ref.reopen_reason)}</div>
+      </div>
+    </div>` : "";
 
   document.getElementById("refModalBody").innerHTML = `
     <div class="review-header-strip" style="display:flex;flex-wrap:wrap;gap:15px;background:var(--bg2);padding:15px;border-radius:8px;margin-bottom:20px;border:1px solid var(--border)">
@@ -261,7 +383,7 @@ function openRefModal(btn) {
       <div style="flex:1.5;min-width:130px"><label style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Grade/Sec</label><span style="font-size:14px">${ref.grade_section}</span></div>
       <div style="flex:1.5;min-width:130px"><label style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Submitted</label><span style="font-size:13px;color:var(--text-2)">${ref.submitted_at}</span></div>
     </div>
-    
+    ${reopenBanner}
     <div class="review-grid" style="display:grid;grid-template-columns: 1.2fr 1fr; gap:25px; align-items:start">
       <div>
         ${ref.ai_summary ? `<div class="ai-box" style="margin-bottom:20px;border-left:4px solid var(--blue);background:rgba(37,99,235,0.05)"><div class="ai-box-label" style="color:var(--blue);font-size:14px;margin-bottom:8px"><i class="fas fa-magic"></i> AI Summary</div><div class="ai-box-text" style="font-size:15px;line-height:1.6">${ref.ai_summary}</div></div>` : \'\'}
@@ -342,7 +464,7 @@ async function updateRefStatus(id) {
     const r = await fetch(refApiUrl("update_referral.php?id="+id+"&status="+encodeURIComponent(status)+"&_t="+Date.now()), { cache: "no-store" });
     const d = await r.json();
     if (d.success) {
-      if (status === "resolved" || status === "closed") {
+      if (status === "resolved") {
         showToast("Referral resolved and moved to Referrals Archive!","success");
       } else {
         showToast("Referral status updated!","success");
@@ -359,20 +481,35 @@ async function updateRefStatus(id) {
   }
 }
 
-async function archiveReferralDirect(id) {
-  if (!confirm("Are you sure you want to resolve and archive this referral?")) return;
+function archiveReferralDirect(id) {
+  const inp = document.getElementById("archiveConfirmRefId");
+  const modal = document.getElementById("archiveRefConfirmModal");
+  if (inp && modal) {
+    inp.value = id;
+    modal.classList.remove("hidden");
+  }
+}
+
+async function confirmArchiveReferralDirect() {
+  const id = document.getElementById("archiveConfirmRefId")?.value;
+  const btn = document.getElementById("btnConfirmArchiveRef");
+  if (!id) return;
+  if (btn) btn.disabled = true;
   try {
     const r = await fetch(refApiUrl("update_referral.php?id="+id+"&status=resolved&_t="+Date.now()), { cache: "no-store" });
     const d = await r.json();
     if (d.success) {
       showToast("Referral marked as resolved and moved to archive!", "success");
+      document.getElementById("archiveRefConfirmModal").classList.add("hidden");
       document.getElementById("refModal").classList.add("hidden");
       setTimeout(() => window.location.reload(), 150);
     } else {
       showToast(d.message || "Failed to archive referral.", "error");
+      if (btn) btn.disabled = false;
     }
   } catch(e) {
     showToast("Error archiving referral.", "error");
+    if (btn) btn.disabled = false;
   }
 }
 

@@ -33,8 +33,8 @@ $refStmt->execute([':uid' => $user['id'], ':fullName' => $studentFullName, ':rev
 $archivedRefs = $refStmt->fetchAll();
 
 function badge(string $s): string {
-    $map=['pending'=>'status-pending','under_review'=>'status-under_review','ongoing'=>'status-ongoing','resolved'=>'status-resolved','closed'=>'status-resolved'];
-    return "<span class='status-badge ".($map[$s]??'status-resolved')."'>".str_replace('_',' ',ucfirst($s))."</span>";
+    $map=['pending'=>'status-pending','ongoing'=>'status-ongoing','resolved'=>'status-resolved'];
+    return "<span class='status-badge ".($map[$s]??'status-resolved')."'>".ucwords(str_replace('_',' ',$s))."</span>";
 }
 function prioBadge(string $p): string {
     $map=['high'=>'priority-high','medium'=>'priority-medium','low'=>'priority-low'];

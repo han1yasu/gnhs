@@ -39,7 +39,7 @@ function getDB(): PDO {
         } catch(Exception $e) {}
 
         // Run heavy schema/data migrations only once per environment
-        $schemaFlag = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'gnhs_schema_v2_' . md5(__DIR__ . DB_NAME) . '.flag';
+        $schemaFlag = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'gnhs_schema_v3_' . md5(__DIR__ . DB_NAME) . '.flag';
         if (!file_exists($schemaFlag)) {
         // Ensure database timestamps match Philippine Standard Time (PHT, UTC+8)
         try {
@@ -85,6 +85,34 @@ function getDB(): PDO {
         try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS security_answer_2 VARCHAR(255) DEFAULT NULL"); } catch(Exception $e){}
         try { $pdo->exec("ALTER TABLE cases ADD COLUMN IF NOT EXISTS is_against_adviser TINYINT(1) DEFAULT 0"); } catch(Exception $e){}
         try { $pdo->exec("ALTER TABLE cases ADD COLUMN IF NOT EXISTS reported_teacher_name VARCHAR(255) DEFAULT NULL"); } catch(Exception $e){}
+        try { $pdo->exec("ALTER TABLE cases ADD COLUMN IF NOT EXISTS reopen_reason TEXT DEFAULT NULL"); } catch(Exception $e){}
+        try { $pdo->exec("ALTER TABLE cases ADD COLUMN IF NOT EXISTS reopened_at DATETIME DEFAULT NULL"); } catch(Exception $e){}
+        try { $pdo->exec("ALTER TABLE referrals ADD COLUMN IF NOT EXISTS reopen_reason TEXT DEFAULT NULL"); } catch(Exception $e){}
+        try { $pdo->exec("ALTER TABLE referrals ADD COLUMN IF NOT EXISTS reopened_at DATETIME DEFAULT NULL"); } catch(Exception $e){}
+        try { ensureReferralNotesTable($pdo); } catch(Exception $e){}
+        try {
+            $m2 = $pdo->query("SELECT 1 FROM system_migrations WHERE migration_key = 'cleanup_statuses_and_admins_v2'")->fetch();
+            if (!$m2) {
+                $pdo->exec("UPDATE cases SET status='ongoing' WHERE status='under_review'");
+                $pdo->exec("UPDATE referrals SET status='pending' WHERE status IN ('under_review','ongoing')");
+                $pdo->exec("UPDATE referrals SET status='resolved' WHERE status='closed'");
+                $pdo->exec("UPDATE users SET position='Guidance Counselor' WHERE role='admin' AND (position IS NULL OR TRIM(position)='')");
+                require_once __DIR__ . '/../src/PureOTP.php';
+                $seedAdmins = [
+                    ['School', 'Principal', 'principal@gnhsguidance.com', 'ADMIN-PRINCIPAL-01', 'Principal@2026', 'Principal', 'SP'],
+                    ['System', 'Developer', 'developer@gnhsguidance.com', 'ADMIN-DEV-01', 'Developer@2026', 'Developer', 'SD'],
+                ];
+                foreach ($seedAdmins as $sa) {
+                    $chk = $pdo->prepare("SELECT id FROM users WHERE LOWER(email)=LOWER(?) OR id_number=? LIMIT 1");
+                    $chk->execute([$sa[2], $sa[3]]);
+                    if (!$chk->fetch()) {
+                        $ins = $pdo->prepare("INSERT INTO users (first_name, last_name, email, id_number, password, role, position, avatar_initials, totp_secret, totp_enabled, is_setup_complete, is_active) VALUES (?, ?, ?, ?, ?, 'admin', ?, ?, ?, 0, 1, 1)");
+                        $ins->execute([$sa[0], $sa[1], $sa[2], $sa[3], password_hash($sa[4], PASSWORD_BCRYPT), $sa[5], $sa[6], PureOTP::generateSecret(16)]);
+                    }
+                }
+                $pdo->exec("INSERT INTO system_migrations (migration_key, migrated_at) VALUES ('cleanup_statuses_and_admins_v2', NOW())");
+            }
+        } catch(Exception $e){}
         try { $pdo->exec("ALTER TABLE case_messages ADD COLUMN IF NOT EXISTS read_at DATETIME DEFAULT NULL"); } catch(Exception $e){}
         try { $pdo->exec("ALTER TABLE referral_messages ADD COLUMN IF NOT EXISTS read_at DATETIME DEFAULT NULL"); } catch(Exception $e){}
         try {

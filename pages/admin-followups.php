@@ -43,20 +43,19 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['action'])) {
         exit;
     } elseif ($_POST['action'] === 'reopen_case') {
         $counselorResponse = trim($_POST['counselor_response'] ?? '');
-        $db->prepare("UPDATE cases SET status='pending', is_follow_up=0, updated_at=NOW() WHERE id=?")->execute([$caseId]);
-        
-        if (!empty($counselorResponse)) {
-            $db->prepare("INSERT INTO case_notes (case_id, author_id, note_type, content, is_visible_to_student, created_at) VALUES (?, ?, 'case_reopened', ?, 1, NOW())")
-               ->execute([$caseId, $user['id'], "Case Reopened upon Appeal: " . $counselorResponse]);
+        if (mb_strlen($counselorResponse) < 5) {
+            $counselorResponse = 'Reopened by Guidance Counselor after appeal review.';
         }
+        $db->prepare("UPDATE cases SET status='pending', is_follow_up=0, reopen_reason=?, reopened_at=NOW(), updated_at=NOW() WHERE id=?")
+           ->execute([$counselorResponse, $caseId]);
+        
+        $db->prepare("INSERT INTO case_notes (case_id, author_id, note_type, content, is_visible_to_student, created_at) VALUES (?, ?, 'case_reopened', ?, 1, NOW())")
+           ->execute([$caseId, $user['id'], "Case Reopened upon Appeal: " . $counselorResponse]);
         
         // Notify student that their appeal has been accepted and case is reopened
         if ($cRow && !empty($cRow['student_id'])) {
             $notifTitle = "Case Reopened: Case #{$cRow['case_number']}";
-            $notifMsg = "Your appeal for Case #{$cRow['case_number']} has been accepted by the Guidance Counselor. The case is now active under review.";
-            if (!empty($counselorResponse)) {
-                $notifMsg .= "\n\nCounselor Note: \"{$counselorResponse}\"";
-            }
+            $notifMsg = "Your appeal for Case #{$cRow['case_number']} has been accepted by the Guidance Counselor. The case is now active under Pending status.\n\nReopen Reason: \"{$counselorResponse}\"";
             $db->prepare("INSERT INTO notifications (user_id, title, message, type, is_read, created_at) VALUES (?, ?, ?, 'case_update', 0, NOW())")
                ->execute([$cRow['student_id'], $notifTitle, $notifMsg]);
             header('Location: admin-cases.php?reopened=1&case=' . urlencode($cRow['case_number']));
@@ -163,15 +162,29 @@ ob_start();
       <div style="background:#fef2f2;padding:14px;border-radius:8px;border:1.5px solid #fecaca;font-size:13.5px;color:#7f1d1d;line-height:1.5" id="vMessage"></div>
     </div>
     
-    <form method="POST">
+    <form method="POST" id="followupActionForm">
       <input type="hidden" name="case_id" id="vCaseId">
-      <div style="margin-bottom:16px;">
-        <label style="font-size:12px;font-weight:700;color:var(--text-2);text-transform:uppercase;display:block;margin-bottom:4px">Counselor Remarks / Feedback to Student (Optional)</label>
-        <textarea name="counselor_response" id="vResponse" rows="3" class="form-control" style="width:100%;padding:10px;border-radius:8px;border:1.5px solid var(--border);font-size:13.5px;box-sizing:border-box" placeholder="Add remarks or explanation for the student regarding this follow-up appeal..."></textarea>
+      <div id="followupErrMsg" class="error-msg" style="display:none;margin-bottom:12px"></div>
+      <div id="followupMainStep">
+        <div style="margin-bottom:16px;">
+          <label style="font-size:12px;font-weight:700;color:var(--text-2);text-transform:uppercase;display:block;margin-bottom:4px">Counselor Reason / Remarks <span class="req">*</span></label>
+          <textarea name="counselor_response" id="vResponse" rows="3" class="form-control" style="width:100%;padding:10px;border-radius:8px;border:1.5px solid var(--border);font-size:13.5px;box-sizing:border-box" placeholder="Enter your reason for reopening or remarks for this appeal..."></textarea>
+        </div>
+        <div style="display:flex;gap:12px;">
+          <button type="button" onclick="openFollowupReopenConfirm()" class="btn-primary" style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px"><i class="fas fa-folder-open"></i> Re-open Case (Pending)</button>
+          <button type="submit" name="action" value="resolve_followup" class="btn-secondary" style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px"><i class="fas fa-check"></i> Mark Addressed</button>
+        </div>
       </div>
-      <div style="display:flex;gap:12px;">
-        <button type="submit" name="action" value="reopen_case" class="btn-primary" style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px"><i class="fas fa-folder-open"></i> Re-open Case (Pending)</button>
-        <button type="submit" name="action" value="resolve_followup" class="btn-secondary" style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px"><i class="fas fa-check"></i> Mark Addressed</button>
+      <div id="followupConfirmStep" style="display:none">
+        <div style="background:#fdf4ff;border:1.5px solid #d8b4fe;border-radius:10px;padding:14px;margin-bottom:16px">
+          <div style="font-size:12px;font-weight:800;color:#7e22ce;text-transform:uppercase;margin-bottom:6px"><i class="fas fa-check-double"></i> Confirm Reopening Case</div>
+          <div style="font-size:13px;color:var(--text);margin-bottom:6px"><strong>Reason to be recorded &amp; sent to student:</strong></div>
+          <div id="vConfirmReasonPreview" style="font-size:13px;background:#fff;padding:8px 10px;border-radius:6px;border:1px solid #e9d5ff;color:#581c87;white-space:pre-wrap"></div>
+        </div>
+        <div style="display:flex;gap:12px;">
+          <button type="button" onclick="cancelFollowupReopenConfirm()" class="btn-secondary" style="flex:1">&larr; Back</button>
+          <button type="submit" name="action" value="reopen_case" class="btn-primary" style="flex:1;background:#7e22ce;border-color:#6b21a8"><i class="fas fa-folder-open"></i> Confirm &amp; Reopen</button>
+        </div>
       </div>
     </form>
   </div>
@@ -185,7 +198,32 @@ function viewFollowUp(data) {
     document.getElementById('vMessage').textContent = data.follow_up_msg || '(No explanation)';
     const respEl = document.getElementById('vResponse');
     if (respEl) respEl.value = '';
+    const errEl = document.getElementById('followupErrMsg');
+    if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+    cancelFollowupReopenConfirm();
     document.getElementById('viewModal').classList.remove('hidden');
+}
+
+function openFollowupReopenConfirm() {
+    const reason = (document.getElementById('vResponse')?.value || '').trim();
+    const errEl = document.getElementById('followupErrMsg');
+    if (reason.length < 5) {
+        if (errEl) {
+            errEl.textContent = 'Please enter the counselor reason for reopening this case (at least 5 characters).';
+            errEl.style.display = 'block';
+        }
+        document.getElementById('vResponse')?.focus();
+        return;
+    }
+    if (errEl) errEl.style.display = 'none';
+    document.getElementById('vConfirmReasonPreview').textContent = reason;
+    document.getElementById('followupMainStep').style.display = 'none';
+    document.getElementById('followupConfirmStep').style.display = 'block';
+}
+
+function cancelFollowupReopenConfirm() {
+    document.getElementById('followupMainStep').style.display = 'block';
+    document.getElementById('followupConfirmStep').style.display = 'none';
 }
 </script>
 <?php

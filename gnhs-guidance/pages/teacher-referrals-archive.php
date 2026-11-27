@@ -32,19 +32,20 @@ $refs = $db->query("SELECT r.*,
         ORDER BY session_date DESC LIMIT 1
     )
     LEFT JOIN users u ON cs.counselor_id = u.id
-    $where ORDER BY r.submitted_at DESC")->fetchAll();
+    $where ORDER BY r.submitted_at DESC, r.id DESC")->fetchAll();
 
 function urgencyBadge(string $u): string {
     $map = ['urgent'=>'priority-high','moderate'=>'priority-medium','low'=>'priority-low'];
     return "<span class='priority-badge ".($map[$u]??'priority-low')."'><i class='fas fa-circle'></i>".ucfirst($u)."</span>";
 }
 function statusBadge(string $s): string {
-    $map=['resolved'=>'status-resolved','closed'=>'status-resolved'];
+    $map=['resolved'=>'status-resolved'];
     return "<span class='status-badge ".($map[$s]??'status-resolved')."'>".ucfirst($s)."</span>";
 }
 
 $rows = '';
 foreach ($refs as $r) {
+    $rawType = strtolower($r['concern_type']);
     $type = ucfirst(str_replace('_',' ',$r['concern_type']));
     $date = date('M d, Y', strtotime($r['submitted_at']));
     $refData = htmlspecialchars(json_encode([
@@ -65,7 +66,21 @@ foreach ($refs as $r) {
         'counselor_name' => trim(($r['counselor_first'] ?? '') . ' ' . ($r['counselor_last'] ?? '')) ?: 'Guidance Staff',
         'session_recommendations' => $r['session_recommendations'] ?? ''
     ]), ENT_QUOTES, 'UTF-8');
-    $rows .= "<tr>
+    $searchTokens = [
+        $r['ref_number'],
+        preg_replace('/[^0-9]/', '', $r['ref_number']),
+        $r['student_name'],
+        $r['grade_section'],
+        $rawType,
+        str_replace('_', ' ', $rawType),
+        $type,
+        $r['urgency'],
+        $r['status'],
+        $date,
+        substr((string)$r['observations'], 0, 200),
+    ];
+    $searchData = htmlspecialchars(strtolower(implode(' ', array_filter($searchTokens))), ENT_QUOTES);
+    $rows .= "<tr class='ref-row' data-search=\"$searchData\">
         <td><strong style='color:var(--maroon)'>{$r['ref_number']}</strong></td>
         <td>".htmlspecialchars($r['student_name'])."</td>
         <td>".htmlspecialchars($r['grade_section'])."</td>
@@ -115,15 +130,16 @@ $content = <<<HTML
 
   <div style="background:var(--maroon-pale);border:1px solid var(--maroon-tint);border-radius:10px;padding:12px 16px;margin:16px 0;font-size:13px;color:var(--maroon);display:flex;align-items:center;gap:10px">
     <i class="fas fa-info-circle"></i>
-    <span>These are referrals you previously submitted that have been marked as <strong>Resolved</strong> or <strong>Closed</strong> by the Guidance Office.</span>
+    <span>These are referrals you previously submitted that have been marked as <strong>Resolved</strong> by the Guidance Office.</span>
   </div>
 
   <div class="filter-bar" style="margin-bottom:18px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
     <div style="display:flex;gap:8px;flex:1;min-width:240px">
       <div class="input-wrap" style="flex:1">
         <i class="fas fa-search"></i>
-        <input type="text" id="searchQ" value="$sqVal" placeholder="Search by student, ref #, or notes…"
-          onkeydown="if(event.key==='Enter')doSearch()"/>
+        <input type="text" id="searchQ" value="$sqVal" placeholder="Search by student, ref #, or notes…" autocomplete="off"
+          oninput="filterTeacherArchLive(this.value)"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();doSearch();}"/>
       </div>
       <button class="btn-sm-primary" onclick="doSearch()"><i class="fas fa-search"></i> Search</button>
     </div>
@@ -181,8 +197,39 @@ HTML;
 
 $content .= '
 <script>
+let tArchTimer = null;
+
+function filterTeacherArchLive(query) {
+  const q = (query || "").trim().toLowerCase();
+  const rows = document.querySelectorAll(".data-table tbody tr.ref-row");
+  const tbody = document.querySelector(".data-table tbody");
+  if (!tbody) return;
+  const oldEmpty = tbody.querySelector(".live-no-match-row");
+  if (oldEmpty) oldEmpty.remove();
+  if (!rows || rows.length === 0) return;
+  if (!q) {
+    rows.forEach(r => r.style.display = "");
+    return;
+  }
+  const tokens = q.split(/\s+/).filter(Boolean);
+  let visible = 0;
+  rows.forEach(r => {
+    const hay = r.getAttribute("data-search") || "";
+    const ok = tokens.every(tok => hay.includes(tok));
+    r.style.display = ok ? "" : "none";
+    if (ok) visible++;
+  });
+  if (visible === 0) {
+    const tr = document.createElement("tr");
+    tr.className = "live-no-match-row";
+    tr.innerHTML = "<td colspan=\"8\" style=\"text-align:center;color:var(--text-3);padding:40px\">No matching archived referrals found.</td>";
+    tbody.appendChild(tr);
+  }
+}
+
 function doSearch() {
-  applyFilter("q", document.getElementById("searchQ").value.trim());
+  const val = document.getElementById("searchQ").value.trim();
+  filterTeacherArchLive(val);
 }
 
 function applyFilter(key, val) {
@@ -190,6 +237,14 @@ function applyFilter(key, val) {
   if (val) url.searchParams.set(key, val); else url.searchParams.delete(key);
   window.location = url;
 }
+
+document.addEventListener("DOMContentLoaded", function() {
+  const inp = document.getElementById("searchQ");
+  if (inp) {
+    inp.addEventListener("input", function() { filterTeacherArchLive(this.value); });
+    if (inp.value.trim()) filterTeacherArchLive(inp.value.trim());
+  }
+});
 
 function openRefModal(btn) {
   const ref = JSON.parse(btn.getAttribute("data-ref"));

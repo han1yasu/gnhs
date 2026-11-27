@@ -13,5 +13,7 @@ putenv('DB_USER=u123456789_gnhs_user');
 putenv('DB_PASS=YourStrongHostingerDbPassword');
 putenv('DB_NAME=u123456789_gnhs_db');
 
-// Google Gemini API Key for AI Summarization & Resolution Suggestions
+// Google Gemini API Keys for AI Summarization & Resolution Suggestions
+// Primary key (tried first), followed by backup key if primary hits quota/limit
 putenv('GEMINI_API_KEY=YOUR_GEMINI_API_KEY_HERE');
+putenv('GEMINI_API_KEY_BACKUP=YOUR_BACKUP_GEMINI_API_KEY_HERE');

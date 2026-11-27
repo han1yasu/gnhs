@@ -15,9 +15,13 @@ $meetingLink = trim($raw['meeting_link'] ?? '');
 $resolution        = trim($raw['resolution'] ?? '');
 $resolutionProcess = trim($raw['resolution_process'] ?? '');
 $sanctions         = trim($raw['sanctions'] ?? '');
+$reopenReason      = trim($raw['reopen_reason'] ?? '');
 $completeSessions  = filter_var($raw['complete_sessions'] ?? true, FILTER_VALIDATE_BOOLEAN);
 
 if (!$caseId) jsonOut(['success'=>false,'message'=>'Case ID required.']);
+if ($status && !in_array($status, ['pending', 'ongoing', 'resolved'], true)) {
+    jsonOut(['success'=>false,'message'=>'Invalid case status selected.'], 400);
+}
 
 try {
     $db = getDB();
@@ -114,31 +118,46 @@ try {
         ]);
     }
 
-    // ── IF OTHER STATUS: Normal priority & status update ──
+    // ── IF OTHER STATUS: Check Reopen or Normal priority & status update ──
+    $wasArchived = in_array($oldStatus, ['resolved', 'closed'], true);
+    $isReopening = ($wasArchived && in_array($status, ['pending', 'ongoing'], true));
+    if ($isReopening && mb_strlen($reopenReason) < 5) {
+        jsonOut(['success' => false, 'message' => 'Please enter a reason for reopening this case (at least 5 characters).'], 400);
+    }
+
     $updates = []; $params = [];
     if ($priority) { $updates[]='priority=?'; $params[]=$priority; }
     if ($status)   { $updates[]='status=?';   $params[]=$status;   }
+    if ($isReopening) {
+        $updates[] = 'reopen_reason=?';
+        $params[]  = $reopenReason;
+        $updates[] = 'reopened_at=NOW()';
+        $updates[] = 'is_follow_up=0';
+    }
     if ($updates) {
         $updates[] = 'updated_at=NOW()';
         $params[] = $caseId;
         $db->prepare("UPDATE cases SET ".implode(',',$updates)." WHERE id=?")->execute($params);
     }
 
+    if ($isReopening) {
+        $db->prepare("INSERT INTO case_notes (case_id, author_id, note_type, content, is_visible_to_student, created_at) VALUES (?, ?, 'case_reopened', ?, 1, NOW())")
+           ->execute([$caseId, $user['id'], "Case Reopened by Counselor {$counselorName}: " . $reopenReason]);
+    }
+
     $statusLabels = [
-        'pending'      => 'Pending',
-        'under_review' => 'Under Review',
-        'ongoing'      => 'Ongoing',
-        'resolved'     => 'Resolved',
-        'closed'       => 'Closed'
+        'pending'  => 'Pending',
+        'ongoing'  => 'Ongoing',
+        'resolved' => 'Resolved'
     ];
     $newStatusLabel = $statusLabels[$status] ?? ucfirst(str_replace('_', ' ', $status));
     $oldStatusLabel = $statusLabels[$oldStatus] ?? ucfirst(str_replace('_', ' ', $oldStatus));
 
     // Send status notification to student
     if ($studentId && $status && ($status !== $oldStatus || empty($session))) {
-        if ($status === 'under_review') {
-            $statusTitle = 'Case Status Updated: Under Review';
-            $statusMsg   = "Your case #{$caseNumber} (\"{$caseSubject}\") has been reviewed by Counselor {$counselorName} and its status has been updated to Under Review.\n\nThe guidance office is currently reviewing the details of your concern and preparing the appropriate guidance interventions.";
+        if ($isReopening) {
+            $statusTitle = "Case #{$caseNumber} Reopened";
+            $statusMsg   = "Your previously resolved case #{$caseNumber} (\"{$caseSubject}\") has been reopened to {$newStatusLabel} by Counselor {$counselorName}.\n\n• Reason for Reopening:\n{$reopenReason}";
         } else if ($status === 'ongoing') {
             $statusTitle = 'Case Status Updated: Ongoing';
             $statusMsg   = "Your case #{$caseNumber} (\"{$caseSubject}\") status has been set to Ongoing by Counselor {$counselorName}.\n\nGuidance interventions and support actions are actively in progress.";

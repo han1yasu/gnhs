@@ -83,9 +83,9 @@ try {
     ]);
     $newSessionId = (int)$db->lastInsertId();
 
-    // Update referral status to ongoing if it was pending or under_review
-    if (in_array($referral['status'], ['pending', 'under_review'])) {
-        $db->prepare("UPDATE referrals SET status = 'ongoing' WHERE id = ?")->execute([$referral['id']]);
+    // Keep referral active under Pending status when session is scheduled
+    if (in_array($referral['status'], ['pending', 'under_review', 'ongoing'], true)) {
+        $db->prepare("UPDATE referrals SET status = 'pending' WHERE id = ?")->execute([$referral['id']]);
     }
 
     $formattedDate = date('F d, Y \a\t g:i A', $sessionTimestamp);

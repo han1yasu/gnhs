@@ -34,12 +34,54 @@ function generateReferralSummary(string $concernType, string $studentName, strin
 }
 
 /**
- * Call Gemini API if a valid key is provided
+ * Collect configured Gemini API keys in priority order (primary first, then backup keys).
+ */
+function getGeminiApiKeys(): array {
+    $candidates = [];
+    $envNames = ['GEMINI_API_KEY', 'GEMINI_API_KEY_BACKUP', 'GEMINI_API_KEY_2'];
+    foreach ($envNames as $name) {
+        $val = getenv($name);
+        if ($val === false || $val === '') {
+            $val = defined($name) ? constant($name) : '';
+        }
+        if (is_string($val)) {
+            $candidates[] = $val;
+        }
+    }
+
+    $multi = getenv('GEMINI_API_KEYS');
+    if (($multi === false || $multi === '') && defined('GEMINI_API_KEYS')) {
+        $multi = GEMINI_API_KEYS;
+    }
+    if (is_string($multi) && $multi !== '') {
+        foreach (explode(',', $multi) as $part) {
+            $candidates[] = $part;
+        }
+    }
+
+    $placeholders = [
+        'YOUR_GEMINI_API_KEY_HERE',
+        'YOUR_BACKUP_GEMINI_API_KEY_HERE',
+    ];
+    $keys = [];
+    foreach ($candidates as $raw) {
+        $clean = trim($raw);
+        if ($clean === '' || in_array($clean, $placeholders, true)) {
+            continue;
+        }
+        if (!in_array($clean, $keys, true)) {
+            $keys[] = $clean;
+        }
+    }
+
+    return $keys;
+}
+
+/**
+ * Call Gemini API if at least one valid key is provided
  */
 function callGeminiApiForCase(string $concernType, string $subject, string $description): string {
-    $apiKey = getenv('GEMINI_API_KEY') ?: (defined('GEMINI_API_KEY') ? GEMINI_API_KEY : '');
-    // Ignore empty keys
-    if (empty($apiKey) || !function_exists('curl_init')) {
+    if (empty(getGeminiApiKeys()) || !function_exists('curl_init')) {
         return '';
     }
 
@@ -55,12 +97,11 @@ function callGeminiApiForCase(string $concernType, string $subject, string $desc
             . "Subject: {$subject}\n"
             . "Student Concern Description:\n{$description}";
 
-    return executeGeminiPrompt($apiKey, $prompt);
+    return executeGeminiPromptWithFallback($prompt);
 }
 
 function callGeminiApiForReferral(string $concernType, string $studentName, string $observations): string {
-    $apiKey = getenv('GEMINI_API_KEY') ?: (defined('GEMINI_API_KEY') ? GEMINI_API_KEY : '');
-    if (empty($apiKey) || !function_exists('curl_init')) {
+    if (empty(getGeminiApiKeys()) || !function_exists('curl_init')) {
         return '';
     }
 
@@ -71,37 +112,67 @@ function callGeminiApiForReferral(string $concernType, string $studentName, stri
             . "Concern Type: {$typeLabel}\n"
             . "Teacher Observation:\n{$observations}";
 
-    return executeGeminiPrompt($apiKey, $prompt);
+    return executeGeminiPromptWithFallback($prompt);
+}
+
+/**
+ * Execute a Gemini prompt trying each configured API key in order (falling back on quota/rate-limit/key errors).
+ */
+function executeGeminiPromptWithFallback(string $prompt): string {
+    $keys = getGeminiApiKeys();
+    foreach ($keys as $apiKey) {
+        $text = executeGeminiPrompt($apiKey, $prompt);
+        if ($text !== '') {
+            return $text;
+        }
+    }
+    return '';
 }
 
 function executeGeminiPrompt(string $apiKey, string $prompt): string {
+    $apiKey = trim($apiKey);
+    if ($apiKey === '' || !function_exists('curl_init')) {
+        return '';
+    }
+
     $payload = json_encode([
-        'contents' => [['parts' => [['text' => $prompt]]]],
-        'generationConfig' => ['maxOutputTokens' => 300, 'temperature' => 0.3]
+        'contents' => [['role' => 'user', 'parts' => [['text' => $prompt]]]],
+        'generationConfig' => ['maxOutputTokens' => 1024, 'temperature' => 0.3]
     ]);
 
-    // Use single fast model with short timeout so submissions never stall
-    $models = ['gemini-2.5-flash'];
+    // Try fast models in order (3.5 models support both new and existing API keys; 2.5 kept as legacy fallback)
+    $models = ['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-2.5-flash'];
     foreach ($models as $model) {
         $ch = curl_init("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key=" . urlencode($apiKey));
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_POST           => true,
             CURLOPT_POSTFIELDS     => $payload,
-            CURLOPT_CONNECTTIMEOUT => 2,
-            CURLOPT_TIMEOUT        => 3,
+            CURLOPT_CONNECTTIMEOUT => 3,
+            CURLOPT_TIMEOUT        => 6,
+            CURLOPT_IPRESOLVE      => CURL_IPRESOLVE_V4,
             CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
         ]);
 
         $response = curl_exec($ch);
         $err      = curl_error($ch);
+        $httpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
         if (!$err && $response) {
             $data = json_decode($response, true);
-            if (isset($data['candidates'][0]['content']['parts'][0]['text'])) {
+            if ($httpCode === 200 && isset($data['candidates'][0]['content']['parts'][0]['text'])) {
                 return trim($data['candidates'][0]['content']['parts'][0]['text']);
+            }
+            // Quota, rate-limit, or key-level auth failure: stop testing models on this key so caller rotates to backup key
+            $status = strtoupper((string)($data['error']['status'] ?? ''));
+            $errMsg = strtolower((string)($data['error']['message'] ?? ''));
+            if (in_array($httpCode, [401, 403, 429], true) ||
+                $status === 'RESOURCE_EXHAUSTED' ||
+                strpos($errMsg, 'api key') !== false ||
+                strpos($errMsg, 'quota') !== false) {
+                break;
             }
         }
     }
@@ -313,8 +384,7 @@ function generateResolutionSuggestion(string $concernType, string $subject, stri
         ];
     }
 
-    $apiKey = getenv('GEMINI_API_KEY') ?: (defined('GEMINI_API_KEY') ? GEMINI_API_KEY : '');
-    if (!empty($apiKey) && function_exists('curl_init')) {
+    if (!empty(getGeminiApiKeys()) && function_exists('curl_init')) {
         $typeLabel = ucfirst(str_replace('_', ' ', $concernType));
         $prompt = "You are a professional school guidance counselor at Guinayang National High School (GNHS).\n"
                 . "Based on the case details and the counselor's direct interview observations and case notes, suggest an official resolution summary and appropriate student handbook sanction.\n\n"
@@ -329,7 +399,7 @@ function generateResolutionSuggestion(string $concernType, string $subject, stri
                 . "3. \"process\": One exact choice from: 'Settled through Counseling Session', 'Settled through Parent / Guardian Conference', 'Settled through Restorative Peer Mediation', 'Settled through Behavioral Agreement & Monitoring', or 'Settled through Direct Guidance Intervention'.\n"
                 . "Do not wrap in markdown quotes if possible or output plain json.";
 
-        $rawResponse = executeGeminiPrompt($apiKey, $prompt);
+        $rawResponse = executeGeminiPromptWithFallback($prompt);
         if (!empty($rawResponse)) {
             $jsonStr = trim($rawResponse);
             if (preg_match('/```(?:json)?\s*(\{.*?\})\s*```/s', $jsonStr, $matches)) {
@@ -414,8 +484,7 @@ function analyzeSessionConclusion(string $concernType, string $subject, string $
         ];
     }
 
-    $apiKey = getenv('GEMINI_API_KEY') ?: (defined('GEMINI_API_KEY') ? GEMINI_API_KEY : '');
-    if (!empty($apiKey) && function_exists('curl_init')) {
+    if (!empty(getGeminiApiKeys()) && function_exists('curl_init')) {
         $typeLabel = ucfirst(str_replace('_', ' ', $concernType));
         $sessionCount = count($existingSessions);
         $prompt = "You are a licensed school guidance counselor and clinical supervisor at Guinayang National High School (GNHS) in the Philippines.\n"
@@ -451,7 +520,7 @@ function analyzeSessionConclusion(string $concernType, string $subject, string $
                 . "  \"suggested_sanctions\": \"No Sanctions (Resolved through Guidance Counseling Only)\"\n"
                 . "}";
 
-        $rawResponse = executeGeminiPrompt($apiKey, $prompt);
+        $rawResponse = executeGeminiPromptWithFallback($prompt);
         if (!empty($rawResponse)) {
             $jsonStr = trim($rawResponse);
             if (preg_match('/```(?:json)?\s*(\{.*?\})\s*```/s', $jsonStr, $matches)) {

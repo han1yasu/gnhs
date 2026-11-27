@@ -39,7 +39,7 @@ if ($filterStatus === 'resolved') {
 // 1. Fetch Student-submitted Cases (Active only)
 $caseWhere = "WHERE student_id=$uid AND status NOT IN ('resolved','closed')";
 if ($filterStatus) $caseWhere = "WHERE student_id=$uid AND status='".addslashes($filterStatus)."'";
-$cases = $db->query("SELECT * FROM cases $caseWhere ORDER BY submitted_at DESC")->fetchAll();
+$cases = $db->query("SELECT * FROM cases $caseWhere ORDER BY submitted_at DESC, id DESC")->fetchAll();
 
 // 2. Fetch Teacher Referrals filed for this student (Active only)
 $refWhere = "WHERE (
@@ -72,7 +72,7 @@ $refStmt = $db->prepare("SELECT r.*,
     )
     LEFT JOIN users u ON cs.counselor_id = u.id
     $refWhere
-    ORDER BY r.submitted_at DESC");
+    ORDER BY r.submitted_at DESC, r.id DESC");
 $refStmt->execute([
     ':uid'         => $uid,
     ':fullName'    => $studentFullName,
@@ -81,8 +81,8 @@ $refStmt->execute([
 $referrals = $refStmt->fetchAll();
 
 function badge(string $s): string {
-    $map=['pending'=>'status-pending','under_review'=>'status-under_review','ongoing'=>'status-ongoing','resolved'=>'status-resolved','closed'=>'status-resolved'];
-    return "<span class='status-badge ".($map[$s]??'status-pending')."'>".str_replace('_',' ',ucfirst($s))."</span>";
+    $map=['pending'=>'status-pending','ongoing'=>'status-ongoing','resolved'=>'status-resolved'];
+    return "<span class='status-badge ".($map[$s]??'status-pending')."'>".ucwords(str_replace('_',' ',$s))."</span>";
 }
 function prioBadge(string $p): string {
     $map=['urgent'=>'priority-high','high'=>'priority-high','moderate'=>'priority-medium','medium'=>'priority-medium','low'=>'priority-low'];
@@ -176,7 +176,6 @@ foreach ($referrals as $r) {
 if (!$refRows) $refRows = "<tr><td colspan='8' class='empty-table-cell'>No active teacher referrals on record. Referrals made by your teachers will appear here.</td></tr>";
 
 $selPending = $filterStatus==='pending'      ? 'selected' : '';
-$selReview  = $filterStatus==='under_review' ? 'selected' : '';
 $selOngoing = $filterStatus==='ongoing'      ? 'selected' : '';
 
 $casesCount = count($cases);
@@ -283,7 +282,6 @@ $refBanner
       <select class="status-select" onchange="if(this.value==='resolved'){window.location='student-archive.php';}else{const t=getCurrentTab();window.location='student-cases.php?tab='+t+(this.value?'&status='+this.value:'');}">
         <option value="">All Active</option>
         <option value="pending" $selPending>Pending</option>
-        <option value="under_review" $selReview>Under Review</option>
         <option value="ongoing" $selOngoing>Ongoing</option>
         <option value="resolved">Resolved (Go to Archive)</option>
       </select>
@@ -365,8 +363,8 @@ function openStudentRefModal(btnOrData) {
 
   const typeLabel = (ref.concern_type || '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   const urgMap = { urgent: 'priority-high', moderate: 'priority-medium', low: 'priority-low' };
-  const statMap = { pending: 'status-pending', under_review: 'status-under_review', ongoing: 'status-ongoing', resolved: 'status-resolved' };
-  const statLabel = { pending: 'Pending', under_review: 'Under Review', ongoing: 'Ongoing', resolved: 'Resolved' };
+  const statMap = { pending: 'status-pending', resolved: 'status-resolved' };
+  const statLabel = { pending: 'Pending', resolved: 'Resolved' };
 
   let sessionBlock = '';
   if (ref.session_id) {

@@ -193,7 +193,7 @@ $sevGradeLowJson    = json_encode($gradeSevMap['low']);
 // --- Teacher Referrals Stats ---
 $totalReferrals    = (int)$db->query("SELECT COUNT(*) FROM referrals")->fetchColumn();
 $pendingReferrals  = (int)$db->query("SELECT COUNT(*) FROM referrals WHERE status='pending'")->fetchColumn();
-$ongoingReferrals  = (int)$db->query("SELECT COUNT(*) FROM referrals WHERE status IN ('under_review','ongoing')")->fetchColumn();
+$ongoingReferrals  = (int)$db->query("SELECT COUNT(DISTINCT r.id) FROM referrals r JOIN counseling_sessions cs ON cs.referral_id = r.id WHERE r.status='pending' AND cs.status IN ('scheduled','in_progress','ongoing')")->fetchColumn();
 $resolvedReferrals = (int)$db->query("SELECT COUNT(*) FROM referrals WHERE status IN ('resolved','closed')")->fetchColumn();
 $urgentReferrals   = (int)$db->query("SELECT COUNT(*) FROM referrals WHERE urgency='urgent'")->fetchColumn();
 
@@ -1131,10 +1131,8 @@ function renderCasesDrilldown(res) {
 
   const statusBadges = {
     pending: '<span class="status-badge status-pending">Pending</span>',
-    under_review: '<span class="status-badge status-under_review">Under Review</span>',
     ongoing: '<span class="status-badge status-ongoing">Ongoing</span>',
-    resolved: '<span class="status-badge status-resolved">Resolved</span>',
-    closed: '<span class="status-badge status-resolved">Closed</span>'
+    resolved: '<span class="status-badge status-resolved">Resolved</span>'
   };
 
   let html = '';
@@ -1352,10 +1350,7 @@ new Chart(document.getElementById('sectionChart'), {
 // Teacher Referrals Status Chart
 const refStatusColorMap = {
   'pending': '#d97706',
-  'under_review': '#2563eb',
-  'ongoing': '#7c3aed',
-  'resolved': '#16a34a',
-  'closed': '#6b7280'
+  'resolved': '#16a34a'
 };
 const refStatusColors = refStatusLabels.map(function(s) {
   return refStatusColorMap[s] || maroon;

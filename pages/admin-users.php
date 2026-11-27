@@ -22,7 +22,7 @@ foreach ($users as $u) {
     $email     = htmlspecialchars($u['email']);
     $idNum     = htmlspecialchars($u['id_number']);
     $roleClass = 'role-'.$u['role'];
-    $roleNames = ['student'=>'Student','teacher'=>'Teacher','admin'=>'Counselor'];
+    $roleNames = ['student'=>'Student','teacher'=>'Teacher','admin'=>!empty($u['position']) ? $u['position'] : 'Guidance Counselor'];
     $roleLabel = $roleNames[$u['role']] ?? ucfirst($u['role']);
     $gradeInfo    = $u['grade_section'] ? "<div style='font-size:12px;color:var(--text-3);margin-top:2px'><i class='fas fa-school' style='color:var(--maroon);width:12px'></i> ".htmlspecialchars($u['grade_section'])."</div>" : '';
     $advisoryInfo = (!empty($u['advisory_class']) && $u['role']==='teacher') ? "<div style='font-size:12px;color:var(--maroon);margin-top:2px;font-weight:700'><i class='fas fa-chalkboard-teacher' style='width:12px'></i> ".htmlspecialchars($u['advisory_class'])."</div>" : '';
@@ -55,6 +55,11 @@ foreach ($users as $u) {
         ? "<button class='btn-icon btn-action-deactivate danger' id='btn-status-{$u['id']}' onclick='openDeactivateConfirmModal({$u['id']},\"$name\",\"$email\")' title='Deactivate Account'><i class='fas fa-user-slash'></i></button>"
         : "<button class='btn-icon btn-action-activate' id='btn-status-{$u['id']}' onclick='openActivateConfirmModal({$u['id']},\"$name\",\"$email\")' title='Activate Account'><i class='fas fa-user-check'></i></button>";
 
+    $isSelf = ((int)$u['id'] === (int)$user['id']);
+    $deleteBtn = !$isSelf
+        ? "<button type='button' class='btn-icon btn-action-delete' id='btn-delete-{$u['id']}' onclick='openDeleteConfirmModal({$u['id']}, this.dataset.name, this.dataset.email, this.dataset.role)' data-name=\"$rawNameAttr\" data-email=\"$rawEmailAttr\" data-role=\"$rawRoleAttr\" title='Delete Account Permanently'><i class='fas fa-trash-alt'></i></button>"
+        : '';
+
     $avatarEl = !empty($u['avatar_photo'])
         ? "<div class='user-card-avatar' style='padding:0;overflow:hidden;position:relative'><span class='avatar-fallback' style='display:none;width:100%;height:100%;align-items:center;justify-content:center'>$initials</span><img src='".htmlspecialchars($u['avatar_photo'])."' onerror='handleAvatarError(this)' style='width:60px;height:60px;object-fit:cover;object-position:center top;border-radius:16px;display:block;'/></div>"
         : "<div class='user-card-avatar'>$initials</div>";
@@ -73,6 +78,7 @@ foreach ($users as $u) {
           $totpBtn
           $resetBtn
           $statusBtn
+          $deleteBtn
         </div>
     </div>";
 }
@@ -191,6 +197,20 @@ $content = <<<HTML
 .btn-advisory i {
   color: #7c3aed !important;
 }
+.btn-action-delete {
+  background: #fee2e2 !important;
+  border-color: #fca5a5 !important;
+}
+.btn-action-delete i {
+  color: #b91c1c !important;
+}
+[data-theme="dark"] .btn-action-delete {
+  background: rgba(185, 28, 28, 0.28) !important;
+  border-color: rgba(248, 113, 113, 0.5) !important;
+}
+[data-theme="dark"] .btn-action-delete i {
+  color: #fca5a5 !important;
+}
 
 /* Button color themes - Dark mode (Illuminated badges with vibrant icons) */
 [data-theme="dark"] .user-card-actions .btn-icon {
@@ -284,7 +304,7 @@ $bannerHtml
         <option value=""        $rAll>All Roles</option>
         <option value="student" $rStu>Students</option>
         <option value="teacher" $rTea>Teachers</option>
-        <option value="admin"   $rAdm>Counselors</option>
+        <option value="admin"   $rAdm>Guidance &amp; Admins</option>
       </select>
       <button class="btn-sm-primary" style="background:linear-gradient(135deg, #1e40af, #2563eb);border-color:#1e40af;font-weight:700" onclick="openAddStudentModal()"><i class="fas fa-user-graduate"></i> Register Walk-in Student</button>
       <button class="btn-sm-outline" onclick="openCsvImportModal()" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer"><i class="fas fa-file-csv"></i> Bulk CSV Import</button>
@@ -319,7 +339,17 @@ $bannerHtml
           <select id="nu-role" onchange="toggleGrade(this.value)">
             <option value="student">Student</option>
             <option value="teacher">Teacher</option>
-            <option value="admin">Guidance Counselor</option>
+            <option value="admin">Guidance / Admin</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group" id="nu-position-group" style="display:none">
+        <label>Admin Position / Title <span class="req">*</span></label>
+        <div class="select-wrap"><i class="fas fa-user-shield"></i>
+          <select id="nu-position">
+            <option value="Guidance Counselor">Guidance Counselor</option>
+            <option value="Principal">Principal</option>
+            <option value="Developer">Developer / IT Admin</option>
           </select>
         </div>
       </div>
@@ -560,6 +590,34 @@ $bannerHtml
   </div>
 </div>
 
+<!-- Delete Account Confirmation Modal -->
+<div class="modal-overlay hidden" id="deleteConfirmModal" onclick="if(event.target.id==='deleteConfirmModal')closeDeleteConfirmModal()">
+  <div class="modal-box" style="max-width:440px;text-align:center;padding:28px 24px;">
+    <button class="modal-close" onclick="closeDeleteConfirmModal()"><i class="fas fa-times"></i></button>
+    <div style="width:60px;height:60px;border-radius:20px;background:rgba(185,28,28,0.14);color:#dc2626;display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 16px;border:1px solid rgba(220,38,38,0.28);">
+      <i class="fas fa-trash-alt"></i>
+    </div>
+    <h3 style="font-size:19px;font-weight:800;color:var(--text);margin-bottom:8px">Delete User Account</h3>
+    <p style="font-size:13.5px;color:var(--text-2);line-height:1.5;margin-bottom:18px" id="deleteConfirmText">
+      Are you sure you want to permanently delete this account?
+    </p>
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:18px;display:flex;align-items:center;gap:12px;text-align:left;">
+      <div id="deleteUserAvatar" class="avatar-circle" style="width:40px;height:40px;font-size:14px;flex-shrink:0;background:#dc2626;color:#fff">U</div>
+      <div style="overflow:hidden;flex:1">
+        <div id="deleteUserName" style="font-weight:700;font-size:14px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">User Name</div>
+        <div id="deleteUserEmail" style="font-size:12px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">user@example.com</div>
+      </div>
+      <span id="deleteUserRoleBadge" class="user-card-role role-student" style="font-size:11px;padding:3px 9px;flex-shrink:0">User</span>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button type="button" class="btn-secondary" style="flex:1;padding:11px" onclick="closeDeleteConfirmModal()">Cancel</button>
+      <button type="button" class="btn-primary" id="confirmDeleteBtn" style="flex:1;padding:11px;background:#b91c1c;border-color:#991b1b" onclick="submitDeleteUser()">
+        <i class="fas fa-trash-alt"></i> Delete Permanently
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- Activate Account Confirmation Modal -->
 <div class="modal-overlay hidden" id="activateConfirmModal" onclick="if(event.target.id==='activateConfirmModal')closeActivateConfirmModal()">
   <div class="modal-box" style="max-width:440px;text-align:center;padding:28px 24px;">
@@ -761,14 +819,66 @@ async function submitActivateUser() {
   }
 }
 
+let _targetDeleteUserId = null;
+
+function openDeleteConfirmModal(userId, name, email, roleLabel) {
+  _targetDeleteUserId = userId;
+  document.getElementById('deleteUserName').textContent = name || 'User';
+  document.getElementById('deleteUserEmail').textContent = email || '';
+  document.getElementById('deleteUserRoleBadge').textContent = roleLabel || 'User';
+  document.getElementById('deleteUserAvatar').textContent = name ? name[0].toUpperCase() : 'U';
+  document.getElementById('deleteConfirmText').innerHTML = 'Are you sure you want to permanently delete the account of <strong>' + (name || 'this user') + '</strong>? This removes their account and cannot be undone.';
+  const modal = document.getElementById('deleteConfirmModal');
+  if (modal) {
+    if (modal.parentElement !== document.body) document.body.appendChild(modal);
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+function closeDeleteConfirmModal() {
+  const modal = document.getElementById('deleteConfirmModal');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
+    document.body.style.overflow = '';
+  }
+  _targetDeleteUserId = null;
+}
+
+async function submitDeleteUser() {
+  if (!_targetDeleteUserId) return;
+  const btn = document.getElementById('confirmDeleteBtn');
+  if (btn) btn.disabled = true;
+  try {
+    const isNested = window.location.pathname.includes('/gnhs-guidance/gnhs-guidance/');
+    const url = (isNested ? '/gnhs-guidance/gnhs-guidance' : '/gnhs-guidance') + '/api/update_user.php?action=delete&id=' + _targetDeleteUserId;
+    const r = await fetch(url);
+    const d = await r.json();
+    if (d.success) {
+      showToast('Account permanently deleted.', 'success');
+      closeDeleteConfirmModal();
+      setTimeout(() => location.reload(), 200);
+    } else {
+      showToast(d.message || 'Failed to delete account.', 'error');
+    }
+  } catch (err) {
+    showToast('Network error while deleting account.', 'error');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
 window.openDeactivateConfirmModal = openDeactivateConfirmModal;
-window.deleteUser = openDeactivateConfirmModal;
+window.deleteUser = openDeleteConfirmModal;
+window.openDeleteConfirmModal = openDeleteConfirmModal;
 window.openActivateConfirmModal = openActivateConfirmModal;
 window.activateUser = openActivateConfirmModal;
 
 // ── Modal Positioning & Viewport Safeguards ──
 function attachModalsToBody() {
-  const modalIds = ['addUserModal', 'advisoryModal', 'resetPasswordModal', 'resetTotpModal', 'deactivateConfirmModal', 'activateConfirmModal'];
+  const modalIds = ['addUserModal', 'advisoryModal', 'resetPasswordModal', 'resetTotpModal', 'deactivateConfirmModal', 'activateConfirmModal', 'deleteConfirmModal'];
   modalIds.forEach(function(id) {
     const el = document.getElementById(id);
     if (el && el.parentElement !== document.body) {
@@ -892,6 +1002,8 @@ const NU_GRADE_SECTIONS = {
 };
 function toggleGrade(role) {
   document.getElementById('nu-grade-group').style.display = role==='student' ? 'block' : 'none';
+  const posGroup = document.getElementById('nu-position-group');
+  if (posGroup) posGroup.style.display = role==='admin' ? 'block' : 'none';
   const idLabel = document.getElementById('nu-idnum-label');
   const idInput = document.getElementById('nu-idnum');
   const idHelp  = document.getElementById('nu-idnum-help');
@@ -904,8 +1016,8 @@ function toggleGrade(role) {
       idInput.setAttribute('pattern', '[0-9]{12}');
       if (idHelp) { idHelp.style.display = 'block'; }
     } else {
-      if (idLabel) idLabel.innerHTML = (role === 'teacher' ? 'Employee Number' : 'Employee / Staff ID') + ' <span class="req">*</span>';
-      idInput.placeholder = 'e.g. EMP-001 or IT-001';
+      if (idLabel) idLabel.innerHTML = (role === 'teacher' ? 'Employee Number' : 'Admin / Staff ID') + ' <span class="req">*</span>';
+      idInput.placeholder = role === 'admin' ? 'e.g. ADMIN-02 or GUID-01' : 'e.g. EMP-001 or IT-001';
       idInput.removeAttribute('maxlength');
       idInput.removeAttribute('inputmode');
       idInput.removeAttribute('pattern');

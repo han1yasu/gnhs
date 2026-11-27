@@ -70,16 +70,12 @@ $cases = $db->query("SELECT c.*,
     CASE WHEN c.is_anonymous=1 THEN 'Anonymous' ELSE CONCAT(s.first_name,' ',s.last_name) END AS student_name,
     CASE WHEN c.is_anonymous=1 THEN 'Confidential' ELSE s.grade_section END AS grade_section
     FROM cases c LEFT JOIN users s ON c.student_id=s.id
-    $where ORDER BY
-    (c.status = 'pending' AND c.follow_up_msg IS NOT NULL AND c.follow_up_msg != '' AND COALESCE(c.is_follow_up, 0) = 0) DESC,
-    c.updated_at DESC,
-    FIELD(c.priority,'high','medium','low'),
-    c.submitted_at DESC")->fetchAll();
+    $where ORDER BY c.submitted_at DESC, c.id DESC")->fetchAll();
 
 if (!function_exists('badge')) {
     function badge(string $s): string {
-        $map=['pending'=>'status-pending','under_review'=>'status-under_review','ongoing'=>'status-ongoing','resolved'=>'status-resolved','closed'=>'status-resolved'];
-        return "<span class='status-badge ".($map[$s]??'status-pending')."'>".str_replace('_',' ',ucfirst($s))."</span>";
+        $map=['pending'=>'status-pending','ongoing'=>'status-ongoing','resolved'=>'status-resolved'];
+        return "<span class='status-badge ".($map[$s]??'status-pending')."'>".ucwords(str_replace('_',' ',$s))."</span>";
     }
 }
 if (!function_exists('prioBadge')) {
@@ -118,10 +114,11 @@ foreach ($cases as $c) {
     $hasMedia = (!empty($c['evidence_files']) && $c['evidence_files'] !== '[]');
     $hasWitness = !empty($c['witnesses']);
     $isPeer = !empty($c['is_peer_report']);
-    $isReopened = (!empty($c['follow_up_msg']) && empty($c['is_follow_up']) && in_array($c['status'], ['pending', 'under_review', 'ongoing']));
+    $isReopened = ((!empty($c['follow_up_msg']) || !empty($c['reopen_reason'])) && empty($c['is_follow_up']) && in_array($c['status'], ['pending', 'ongoing']));
 
     if ($isReopened) {
-        $mediaBadges .= "<span class='badge-witness' style='background:#fdf4ff;color:#7e22ce;border-color:#e9d5ff' title='Appealed by student and reopened by Guidance'><i class='fas fa-reply-all'></i> Reopened</span>";
+        $rTitle = !empty($c['reopen_reason']) ? htmlspecialchars('Reopened: ' . $c['reopen_reason'], ENT_QUOTES) : 'Appealed by student and reopened by Guidance';
+        $mediaBadges .= "<span class='badge-witness' style='background:#fdf4ff;color:#7e22ce;border-color:#e9d5ff' title='{$rTitle}'><i class='fas fa-reply-all'></i> Reopened</span>";
     }
     if ($hasMedia) {
         $evArray = is_string($c['evidence_files']) ? json_decode($c['evidence_files'], true) : $c['evidence_files'];
@@ -208,7 +205,6 @@ if (!$rows) $rows = "<tr class='no-active-cases-row'><td colspan='8' style='text
 
 $sqVal = htmlspecialchars($search);
 $ss1 = $filterStatus==='pending'        ? 'selected' : '';
-$ss2 = $filterStatus==='under_review'   ? 'selected' : '';
 $ss3 = $filterStatus==='ongoing'        ? 'selected' : '';
 $sp1 = $filterPriority==='high'         ? 'selected' : '';
 $sp2 = $filterPriority==='medium'       ? 'selected' : '';
@@ -269,7 +265,6 @@ $reopenedBannerHtml
       <select class="filter-equal-control" onchange="applyFilter('status',this.value)">
         <option value="">All Status</option>
         <option value="pending"      $ss1>Pending</option>
-        <option value="under_review" $ss2>Under Review</option>
         <option value="ongoing"      $ss3>Ongoing</option>
       </select>
     </div>

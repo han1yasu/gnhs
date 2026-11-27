@@ -74,6 +74,7 @@ try {
             'last_name'       => $user['last_name'],
             'id_number'       => $user['id_number'],
             'role'            => $role,
+            'position'        => $user['position'] ?? null,
             'grade_section'   => $user['grade_section'],
             'department'      => $user['department'] ?? null,
             'avatar_initials' => $user['avatar_initials'] ?? strtoupper($user['first_name'][0].($user['last_name'][0]??'')),

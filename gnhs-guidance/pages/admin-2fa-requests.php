@@ -31,7 +31,7 @@ foreach ($pendingUsers as $u) {
     $email = htmlspecialchars($u['email']);
     $idNum = htmlspecialchars($u['id_number']);
     $roleClass = 'role-' . $u['role'];
-    $roleNames = ['student'=>'Student','teacher'=>'Teacher','admin'=>'Counselor'];
+    $roleNames = ['student'=>'Student','teacher'=>'Teacher','admin'=>!empty($u['position']) ? $u['position'] : 'Counselor'];
     $roleLabel = $roleNames[$u['role']] ?? ucfirst($u['role']);
     $avatar = renderUserAvatar($u);
     
@@ -83,7 +83,7 @@ foreach ($activeTotpUsers as $u) {
     $email = htmlspecialchars($u['email']);
     $idNum = htmlspecialchars($u['id_number']);
     $roleClass = 'role-' . $u['role'];
-    $roleNames = ['student'=>'Student','teacher'=>'Teacher','admin'=>'Counselor'];
+    $roleNames = ['student'=>'Student','teacher'=>'Teacher','admin'=>!empty($u['position']) ? $u['position'] : 'Counselor'];
     $roleLabel = $roleNames[$u['role']] ?? ucfirst($u['role']);
     $avatar = renderUserAvatar($u);
 

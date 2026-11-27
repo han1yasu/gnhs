@@ -14,8 +14,10 @@ $headerSub        = $isTopAdmin
     ? 'Principal &amp; Developer Account Provisioning &bull; Student, Teacher, Guidance Admin &amp; Top Admin'
     : 'Guidance Office Student Enrollment Portal &bull; Official 12-Digit LRN Verification';
 $singleModeBtnLbl = $isTopAdmin ? 'Single Account Creation' : 'Single Student Enrollment';
-$sectionOneTitle  = $isTopAdmin ? '1. Account Personal Information' : '1. Student Personal Information';
-$sectionTwoTitle  = $isTopAdmin ? '2. Role, ID / LRN &amp; Portal Account' : '2. DepEd LRN &amp; Portal Account';
+$sectionOneTitle       = $isTopAdmin ? '1. Select Account Type' : '1. Student Personal Information';
+$sectionPersonalHeading = $isTopAdmin ? '2. Account Personal Information' : '1. Student Personal Information';
+$sectionIdHeading      = $isTopAdmin ? '3. ID / LRN &amp; Portal Account' : '2. DepEd LRN &amp; Portal Account';
+$sectionClassHeading   = $isTopAdmin ? '4. Class Grade &amp; Section Assignment' : '3. Class Grade &amp; Section Assignment';
 $submitBtnLabel   = $isTopAdmin ? 'Create Account' : 'Register &amp; Create Student Account';
 $succCardTitle    = $isTopAdmin ? 'Account Created Successfully!' : 'Student Enrolled Successfully!';
 $succCardSub      = $isTopAdmin
@@ -28,9 +30,43 @@ $sidebarBody      = $isTopAdmin
 $isTopAdminJs     = $isTopAdmin ? 'true' : 'false';
 
 $roleSelectorHtml = $isTopAdmin ? <<<ROLEHTML
-        <div class="as-form-row">
+        <!-- 1. Select Account Type -->
+        <div class="as-section-tag">
+          <i class="fas fa-user-tag"></i> {$sectionOneTitle}
+        </div>
+        <div class="as-role-grid" id="acctRoleCards">
+          <button type="button" class="as-role-card active" data-role="student" onclick="pickAccountRole('student')">
+            <div class="as-role-icon"><i class="fas fa-user-graduate"></i></div>
+            <div>
+              <strong>Student</strong>
+              <small>Learner account (LRN + Section)</small>
+            </div>
+          </button>
+          <button type="button" class="as-role-card" data-role="teacher" onclick="pickAccountRole('teacher')">
+            <div class="as-role-icon"><i class="fas fa-chalkboard-teacher"></i></div>
+            <div>
+              <strong>Teacher</strong>
+              <small>Faculty &amp; referral portal</small>
+            </div>
+          </button>
+          <button type="button" class="as-role-card" data-role="admin" onclick="pickAccountRole('admin')">
+            <div class="as-role-icon"><i class="fas fa-user-tie"></i></div>
+            <div>
+              <strong>Guidance Admin</strong>
+              <small>Counselor case &amp; session access</small>
+            </div>
+          </button>
+          <button type="button" class="as-role-card" data-role="super_admin" onclick="pickAccountRole('super_admin')">
+            <div class="as-role-icon"><i class="fas fa-crown"></i></div>
+            <div>
+              <strong>Top Admin</strong>
+              <small>Principal / System Developer</small>
+            </div>
+          </button>
+        </div>
+        <div class="as-form-row" style="margin-top:12px">
           <div class="as-form-group" style="margin-bottom:0">
-            <label>Account Role <span class="req">*</span></label>
+            <label>Selected Account Type <span class="req">*</span></label>
             <div class="as-input-wrap">
               <i class="fas fa-user-tag"></i>
               <select id="acctRole" onchange="onAccountRoleChange()" required>
@@ -93,12 +129,13 @@ $content = <<<HTML
     align-items: start;
   }
   .as-main-card {
-    background: #ffffff;
+    background: var(--card-bg, #ffffff);
     border-radius: 14px;
     border: 1px solid var(--border, #e2e8f0);
     box-shadow: 0 4px 14px rgba(0,0,0,0.03);
     padding: 28px;
     position: relative;
+    color: var(--text, #1e293b);
   }
   .as-card-header {
     display: flex;
@@ -199,7 +236,7 @@ $content = <<<HTML
     border-radius: 10px;
     font-size: 14px;
     color: var(--text, #1e293b);
-    background: #ffffff;
+    background: var(--bg, #ffffff);
     transition: all .2s ease;
     box-sizing: border-box;
     font-family: inherit;
@@ -207,6 +244,11 @@ $content = <<<HTML
   .as-input-wrap select {
     appearance: none;
     cursor: pointer;
+    padding-right: 36px;
+  }
+  .as-input-wrap select option {
+    background: var(--card-bg, #ffffff);
+    color: var(--text, #1e293b);
   }
   .as-input-wrap .select-arrow {
     position: absolute;
@@ -301,7 +343,7 @@ $content = <<<HTML
     border-top: 1px solid var(--border, #e2e8f0);
   }
   .as-sidebar-card {
-    background: #ffffff;
+    background: var(--card-bg, #ffffff);
     border-radius: 14px;
     border: 1px solid var(--border, #e2e8f0);
     padding: 20px;
@@ -327,7 +369,7 @@ $content = <<<HTML
   /* Result card after successful account creation */
   .as-success-card {
     display: none;
-    background: #ffffff;
+    background: var(--card-bg, #ffffff);
     border-radius: 14px;
     border: 1.5px solid #86efac;
     box-shadow: 0 10px 25px rgba(22, 163, 74, 0.08);
@@ -340,7 +382,7 @@ $content = <<<HTML
     gap: 14px;
     margin-bottom: 18px;
     padding-bottom: 16px;
-    border-bottom: 1px solid #dcfce7;
+    border-bottom: 1px solid var(--border, #dcfce7);
   }
   .as-success-badge {
     width: 48px;
@@ -355,8 +397,8 @@ $content = <<<HTML
     flex-shrink: 0;
   }
   .as-cred-box {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
+    background: var(--bg2, #f8fafc);
+    border: 1px solid var(--border, #e2e8f0);
     border-radius: 10px;
     padding: 16px;
     margin: 16px 0;
@@ -536,6 +578,157 @@ $content = <<<HTML
     background: #fee2e2;
     color: #b91c1c;
   }
+  .as-role-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  @media (max-width: 900px) {
+    .as-role-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 520px) {
+    .as-role-grid { grid-template-columns: 1fr; }
+  }
+  .as-role-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    border-radius: 11px;
+    border: 1.5px solid var(--border, #e2e8f0);
+    background: var(--bg2, #f8fafc);
+    color: var(--text, #1e293b);
+    cursor: pointer;
+    text-align: left;
+    transition: all .2s ease;
+    font-family: inherit;
+  }
+  .as-role-card:hover {
+    border-color: var(--maroon, #550000);
+    background: var(--maroon-pale, #fff5f5);
+  }
+  .as-role-card.active {
+    border-color: var(--maroon, #550000);
+    background: var(--maroon-pale, #fff5f5);
+    box-shadow: 0 0 0 2px rgba(85,0,0,0.12);
+  }
+  .as-role-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    background: var(--card-bg, #ffffff);
+    color: var(--maroon, #550000);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+    border: 1px solid var(--border, #e2e8f0);
+  }
+  .as-role-card.active .as-role-icon {
+    background: var(--maroon, #550000);
+    color: #ffffff;
+    border-color: var(--maroon, #550000);
+  }
+  .as-role-card strong {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 800;
+    color: var(--text, #1e293b);
+    line-height: 1.2;
+  }
+  .as-role-card small {
+    display: block;
+    font-size: 10.5px;
+    color: var(--text-3, #64748b);
+    margin-top: 2px;
+    line-height: 1.25;
+  }
+
+  /* Dark mode support for Add Account / Add Student page */
+  [data-theme="dark"] .as-main-card,
+  [data-theme="dark"] .as-sidebar-card,
+  [data-theme="dark"] .as-success-card {
+    background: var(--card-bg, #1e1e1e) !important;
+    border-color: var(--border, #2c2c2c) !important;
+    color: var(--text, #e2e8f0) !important;
+    box-shadow: 0 6px 22px rgba(0, 0, 0, 0.35) !important;
+  }
+  [data-theme="dark"] .as-card-header h2,
+  [data-theme="dark"] .as-sidebar-card h4,
+  [data-theme="dark"] .as-form-group label,
+  [data-theme="dark"] .as-cred-item span {
+    color: var(--text, #e2e8f0) !important;
+  }
+  [data-theme="dark"] .as-sidebar-card p,
+  [data-theme="dark"] .as-card-header p,
+  [data-theme="dark"] .as-helper {
+    color: var(--text-2, #94a3b8) !important;
+  }
+  [data-theme="dark"] .as-input-wrap input,
+  [data-theme="dark"] .as-input-wrap select {
+    background: #141414 !important;
+    color: var(--text, #e2e8f0) !important;
+    border-color: var(--border, #334155) !important;
+  }
+  [data-theme="dark"] .as-input-wrap select option {
+    background: #1e1e1e !important;
+    color: #e2e8f0 !important;
+  }
+  [data-theme="dark"] .as-pwd-checklist,
+  [data-theme="dark"] .as-cred-box,
+  [data-theme="dark"] .csv-dropzone {
+    background: #161616 !important;
+    border-color: var(--border, #2c2c2c) !important;
+  }
+  [data-theme="dark"] .as-mode-btn {
+    background: #161616 !important;
+    border-color: var(--border, #2c2c2c) !important;
+    color: var(--text-2, #cbd5e1) !important;
+  }
+  [data-theme="dark"] .as-mode-btn:hover {
+    background: #252525 !important;
+    color: #fca5a5 !important;
+  }
+  [data-theme="dark"] .as-mode-btn.active {
+    background: var(--maroon, #e53e3e) !important;
+    color: #ffffff !important;
+    border-color: var(--maroon, #e53e3e) !important;
+  }
+  [data-theme="dark"] .as-role-card {
+    background: #161616 !important;
+    border-color: var(--border, #2c2c2c) !important;
+    color: var(--text, #e2e8f0) !important;
+  }
+  [data-theme="dark"] .as-role-card:hover,
+  [data-theme="dark"] .as-role-card.active {
+    background: rgba(229, 62, 62, 0.14) !important;
+    border-color: var(--maroon, #e53e3e) !important;
+    box-shadow: 0 0 0 2px rgba(229, 62, 62, 0.22) !important;
+  }
+  [data-theme="dark"] .as-role-icon {
+    background: #222222 !important;
+    border-color: #333333 !important;
+    color: #fca5a5 !important;
+  }
+  [data-theme="dark"] .as-role-card.active .as-role-icon {
+    background: var(--maroon, #e53e3e) !important;
+    color: #ffffff !important;
+    border-color: var(--maroon, #e53e3e) !important;
+  }
+  [data-theme="dark"] .as-notice-banner {
+    background: rgba(22, 163, 74, 0.14) !important;
+    border-color: rgba(74, 222, 128, 0.32) !important;
+    color: #bbf7d0 !important;
+  }
+  [data-theme="dark"] .csv-preview-table th {
+    background: #181818 !important;
+    color: #cbd5e1 !important;
+  }
+  [data-theme="dark"] .as-section-tag {
+    border-bottom-color: var(--border, #2c2c2c) !important;
+  }
 </style>
 
 <div class="as-wrapper">
@@ -625,9 +818,11 @@ $content = <<<HTML
       <!-- Single Account / Student Section -->
       <div id="singleEnrollSection">
       <form id="studentEnrollForm" onsubmit="handleStudentEnroll(event)">
-        <!-- 1. Personal Information -->
+        {$roleSelectorHtml}
+
+        <!-- Personal Information -->
         <div class="as-section-tag">
-          <i class="fas fa-id-card"></i> {$sectionOneTitle}
+          <i class="fas fa-id-card"></i> {$sectionPersonalHeading}
         </div>
 
         <div class="as-form-row">
@@ -664,12 +859,10 @@ $content = <<<HTML
           </div>
         </div>
 
-        <!-- 2. Role, ID / LRN & Contact -->
+        <!-- ID / LRN & Contact -->
         <div class="as-section-tag">
-          <i class="fas fa-school"></i> {$sectionTwoTitle}
+          <i class="fas fa-school"></i> {$sectionIdHeading}
         </div>
-
-        {$roleSelectorHtml}
 
         <div class="as-form-group">
           <label id="stuIdLabel">12-Digit Learner Reference Number (LRN) <span class="req">*</span></label>
@@ -693,10 +886,10 @@ $content = <<<HTML
           </div>
         </div>
 
-        <!-- 3. Grade & Section (Students Only) -->
+        <!-- Grade & Section (Students Only) -->
         <div id="stuGradeSectionBlock">
         <div class="as-section-tag">
-          <i class="fas fa-layer-group"></i> 3. Class Grade &amp; Section Assignment
+          <i class="fas fa-layer-group"></i> {$sectionClassHeading}
         </div>
 
         <div class="as-form-row">
@@ -935,8 +1128,17 @@ function setPresetPassword() {
   validatePasswordStandards();
 }
 
+function pickAccountRole(role) {
+  const sel = document.getElementById('acctRole');
+  if (sel) sel.value = role;
+  onAccountRoleChange();
+}
+
 function onAccountRoleChange() {
   const role = document.getElementById('acctRole')?.value || 'student';
+  document.querySelectorAll('#acctRoleCards .as-role-card').forEach(card => {
+    card.classList.toggle('active', card.getAttribute('data-role') === role);
+  });
   const posWrap = document.getElementById('acctPositionWrap');
   const gradeBlock = document.getElementById('stuGradeSectionBlock');
   const gradeSel = document.getElementById('stuGradeLevel');
@@ -954,7 +1156,7 @@ function onAccountRoleChange() {
   if (gradeBlock) gradeBlock.style.display = isStu ? 'block' : 'none';
   if (gradeSel) gradeSel.required = isStu;
   if (secSel) secSel.required = isStu;
-  if (sec4) sec4.textContent = isStu ? '4' : '3';
+  if (sec4) sec4.textContent = {$isTopAdminJs} ? (isStu ? '5' : '4') : (isStu ? '4' : '3');
 
   if (idInput && idLabel) {
     if (isStu) {

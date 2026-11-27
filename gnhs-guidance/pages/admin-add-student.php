@@ -2,9 +2,61 @@
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/layout.php';
 $user = requireLogin('admin');
+$isTopAdmin = isTopAdminRole($user['role'] ?? '');
 
-$pageTitle = 'Add Student';
+$pageTitle = $isTopAdmin ? 'Add Account' : 'Add Student';
 $activeNav = 'add_student';
+
+$pageCrumbLabel   = $isTopAdmin ? 'Add Account' : 'Add Student';
+$headerIconClass  = $isTopAdmin ? 'fa-user-plus' : 'fa-user-graduate';
+$headerTitle      = $isTopAdmin ? 'Create System / User Account' : 'Register Walk-in / New Student';
+$headerSub        = $isTopAdmin
+    ? 'Principal &amp; Developer Account Provisioning &bull; Student, Teacher, Guidance Admin &amp; Top Admin'
+    : 'Guidance Office Student Enrollment Portal &bull; Official 12-Digit LRN Verification';
+$singleModeBtnLbl = $isTopAdmin ? 'Single Account Creation' : 'Single Student Enrollment';
+$sectionOneTitle  = $isTopAdmin ? '1. Account Personal Information' : '1. Student Personal Information';
+$sectionTwoTitle  = $isTopAdmin ? '2. Role, ID / LRN &amp; Portal Account' : '2. DepEd LRN &amp; Portal Account';
+$submitBtnLabel   = $isTopAdmin ? 'Create Account' : 'Register &amp; Create Student Account';
+$succCardTitle    = $isTopAdmin ? 'Account Created Successfully!' : 'Student Enrolled Successfully!';
+$succCardSub      = $isTopAdmin
+    ? 'The new user account has been registered in the GNHS Guidance System.'
+    : 'The student account has been registered into the GNHS Guidance System.';
+$sidebarTitle     = $isTopAdmin ? 'Account Provisioning' : 'Guidance Enrollment';
+$sidebarBody      = $isTopAdmin
+    ? 'As Principal or Developer, you can create Student, Teacher, Guidance Counselor, or Top Admin accounts directly with immediate portal access.'
+    : 'Walk-in students enrolled through this portal are instantly registered in official database records and can submit cases or request counseling sessions.';
+$isTopAdminJs     = $isTopAdmin ? 'true' : 'false';
+
+$roleSelectorHtml = $isTopAdmin ? <<<ROLEHTML
+        <div class="as-form-row">
+          <div class="as-form-group" style="margin-bottom:0">
+            <label>Account Role <span class="req">*</span></label>
+            <div class="as-input-wrap">
+              <i class="fas fa-user-tag"></i>
+              <select id="acctRole" onchange="onAccountRoleChange()" required>
+                <option value="student">Student</option>
+                <option value="teacher">Teacher</option>
+                <option value="admin">Guidance Counselor (Guidance Admin)</option>
+                <option value="super_admin">Top Admin (Principal / Developer)</option>
+              </select>
+              <i class="fas fa-chevron-down select-arrow"></i>
+            </div>
+          </div>
+          <div class="as-form-group" id="acctPositionWrap" style="margin-bottom:0;display:none">
+            <label>Top Admin Title / Position <span class="req">*</span></label>
+            <div class="as-input-wrap">
+              <i class="fas fa-crown"></i>
+              <select id="acctPosition">
+                <option value="Principal">Principal</option>
+                <option value="Developer">Developer</option>
+                <option value="IT Administrator">IT Administrator</option>
+              </select>
+              <i class="fas fa-chevron-down select-arrow"></i>
+            </div>
+          </div>
+        </div>
+ROLEHTML
+: '<input type="hidden" id="acctRole" value="student" />';
 
 $content = <<<HTML
 <style>
@@ -493,7 +545,7 @@ $content = <<<HTML
     <i class="fas fa-chevron-right"></i>
     <a href="admin-users.php">User Accounts</a>
     <i class="fas fa-chevron-right"></i>
-    <span style="color:var(--text);font-weight:700">Add Student</span>
+    <span style="color:var(--text);font-weight:700">{$pageCrumbLabel}</span>
   </div>
 
   <!-- Success Notification Box -->
@@ -501,8 +553,8 @@ $content = <<<HTML
     <div class="as-success-header">
       <div class="as-success-badge"><i class="fas fa-check"></i></div>
       <div>
-        <h3 style="margin:0 0 4px;font-size:18px;font-weight:800;color:#15803d">Student Enrolled Successfully!</h3>
-        <p style="margin:0;font-size:12.5px;color:#166534">The student account has been registered into the GNHS Guidance System.</p>
+        <h3 style="margin:0 0 4px;font-size:18px;font-weight:800;color:#15803d">{$succCardTitle}</h3>
+        <p style="margin:0;font-size:12.5px;color:#166534">{$succCardSub}</p>
       </div>
     </div>
     <div class="as-cred-box">
@@ -511,18 +563,22 @@ $content = <<<HTML
         <span id="succName">-</span>
       </div>
       <div class="as-cred-item">
-        <label>12-Digit LRN</label>
+        <label id="succRoleLabel">Account Role</label>
+        <span id="succRole">Student</span>
+      </div>
+      <div class="as-cred-item">
+        <label id="succIdLabel">12-Digit LRN / ID</label>
         <span id="succLrn" style="letter-spacing:1px;font-family:monospace">-</span>
       </div>
       <div class="as-cred-item">
         <label>Portal Email</label>
         <span id="succEmail">-</span>
       </div>
-      <div class="as-cred-item">
+      <div class="as-cred-item" id="succClassWrap">
         <label>Grade &amp; Section</label>
         <span id="succClass">-</span>
       </div>
-      <div class="as-cred-item" style="grid-column: 1 / -1">
+      <div class="as-cred-item">
         <label>Temporary Password</label>
         <span id="succPass" style="font-family:monospace;color:var(--maroon)">-</span>
       </div>
@@ -532,7 +588,7 @@ $content = <<<HTML
         <i class="fas fa-copy"></i> Copy Credentials to Clipboard
       </button>
       <button type="button" class="btn-secondary" onclick="resetFormForNewStudent()" style="display:inline-flex;align-items:center;gap:6px">
-        <i class="fas fa-user-plus"></i> Register Another Student
+        <i class="fas fa-user-plus"></i> Create Another Account
       </button>
       <a href="admin-users.php" class="btn-sm-outline" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;padding:10px 18px">
         <i class="fas fa-users-cog"></i> View in User Management
@@ -545,11 +601,11 @@ $content = <<<HTML
     <div class="as-main-card">
       <div class="as-card-header">
         <div class="as-icon-badge">
-          <i class="fas fa-user-graduate"></i>
+          <i class="fas {$headerIconClass}"></i>
         </div>
         <div>
-          <h2>Register Walk-in / New Student</h2>
-          <p>Guidance Office Student Enrollment Portal • Official 12-Digit LRN Verification</p>
+          <h2>{$headerTitle}</h2>
+          <p>{$headerSub}</p>
         </div>
       </div>
 
@@ -559,19 +615,19 @@ $content = <<<HTML
       <!-- Enrollment Mode Tabs -->
       <div class="as-mode-nav">
         <button type="button" class="as-mode-btn active" id="btnModeSingle" onclick="switchEnrollMode('single')">
-          <i class="fas fa-user-plus"></i> Single Student Enrollment
+          <i class="fas fa-user-plus"></i> {$singleModeBtnLbl}
         </button>
         <button type="button" class="as-mode-btn" id="btnModeBulk" onclick="openCsvImportModal()">
           <i class="fas fa-file-csv"></i> Bulk Import via CSV / Excel
         </button>
       </div>
 
-      <!-- Single Student Enrollment Section -->
+      <!-- Single Account / Student Section -->
       <div id="singleEnrollSection">
       <form id="studentEnrollForm" onsubmit="handleStudentEnroll(event)">
         <!-- 1. Personal Information -->
         <div class="as-section-tag">
-          <i class="fas fa-id-card"></i> 1. Student Personal Information
+          <i class="fas fa-id-card"></i> {$sectionOneTitle}
         </div>
 
         <div class="as-form-row">
@@ -608,34 +664,37 @@ $content = <<<HTML
           </div>
         </div>
 
-        <!-- 2. DepEd LRN & Contact -->
+        <!-- 2. Role, ID / LRN & Contact -->
         <div class="as-section-tag">
-          <i class="fas fa-school"></i> 2. DepEd LRN &amp; Portal Account
+          <i class="fas fa-school"></i> {$sectionTwoTitle}
         </div>
 
+        {$roleSelectorHtml}
+
         <div class="as-form-group">
-          <label>12-Digit Learner Reference Number (LRN) <span class="req">*</span></label>
+          <label id="stuIdLabel">12-Digit Learner Reference Number (LRN) <span class="req">*</span></label>
           <div class="as-input-wrap">
             <i class="fas fa-id-badge"></i>
-            <input type="text" id="stuLrn" placeholder="Enter strictly 12 digits (e.g. 109283746501)" maxlength="12" inputmode="numeric" pattern="[0-9]{12}" required oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,12)" />
+            <input type="text" id="stuLrn" placeholder="Enter strictly 12 digits (e.g. 109283746501)" maxlength="12" inputmode="numeric" pattern="[0-9]{12}" required oninput="if((document.getElementById('acctRole')?.value||'student')==='student'){this.value=this.value.replace(/[^0-9]/g,'').slice(0,12);}" />
           </div>
-          <div class="as-helper">
+          <div class="as-helper" id="stuIdHelper">
             <i class="fas fa-info-circle"></i> Permanent 12-digit DepEd identifier. Prevents duplicate and fake accounts.
           </div>
         </div>
 
         <div class="as-form-group">
-          <label>Student Email Address <span class="req">*</span></label>
+          <label id="stuEmailLabel">Email Address <span class="req">*</span></label>
           <div class="as-input-wrap">
             <i class="fas fa-envelope"></i>
-            <input type="email" id="stuEmail" placeholder="student@gmail.com or deped email" required />
+            <input type="email" id="stuEmail" placeholder="email@gmail.com or deped.gov.ph" required />
           </div>
           <div class="as-helper">
             <i class="fas fa-shield-alt"></i> Used for Two-Factor Authentication (2FA) and self-service password recovery.
           </div>
         </div>
 
-        <!-- 3. Grade & Section -->
+        <!-- 3. Grade & Section (Students Only) -->
+        <div id="stuGradeSectionBlock">
         <div class="as-section-tag">
           <i class="fas fa-layer-group"></i> 3. Class Grade &amp; Section Assignment
         </div>
@@ -666,16 +725,17 @@ $content = <<<HTML
             </div>
           </div>
         </div>
+        </div>
 
         <!-- 4. Security & Temporary Password -->
         <div class="as-section-tag">
-          <i class="fas fa-lock"></i> 4. Initial Security &amp; Temporary Password
+          <i class="fas fa-lock"></i> <span id="sec4StepLabel">4</span>. Initial Security &amp; Temporary Password
         </div>
 
         <div class="as-form-group">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
             <label style="margin:0">Temporary Password <span class="req">*</span></label>
-            <button type="button" onclick="setPresetPassword()" style="font-size:11.5px;color:var(--maroon);background:none;border:none;cursor:pointer;font-weight:700">
+            <button type="button" id="btnPresetPwd" onclick="setPresetPassword()" style="font-size:11.5px;color:var(--maroon);background:none;border:none;cursor:pointer;font-weight:700">
               <i class="fas fa-magic"></i> Preset: Student@2026
             </button>
           </div>
@@ -698,7 +758,7 @@ $content = <<<HTML
         <div class="as-notice-banner">
           <i class="fas fa-shield-halved"></i>
           <div>
-            <strong>Automated 2FA Security Protection:</strong> Upon their very first sign-in, the student will be guided to set up Google Authenticator (or pure OTP verification) before accessing their portal.
+            <strong>Automated 2FA Security Protection:</strong> Upon their very first sign-in, the user will be guided to set up Google Authenticator (or pure OTP verification) before accessing their portal.
           </div>
         </div>
 
@@ -707,7 +767,7 @@ $content = <<<HTML
             Cancel
           </a>
           <button type="submit" class="btn-primary" id="btnSubmitStudent" style="display:inline-flex;align-items:center;gap:8px">
-            <i class="fas fa-user-plus"></i> Register &amp; Create Student Account
+            <i class="fas fa-user-plus"></i> {$submitBtnLabel}
           </button>
         </div>
       </form>
@@ -814,18 +874,18 @@ $content = <<<HTML
     <!-- Sidebar Tips & Guidelines -->
     <div class="as-sidebar">
       <div class="as-sidebar-card">
-        <h4><i class="fas fa-school" style="color:var(--maroon)"></i> Guidance Enrollment</h4>
-        <p>Walk-in students enrolled through this portal are instantly registered in official database records and can submit cases or request counseling sessions.</p>
+        <h4><i class="fas fa-school" style="color:var(--maroon)"></i> {$sidebarTitle}</h4>
+        <p>{$sidebarBody}</p>
       </div>
 
       <div class="as-sidebar-card">
-        <h4><i class="fas fa-shield-alt" style="color:#0284c7"></i> DepEd LRN Verification</h4>
-        <p>The 12-digit LRN is strictly validated against existing school records to prevent duplication and unauthorized duplicate accounts.</p>
+        <h4><i class="fas fa-shield-alt" style="color:#0284c7"></i> ID &amp; LRN Verification</h4>
+        <p>Student 12-digit LRNs and Staff IDs are strictly validated against existing school records to prevent duplicate accounts.</p>
       </div>
 
       <div class="as-sidebar-card">
-        <h4><i class="fas fa-key" style="color:#16a34a"></i> Student Onboarding</h4>
-        <p>Provide the student with their LRN, portal email, and initial password. They can change their password and register their authenticator upon first sign-in.</p>
+        <h4><i class="fas fa-key" style="color:#16a34a"></i> Account Onboarding</h4>
+        <p>Share the generated ID / LRN, portal email, and temporary password with the user so they can log in and complete their 2FA setup.</p>
       </div>
     </div>
   </div>
@@ -864,10 +924,74 @@ function populateSections(grade, preselect) {
   });
 }
 
+function getSelectedPresetPwd() {
+  const role = document.getElementById('acctRole')?.value || 'student';
+  return role === 'student' ? 'Student@2026' : 'Staff@2026';
+}
+
 function setPresetPassword() {
   const p = document.getElementById('stuPass');
-  p.value = 'Student@2026';
+  p.value = getSelectedPresetPwd();
   validatePasswordStandards();
+}
+
+function onAccountRoleChange() {
+  const role = document.getElementById('acctRole')?.value || 'student';
+  const posWrap = document.getElementById('acctPositionWrap');
+  const gradeBlock = document.getElementById('stuGradeSectionBlock');
+  const gradeSel = document.getElementById('stuGradeLevel');
+  const secSel = document.getElementById('stuSection');
+  const idLabel = document.getElementById('stuIdLabel');
+  const idInput = document.getElementById('stuLrn');
+  const idHelp = document.getElementById('stuIdHelper');
+  const btnPreset = document.getElementById('btnPresetPwd');
+  const sec4 = document.getElementById('sec4StepLabel');
+  const btnSubmit = document.getElementById('btnSubmitStudent');
+
+  if (posWrap) posWrap.style.display = (role === 'super_admin') ? 'block' : 'none';
+
+  const isStu = (role === 'student');
+  if (gradeBlock) gradeBlock.style.display = isStu ? 'block' : 'none';
+  if (gradeSel) gradeSel.required = isStu;
+  if (secSel) secSel.required = isStu;
+  if (sec4) sec4.textContent = isStu ? '4' : '3';
+
+  if (idInput && idLabel) {
+    if (isStu) {
+      idLabel.innerHTML = '12-Digit Learner Reference Number (LRN) <span class="req">*</span>';
+      idInput.placeholder = 'Enter strictly 12 digits (e.g. 109283746501)';
+      idInput.setAttribute('maxlength', '12');
+      idInput.setAttribute('inputmode', 'numeric');
+      idInput.setAttribute('pattern', '[0-9]{12}');
+      if (idHelp) idHelp.innerHTML = '<i class="fas fa-info-circle"></i> Permanent 12-digit DepEd identifier. Prevents duplicate and fake accounts.';
+    } else {
+      const idTitle = role === 'super_admin' ? 'Top Admin ID Number' : (role === 'admin' ? 'Guidance Counselor / Staff ID' : 'Employee Number');
+      const idPh = role === 'super_admin' ? 'e.g. ADMIN-PRINCIPAL-02' : (role === 'admin' ? 'e.g. GUID-2026-01' : 'e.g. EMP-2026-01');
+      idLabel.innerHTML = idTitle + ' <span class="req">*</span>';
+      idInput.placeholder = idPh;
+      idInput.removeAttribute('maxlength');
+      idInput.removeAttribute('inputmode');
+      idInput.removeAttribute('pattern');
+      if (idHelp) idHelp.innerHTML = '<i class="fas fa-info-circle"></i> Unique school employee or administrator identifier.';
+    }
+  }
+
+  const preset = getSelectedPresetPwd();
+  const p = document.getElementById('stuPass');
+  if (p && (p.value === 'Student@2026' || p.value === 'Staff@2026' || !p.value)) {
+    p.value = preset;
+    validatePasswordStandards();
+  }
+  if (btnPreset) btnPreset.innerHTML = '<i class="fas fa-magic"></i> Preset: ' + preset;
+  if (btnSubmit) {
+    const labelMap = {
+      student: 'Create Student Account',
+      teacher: 'Create Teacher Account',
+      admin: 'Create Guidance Admin Account',
+      super_admin: 'Create Top Admin Account'
+    };
+    btnSubmit.innerHTML = '<i class="fas fa-user-plus"></i> ' + ({$isTopAdminJs} ? (labelMap[role] || 'Create Account') : 'Register & Create Student Account');
+  }
 }
 
 function togglePassVisibility(inputId, btn) {
@@ -908,6 +1032,10 @@ async function handleStudentEnroll(e) {
   const alertEl = document.getElementById('pageAlert');
   alertEl.style.display = 'none';
 
+  const role = document.getElementById('acctRole')?.value || 'student';
+  const position = role === 'super_admin'
+    ? (document.getElementById('acctPosition')?.value || 'Principal')
+    : (role === 'admin' ? 'Guidance Counselor' : '');
   const first = document.getElementById('stuFirst').value.trim();
   const last = document.getElementById('stuLast').value.trim();
   const middle = document.getElementById('stuMiddle').value.trim();
@@ -918,12 +1046,12 @@ async function handleStudentEnroll(e) {
   const section = document.getElementById('stuSection').value;
   const pass = document.getElementById('stuPass').value.trim();
 
-  if (!first || !last || !lrn || !email || !gradeLevel || !section || !pass) {
+  if (!first || !last || !lrn || !email || !pass || (role === 'student' && (!gradeLevel || !section))) {
     showAlert('Please fill in all required fields.', 'error');
     return;
   }
 
-  if (!/^\d{12}$/.test(lrn)) {
+  if (role === 'student' && !/^\d{12}$/.test(lrn)) {
     showAlert('Learner Reference Number (LRN) must be strictly 12 numeric digits.', 'error');
     document.getElementById('stuLrn').focus();
     return;
@@ -935,10 +1063,11 @@ async function handleStudentEnroll(e) {
     return;
   }
 
-  const fullGrade = 'Grade ' + gradeLevel + ' - ' + section;
+  const fullGrade = role === 'student' ? ('Grade ' + gradeLevel + ' - ' + section) : '';
   const btn = document.getElementById('btnSubmitStudent');
+  const prevBtnHtml = btn.innerHTML;
   btn.disabled = true;
-  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enrolling Student...';
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Account...';
 
   try {
     const apiPath = getApiPath('register.php');
@@ -954,7 +1083,8 @@ async function handleStudentEnroll(e) {
         email: email,
         password: pass,
         confirm: pass,
-        role: 'student',
+        role: role,
+        position: position,
         id_number: lrn,
         grade_section: fullGrade
       })
@@ -963,17 +1093,25 @@ async function handleStudentEnroll(e) {
     const data = await resp.json();
 
     if (data.success) {
+      const roleDisp = role === 'super_admin' ? position : (role === 'admin' ? 'Guidance Counselor' : (role === 'teacher' ? 'Teacher' : 'Student'));
       _lastCreatedCreds = {
         name: first + (middle ? ' ' + middle : '') + ' ' + last + (suffix ? ' ' + suffix : ''),
+        role: roleDisp,
         lrn: lrn,
         email: email,
-        section: fullGrade,
+        section: fullGrade || '—',
         pass: pass
       };
 
       document.getElementById('succName').textContent = _lastCreatedCreds.name;
+      const succRoleEl = document.getElementById('succRole');
+      if (succRoleEl) succRoleEl.textContent = _lastCreatedCreds.role;
+      const succIdLbl = document.getElementById('succIdLabel');
+      if (succIdLbl) succIdLbl.textContent = role === 'student' ? '12-Digit LRN' : 'Employee / Admin ID';
       document.getElementById('succLrn').textContent = _lastCreatedCreds.lrn;
       document.getElementById('succEmail').textContent = _lastCreatedCreds.email;
+      const succClassWrap = document.getElementById('succClassWrap');
+      if (succClassWrap) succClassWrap.style.display = role === 'student' ? '' : 'none';
       document.getElementById('succClass').textContent = _lastCreatedCreds.section;
       document.getElementById('succPass').textContent = _lastCreatedCreds.pass;
 
@@ -990,17 +1128,17 @@ async function handleStudentEnroll(e) {
       setPresetPassword();
 
       if (typeof showToast === 'function') {
-        showToast(data.message || 'Student enrolled successfully!', 'success');
+        showToast(data.message || 'Account created successfully!', 'success');
       }
     } else {
-      showAlert(data.message || 'Failed to create student account.', 'error');
+      showAlert(data.message || 'Failed to create account.', 'error');
     }
   } catch (err) {
     showAlert('Server communication error. Please check your network and try again.', 'error');
   }
 
   btn.disabled = false;
-  btn.innerHTML = '<i class="fas fa-user-plus"></i> Register & Create Student Account';
+  btn.innerHTML = prevBtnHtml;
 }
 
 function showAlert(text, type) {
@@ -1027,11 +1165,12 @@ function showAlert(text, type) {
 
 function copyStudentCredentials() {
   if (!_lastCreatedCreds) return;
-  const text = "GNHS Guidance Portal - Student Account Credentials\\n"
+  const text = "GNHS Guidance Portal - Account Credentials\\n"
     + "Name: " + _lastCreatedCreds.name + "\\n"
-    + "12-Digit LRN: " + _lastCreatedCreds.lrn + "\\n"
+    + "Role: " + (_lastCreatedCreds.role || 'Student') + "\\n"
+    + "ID / LRN: " + _lastCreatedCreds.lrn + "\\n"
     + "Email: " + _lastCreatedCreds.email + "\\n"
-    + "Class: " + _lastCreatedCreds.section + "\\n"
+    + (_lastCreatedCreds.section && _lastCreatedCreds.section !== '—' ? ("Class: " + _lastCreatedCreds.section + "\\n") : "")
     + "Temporary Password: " + _lastCreatedCreds.pass + "\\n"
     + "Login at: " + window.location.origin + "/gnhs-guidance/index.html";
 
@@ -1418,6 +1557,7 @@ window.resetCsvUpload = resetCsvUpload;
 function initAdminAddStudentPage() {
   document.getElementById('stuGradeLevel').value = '10';
   populateSections('10', '');
+  onAccountRoleChange();
   validatePasswordStandards();
   const tab = new URLSearchParams(window.location.search).get('tab');
   if (tab === 'bulk') {

@@ -120,6 +120,7 @@ function renderLayout(array $user, string $pageTitle, string $activeNav, string 
     ];
     $navLinks['super_admin'] = $navLinks['admin'];
     $navLinks['super_admin'][4]['items'][0]['label'] = 'User Hierarchy';
+    $navLinks['super_admin'][4]['items'][2]['label'] = 'Add Account';
 
     $pending2faCount = 0;
     if ($isAnyAdmin) {

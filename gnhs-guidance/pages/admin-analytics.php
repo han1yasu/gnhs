@@ -193,7 +193,7 @@ $sevGradeLowJson    = json_encode($gradeSevMap['low']);
 // --- Teacher Referrals Stats ---
 $totalReferrals    = (int)$db->query("SELECT COUNT(*) FROM referrals")->fetchColumn();
 $pendingReferrals  = (int)$db->query("SELECT COUNT(*) FROM referrals WHERE status='pending'")->fetchColumn();
-$ongoingReferrals  = (int)$db->query("SELECT COUNT(DISTINCT r.id) FROM referrals r JOIN counseling_sessions cs ON cs.referral_id = r.id WHERE r.status='pending' AND cs.status IN ('scheduled','in_progress','ongoing')")->fetchColumn();
+$ongoingReferrals  = (int)$db->query("SELECT COUNT(*) FROM referrals WHERE status='ongoing'")->fetchColumn();
 $resolvedReferrals = (int)$db->query("SELECT COUNT(*) FROM referrals WHERE status IN ('resolved','closed')")->fetchColumn();
 $urgentReferrals   = (int)$db->query("SELECT COUNT(*) FROM referrals WHERE urgency='urgent'")->fetchColumn();
 
@@ -1350,6 +1350,7 @@ new Chart(document.getElementById('sectionChart'), {
 // Teacher Referrals Status Chart
 const refStatusColorMap = {
   'pending': '#d97706',
+  'ongoing': '#7c3aed',
   'resolved': '#16a34a'
 };
 const refStatusColors = refStatusLabels.map(function(s) {

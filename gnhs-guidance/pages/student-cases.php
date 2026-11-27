@@ -363,8 +363,8 @@ function openStudentRefModal(btnOrData) {
 
   const typeLabel = (ref.concern_type || '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   const urgMap = { urgent: 'priority-high', moderate: 'priority-medium', low: 'priority-low' };
-  const statMap = { pending: 'status-pending', resolved: 'status-resolved' };
-  const statLabel = { pending: 'Pending', resolved: 'Resolved' };
+  const statMap = { pending: 'status-pending', ongoing: 'status-ongoing', resolved: 'status-resolved' };
+  const statLabel = { pending: 'Pending', ongoing: 'Ongoing', resolved: 'Resolved' };
 
   let sessionBlock = '';
   if (ref.session_id) {

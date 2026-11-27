@@ -39,7 +39,7 @@ function getDB(): PDO {
         } catch(Exception $e) {}
 
         // Run heavy schema/data migrations only once per environment
-        $schemaFlag = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'gnhs_schema_v3_' . md5(__DIR__ . DB_NAME) . '.flag';
+        $schemaFlag = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'gnhs_schema_v4_' . md5(__DIR__ . DB_NAME) . '.flag';
         if (!file_exists($schemaFlag)) {
         // Ensure database timestamps match Philippine Standard Time (PHT, UTC+8)
         try {
@@ -91,10 +91,10 @@ function getDB(): PDO {
         try { $pdo->exec("ALTER TABLE referrals ADD COLUMN IF NOT EXISTS reopened_at DATETIME DEFAULT NULL"); } catch(Exception $e){}
         try { ensureReferralNotesTable($pdo); } catch(Exception $e){}
         try {
-            $m2 = $pdo->query("SELECT 1 FROM system_migrations WHERE migration_key = 'cleanup_statuses_and_admins_v2'")->fetch();
+            $m2 = $pdo->query("SELECT 1 FROM system_migrations WHERE migration_key = 'cleanup_statuses_and_admins_v3'")->fetch();
             if (!$m2) {
                 $pdo->exec("UPDATE cases SET status='ongoing' WHERE status='under_review'");
-                $pdo->exec("UPDATE referrals SET status='pending' WHERE status IN ('under_review','ongoing')");
+                $pdo->exec("UPDATE referrals SET status='ongoing' WHERE status='under_review'");
                 $pdo->exec("UPDATE referrals SET status='resolved' WHERE status='closed'");
                 $pdo->exec("UPDATE users SET position='Guidance Counselor' WHERE role='admin' AND (position IS NULL OR TRIM(position)='')");
                 require_once __DIR__ . '/../src/PureOTP.php';
@@ -110,7 +110,7 @@ function getDB(): PDO {
                         $ins->execute([$sa[0], $sa[1], $sa[2], $sa[3], password_hash($sa[4], PASSWORD_BCRYPT), $sa[5], $sa[6], PureOTP::generateSecret(16)]);
                     }
                 }
-                $pdo->exec("INSERT INTO system_migrations (migration_key, migrated_at) VALUES ('cleanup_statuses_and_admins_v2', NOW())");
+                $pdo->exec("INSERT INTO system_migrations (migration_key, migrated_at) VALUES ('cleanup_statuses_and_admins_v3', NOW())");
             }
         } catch(Exception $e){}
         try { $pdo->exec("ALTER TABLE case_messages ADD COLUMN IF NOT EXISTS read_at DATETIME DEFAULT NULL"); } catch(Exception $e){}

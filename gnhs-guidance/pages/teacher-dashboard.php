@@ -140,8 +140,8 @@ function urgencyBadge(string $u): string {
     return "<span class='priority-badge ".($map[$u]??'priority-low')."'><i class='fas fa-circle'></i> ".ucfirst($u)."</span>";
 }
 function statusBadge(string $s): string {
-    $map = ['pending'=>'status-pending','resolved'=>'status-resolved'];
-    return "<span class='status-badge ".($map[$s]??'status-pending')."'>".($s==='resolved'?'Resolved':'Pending')."</span>";
+    $map = ['pending'=>'status-pending','ongoing'=>'status-ongoing','resolved'=>'status-resolved'];
+    return "<span class='status-badge ".($map[$s]??'status-pending')."'>".ucfirst($s)."</span>";
 }
 function prioBadge(string $p): string {
     $map = ['high'=>'priority-high','medium'=>'priority-medium','low'=>'priority-low'];
@@ -358,8 +358,8 @@ $content .= '
 function openRefModal(btn) {
   const ref = JSON.parse(btn.getAttribute("data-ref"));
   const urgMap   = {urgent:"priority-high", moderate:"priority-medium", low:"priority-low"};
-  const statMap  = {pending:"status-pending", resolved:"status-resolved"};
-  const statLabel = {pending:"Pending", resolved:"Resolved"};
+  const statMap  = {pending:"status-pending", ongoing:"status-ongoing", resolved:"status-resolved"};
+  const statLabel = {pending:"Pending", ongoing:"Ongoing", resolved:"Resolved"};
   const typeLabel = ref.concern_type.replace(/_/g," ").replace(/\b\w/g, l=>l.toUpperCase());
 
   document.getElementById("refModalBody").innerHTML =

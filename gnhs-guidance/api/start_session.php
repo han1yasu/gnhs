@@ -45,7 +45,7 @@ try {
            ->execute([$session['case_id']]);
     }
     if (!empty($session['referral_id'])) {
-        $db->prepare("UPDATE referrals SET status = 'pending' WHERE id = ?")
+        $db->prepare("UPDATE referrals SET status = 'ongoing' WHERE id = ?")
            ->execute([$session['referral_id']]);
     }
 

@@ -47,7 +47,7 @@ if ($caseId > 0 && !$refId) {
             if ($teacher) {
                 $countRow = (int)$db->query("SELECT COUNT(*) FROM referrals")->fetchColumn();
                 $nextNum = 'R-' . str_pad((string)($countRow + 1), 4, '0', STR_PAD_LEFT);
-                $ins = $db->prepare("INSERT INTO referrals (ref_number, teacher_id, student_name, grade_section, concern_type, urgency, observations, status, submitted_at, ai_summary) VALUES (?, ?, ?, ?, ?, 'moderate', ?, 'pending', NOW(), ?)");
+                $ins = $db->prepare("INSERT INTO referrals (ref_number, teacher_id, student_name, grade_section, concern_type, urgency, observations, status, submitted_at, ai_summary) VALUES (?, ?, ?, ?, ?, 'moderate', ?, 'ongoing', NOW(), ?)");
                 $obs = "Guidance Counselor case coordination thread regarding Case #" . ($caseData['case_number'] ?? $caseId) . " for student " . $stName . ".";
                 $aiSum = "Case coordination between Guidance Counselor and Advisory Teacher for student " . $stName . " (" . $sec . ").";
                 $ins->execute([$nextNum, (int)$teacher['id'], $stName, $sec, $caseData['concern_type'] ?? 'other', $obs, $aiSum]);

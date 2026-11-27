@@ -52,8 +52,8 @@ if (!function_exists('urgencyBadge')) {
 }
 if (!function_exists('statusBadge')) {
     function statusBadge(string $s): string {
-        $map=['pending'=>'status-pending','resolved'=>'status-resolved'];
-        return "<span class='status-badge ".($map[$s]??'status-pending')."'>".($s==='resolved'?'Resolved':'Pending')."</span>";
+        $map=['pending'=>'status-pending','ongoing'=>'status-ongoing','resolved'=>'status-resolved'];
+        return "<span class='status-badge ".($map[$s]??'status-pending')."'>".ucfirst($s)."</span>";
     }
 }
 
@@ -124,6 +124,7 @@ if (!$rows) $rows = "<tr class='no-referrals-row'><td colspan='9' style='text-al
 
 $sqVal = htmlspecialchars($search);
 $ss1 = $filterStatus==='pending'      ? 'selected' : '';
+$ss3 = $filterStatus==='ongoing'      ? 'selected' : '';
 $ss4 = $filterStatus==='resolved'     ? 'selected' : '';
 $su1 = $filterUrgency==='urgent'      ? 'selected' : '';
 $su2 = $filterUrgency==='moderate'    ? 'selected' : '';
@@ -159,6 +160,7 @@ $content = <<<HTML
     <select class="status-select" onchange="applyFilter('status',this.value)">
       <option value="">All Status (Active)</option>
       <option value="pending"  $ss1>Pending</option>
+      <option value="ongoing"  $ss3>Ongoing</option>
       <option value="resolved" $ss4>Resolved</option>
     </select>
 
@@ -358,11 +360,11 @@ document.addEventListener("DOMContentLoaded", function() {
 function openRefModal(btn) {
   const ref = JSON.parse(btn.getAttribute("data-ref"));
   const urgMap   = {urgent:"priority-high", moderate:"priority-medium", low:"priority-low"};
-  const statLabel = {pending:"Pending", resolved:"Resolved"};
+  const statLabel = {pending:"Pending", ongoing:"Ongoing", resolved:"Resolved"};
   const typeLabel = ref.concern_type.replace(/_/g," ").replace(/\b\w/g, l=>l.toUpperCase());
 
-  const currentSt = ["pending","resolved"].includes(ref.status) ? ref.status : "pending";
-  const selOpts = ["pending","resolved"].map(s =>
+  const currentSt = ["pending","ongoing","resolved"].includes(ref.status) ? ref.status : "pending";
+  const selOpts = ["pending","ongoing","resolved"].map(s =>
     "<option value=\""+s+"\""+(s===currentSt?" selected":"")+">"+statLabel[s]+"</option>"
   ).join("");
 

@@ -231,8 +231,14 @@ $content = <<<HTML
     <div id="rrErrMsg" class="error-msg" style="display:none;margin-bottom:12px"></div>
 
     <div id="rrStep1">
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:13px;color:var(--text-2)">
-        <strong>Target Active Status:</strong> <span class="status-badge status-pending" style="margin-left:6px">Pending</span>
+      <div class="form-group" style="margin-bottom:14px">
+        <label style="font-size:12.5px;font-weight:700;display:block;margin-bottom:6px">Restore Referral To Active Status</label>
+        <div class="select-wrap"><i class="fas fa-tag"></i>
+          <select id="reopenRefTargetStatus">
+            <option value="pending">Pending</option>
+            <option value="ongoing">Ongoing</option>
+          </select>
+        </div>
       </div>
       <div class="form-group" style="margin-bottom:18px">
         <label style="font-size:12.5px;font-weight:700;display:block;margin-bottom:6px">Reason for Reopening Referral <span class="req">*</span></label>
@@ -448,6 +454,8 @@ function openReopenRefModal(id, refNum, studentName) {
   _reopenRefNum = refNum;
   document.getElementById("reopenRefSub").textContent = "Referral #" + refNum + " • " + (studentName || "Student");
   document.getElementById("reopenRefReasonInput").value = "";
+  const stSel = document.getElementById("reopenRefTargetStatus");
+  if (stSel) stSel.value = "pending";
   const errEl = document.getElementById("rrErrMsg");
   if (errEl) { errEl.style.display = "none"; errEl.textContent = ""; }
   setReopenRefStep(1);
@@ -483,6 +491,7 @@ function setReopenRefStep(step) {
 
 function goReopenRefConfirmStep() {
   const reason = (document.getElementById("reopenRefReasonInput")?.value || "").trim();
+  const status = document.getElementById("reopenRefTargetStatus")?.value || "pending";
   const errEl = document.getElementById("rrErrMsg");
   if (reason.length < 5) {
     if (errEl) {
@@ -494,7 +503,7 @@ function goReopenRefConfirmStep() {
   }
   if (errEl) { errEl.style.display = "none"; errEl.textContent = ""; }
   document.getElementById("rrConfirmNum").textContent = "#" + _reopenRefNum;
-  document.getElementById("rrConfirmStatus").textContent = "Pending";
+  document.getElementById("rrConfirmStatus").textContent = status === "ongoing" ? "Ongoing" : "Pending";
   document.getElementById("rrConfirmReason").textContent = reason;
   setReopenRefStep(2);
 }
@@ -502,6 +511,7 @@ function goReopenRefConfirmStep() {
 async function submitReopenArchivedReferral() {
   if (!_reopenRefId) return;
   const reason = (document.getElementById("reopenRefReasonInput")?.value || "").trim();
+  const status = document.getElementById("reopenRefTargetStatus")?.value || "pending";
   const btn = document.getElementById("btnConfirmReopenRef");
   const errEl = document.getElementById("rrErrMsg");
   if (btn) { btn.disabled = true; btn.innerHTML = "<span class=\"spinner\"></span> Reopening…"; }
@@ -513,7 +523,7 @@ async function submitReopenArchivedReferral() {
     const r = await fetch(apiBase + "update_referral.php", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: _reopenRefId, status: "pending", reopen_reason: reason })
+      body: JSON.stringify({ id: _reopenRefId, status: status, reopen_reason: reason })
     });
     const d = await r.json();
     if (d.success) {

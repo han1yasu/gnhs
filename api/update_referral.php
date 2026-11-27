@@ -9,7 +9,7 @@ $status       = trim($raw['status'] ?? $_REQUEST['status'] ?? '');
 $reopenReason = trim($raw['reopen_reason'] ?? $_REQUEST['reopen_reason'] ?? '');
 if (!$id || !$status) jsonOut(['success'=>false,'message'=>'Missing params.']);
 
-$allowedStatuses = ['pending', 'resolved'];
+$allowedStatuses = ['pending', 'ongoing', 'resolved'];
 if (!in_array($status, $allowedStatuses, true)) {
     jsonOut(['success'=>false,'message'=>'Invalid referral status selected.']);
 }
@@ -25,7 +25,7 @@ try {
     }
 
     $wasArchived = in_array($ref['status'], ['resolved', 'closed'], true);
-    $isReopening = ($wasArchived && $status === 'pending');
+    $isReopening = ($wasArchived && in_array($status, ['pending', 'ongoing'], true));
 
     if ($isReopening && mb_strlen($reopenReason) < 5) {
         jsonOut(['success'=>false,'message'=>'Please provide a reason for reopening this referral (at least 5 characters).'], 400);

@@ -47,8 +47,8 @@ function urgencyBadge(string $u): string {
     return "<span class='priority-badge ".($map[$u]??'priority-low')."'><i class='fas fa-circle'></i>".ucfirst($u)."</span>";
 }
 function statusBadge(string $s): string {
-    $map=['pending'=>'status-pending','resolved'=>'status-resolved'];
-    return "<span class='status-badge ".($map[$s]??'status-pending')."'>".($s==='resolved'?'Resolved':'Pending')."</span>";
+    $map=['pending'=>'status-pending','ongoing'=>'status-ongoing','resolved'=>'status-resolved'];
+    return "<span class='status-badge ".($map[$s]??'status-pending')."'>".ucfirst($s)."</span>";
 }
 
 $rows = '';
@@ -119,6 +119,7 @@ if (!$rows) $rows = "<tr><td colspan='9' style='text-align:center;color:var(--te
 
 $sqVal = htmlspecialchars($search);
 $sSel1 = $filterStatus==='pending'      ? 'selected' : '';
+$sSel3 = $filterStatus==='ongoing'      ? 'selected' : '';
 $sSel4 = $filterStatus==='resolved'     ? 'selected' : '';
 $uSel1 = $filterUrgency==='urgent'      ? 'selected' : '';
 $uSel2 = $filterUrgency==='moderate'    ? 'selected' : '';
@@ -157,6 +158,7 @@ $content = <<<HTML
     <select class="status-select" onchange="applyFilter('status',this.value)">
       <option value="">All Status (Active)</option>
       <option value="pending"  $sSel1>Pending</option>
+      <option value="ongoing"  $sSel3>Ongoing</option>
       <option value="resolved" $sSel4>Resolved</option>
     </select>
 
@@ -274,8 +276,8 @@ document.addEventListener("DOMContentLoaded", function() {
 function openRefModal(btn) {
   const ref = JSON.parse(btn.getAttribute("data-ref"));
   const urgMap   = {urgent:"priority-high", moderate:"priority-medium", low:"priority-low"};
-  const statMap  = {pending:"status-pending", resolved:"status-resolved"};
-  const statLabel = {pending:"Pending", resolved:"Resolved"};
+  const statMap  = {pending:"status-pending", ongoing:"status-ongoing", resolved:"status-resolved"};
+  const statLabel = {pending:"Pending", ongoing:"Ongoing", resolved:"Resolved"};
   const typeLabel = ref.concern_type.replace(/_/g," ").replace(/\b\w/g, l=>l.toUpperCase());
 
   document.getElementById("refModalBody").innerHTML = `
